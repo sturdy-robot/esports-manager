@@ -18,7 +18,6 @@ import random
 import uuid
 from typing import Optional
 
-from esm.core.esports.moba.generator.default_team_names import get_default_team_names
 from esm.core.esports.moba.generator.generate_champions import Champion
 from esm.core.esports.moba.generator.generate_players import MobaPlayerGenerator
 from esm.core.esports.moba.generator.generator import GeneratorInterface
@@ -48,10 +47,6 @@ class TeamGenerator(GeneratorInterface):
         Generates teams UUID
         """
         return uuid.uuid4()
-
-    @staticmethod
-    def generate_name() -> str:
-        return random.choice(get_default_team_names())
 
     def generate_roster(
         self, nationality: str, mu: int, sigma: int
