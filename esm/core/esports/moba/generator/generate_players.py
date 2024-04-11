@@ -17,7 +17,7 @@
 import random
 import uuid
 from datetime import date, timedelta
-from typing import Optional, Tuple
+from typing import Optional
 
 from ....utils import get_nations
 from ..champion import Champion
@@ -132,7 +132,7 @@ class MobaPlayerGenerator(GeneratorInterface):
     def __init__(
         self,
         champions_list: list[Champion],
-        names: list[dict[str, float | str | int]],
+        names: list[dict[str, dict[str, str | int]]],
         today: date = date.today(),
         min_age: int = 16,
         max_age: int = 25,
@@ -216,7 +216,7 @@ class MobaPlayerGenerator(GeneratorInterface):
 
         return player_champions
 
-    def get_nationality_skill(self, nationality: str) -> Tuple[int, int]:
+    def get_nationality_skill(self, nationality: str) -> tuple[int, int]:
         for nat in self.names:
             if nat["region"] == nationality:
                 mu = nat["mu"]
@@ -240,7 +240,7 @@ class MobaPlayerGenerator(GeneratorInterface):
             if name_dict["region"] == nationality:
                 return random.choice(name_dict["male"])
 
-        raise ValueError("Invalid region!")
+        raise MobaPlayerGeneratorError("Invalid region!")
 
     def generate_last_name(self, nationality: str) -> str:
         """
@@ -250,7 +250,7 @@ class MobaPlayerGenerator(GeneratorInterface):
             if name_dict["region"] == nationality:
                 return random.choice(name_dict["surnames"])
 
-        raise ValueError("Invalid region!")
+        raise MobaPlayerGeneratorError("Invalid region!")
 
     def generate_nick(self) -> str:
         """
@@ -270,7 +270,7 @@ class MobaPlayerGenerator(GeneratorInterface):
         Essentially this should discourage the users from making players play off-lane
         """
         mult = {}
-        for lane in range(5):
+        for lane in list(Lanes):
             multiplier = random.randrange(55, 100) / 100 if lane != main_lane else 1
             mult[lane] = multiplier
 
@@ -287,7 +287,7 @@ class MobaPlayerGenerator(GeneratorInterface):
         """
         Runs the player generation routine
         """
-        if not nationality:
+        if not nationality or nationality not in self.nationalities:
             nationality = self.get_nationality()
 
         if mu is None or sigma is None:

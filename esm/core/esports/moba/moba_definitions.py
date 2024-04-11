@@ -28,11 +28,11 @@ class Lanes(Enum):
     Defines lanes that can be played during a MOBA match
     """
 
-    TOP = 0
-    JNG = auto()
-    MID = auto()
-    ADC = auto()
-    SUP = auto()
+    TOP = "TOP"
+    JNG = "JNG"
+    MID = "MID"
+    ADC = "ADC"
+    SUP = "SUP"
 
 
 class LaneMultiplierError(Exception):
@@ -108,7 +108,7 @@ class LaneMultipliers(Serializable):
 
     @classmethod
     def get_from_dict(cls, dictionary: dict):
-        attributes = {Lanes(key): value for key, value in dictionary.items()}
+        attributes = get_lanes_from_dict(dictionary)
 
         return cls(
             attributes[Lanes.TOP],
@@ -118,15 +118,15 @@ class LaneMultipliers(Serializable):
             attributes[Lanes.SUP],
         )
 
-    def serialize(self) -> dict[int, float]:
+    def serialize(self) -> dict[str, float]:
         return {
-            Lanes.TOP.value: self.top,
-            Lanes.JNG.value: self.jng,
-            Lanes.MID.value: self.mid,
-            Lanes.ADC.value: self.adc,
-            Lanes.SUP.value: self.sup,
+            Lanes.TOP.name: self.top,
+            Lanes.JNG.name: self.jng,
+            Lanes.MID.name: self.mid,
+            Lanes.ADC.name: self.adc,
+            Lanes.SUP.name: self.sup,
         }
 
 
-def get_lanes_from_dict(lanes: dict[int, float]) -> dict[Lanes, float]:
+def get_lanes_from_dict(lanes: dict[str, float]) -> dict[Lanes, float]:
     return {Lanes(lane): mult for lane, mult in lanes.items()}

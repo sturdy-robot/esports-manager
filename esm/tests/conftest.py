@@ -15,6 +15,7 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import uuid
 from datetime import date
+from pathlib import Path
 
 import pytest
 
@@ -65,11 +66,11 @@ def champion_dict():
         "id": "00000000000000000000000000000001",
         "name": "MyChampion",
         "lanes": {
-            Lanes.TOP.value: 0.80,
-            Lanes.JNG.value: 1.00,
-            Lanes.MID.value: 0.45,
-            Lanes.ADC.value: 0.30,
-            Lanes.SUP.value: 0.10,
+            Lanes.TOP.name: 0.80,
+            Lanes.JNG.name: 1.00,
+            Lanes.MID.name: 0.45,
+            Lanes.ADC.name: 0.30,
+            Lanes.SUP.name: 0.10,
         },
         "scaling_factor": 0.5,
         "scaling_peak": 20,
@@ -352,9 +353,9 @@ def mock_champion_defs() -> list[dict[str, str | int | float]]:
 
 
 @pytest.fixture
-def settings(tmp_path) -> Settings:
-    root_dir = tmp_path / "esm"
-    settings = Settings(root_dir)
+def settings(tmp_path: Path) -> Settings:
+    settings = Settings()
+    settings.db_dir = tmp_path / "db"
     return settings
 
 

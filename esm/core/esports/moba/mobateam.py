@@ -50,9 +50,9 @@ class MobaTeam(Serializable):
     roster: list[MobaPlayer]
 
     def serialize(self) -> dict:
-        players = [player.player_id for player in self.roster]
+        players = [player.player_id.hex for player in self.roster]
         return {
-            "team_id": self.team_id,
+            "team_id": self.team_id.hex,
             "name": self.name,
             "nationality": self.nationality,
             "roster": players,
