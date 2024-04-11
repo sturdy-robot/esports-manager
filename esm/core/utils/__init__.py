@@ -73,7 +73,7 @@ def load_list_from_file(filepath: Union[str, Path]) -> list[dict]:
 
 def get_files_from_extension(directory: Union[str, Path], extension: str) -> list[str]:
     return [
-        str(file) for file in Path(directory).glob(f"*{extension}") if file.is_file()
+        str(file) for file in Path(directory).rglob(f"*{extension}") if file.is_file()
     ]
 
 
@@ -95,7 +95,9 @@ def normalize_filename(filename, delim="_") -> str:
     return f"{filename}.cbor"
 
 
-def get_nations(names: list[dict[str, str | float]]) -> list[dict]:
+def get_nations(
+    names: list[dict[str, dict[str, str | int]]]
+) -> list[dict[str, str | int]]:
     return [nat["region"] for nat in names]
 
 

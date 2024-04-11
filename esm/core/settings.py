@@ -13,9 +13,6 @@
 #
 #      You should have received a copy of the GNU General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import os
-from pathlib import Path
-
 import yaml
 
 from esm.definitions import *
@@ -47,7 +44,7 @@ class Settings:
 
     @property
     def moba_champion_defs(self) -> Path:
-        return self.moba_definitions_dir / "champions"
+        return self.moba_definitions_dir / "champions" / "champions.json"
 
     @property
     def moba_championship_defs(self) -> Path:
@@ -88,14 +85,14 @@ class Settings:
         else:
             self.create_config_file()
 
-    def get_from_dict(self, data: dict[str, int | float | str]):
+    def get_from_dict(self, data: dict[str, str]):
         self.root_dir = Path(data["root_dir"])
         self.res_dir = Path(data["res_dir"])
         self.db_dir = Path(data["db_dir"])
         self.save_file_dir = Path(data["save_file_dir"])
         self.logs_dir = Path(data["logs_dir"])
 
-    def serialize(self) -> dict[str, int | float | str]:
+    def serialize(self) -> dict[str, str]:
         return {
             "root_dir": str(self.root_dir.absolute()),
             "res_dir": str(self.res_dir.absolute()),
@@ -105,6 +102,6 @@ class Settings:
         }
 
     def create_config_file(self):
-        os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
+        self.config_file.parent.mkdir(parents=True, exist_ok=True)
         with open(self.config_file, "w") as fp:
             yaml.safe_dump(self.serialize(), fp)

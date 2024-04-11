@@ -15,6 +15,7 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import os
+from pathlib import Path
 
 from .esports.moba.champion import Champion
 from .esports.moba.generator import (
@@ -53,7 +54,7 @@ class DB:
         teams_list = []
         for region in regions:
             region_teams = []
-            teams_def = load_list_from_file(region["filename"])
+            teams_def = load_list_from_file(Path(region["filename"]))
             for team_def in teams_def:
                 team = team_gen.generate(team_def)
                 region_teams.append(team)
@@ -80,49 +81,61 @@ class DB:
     @staticmethod
     def serialize_champions(
         champions_list: list[Champion],
-    ) -> dict[int, dict[str, str | list[str]]]:
+    ) -> dict[str, dict[str, str | list[str]]]:
         return {
-            champion.champion_id.int: champion.serialize()
+            champion.champion_id.hex: champion.serialize()
             for champion in champions_list
         }
 
     @staticmethod
     def serialize_teams(
         teams_list: list[MobaTeam],
-    ) -> dict[int, dict[str, str | list[str]]]:
-        return {team.team_id.int: team.serialize() for team in teams_list}
+    ) -> dict[str, dict[str, str | list[str]]]:
+        return {team.team_id.hex: team.serialize() for team in teams_list}
 
     @staticmethod
     def serialize_players(
         players_list: list[MobaPlayer],
-    ) -> dict[int, dict[str, str | list[str]]]:
-        return {player.player_id.int: player.serialize() for player in players_list}
+    ) -> dict[str, dict[str, str | list[str]]]:
+        return {player.player_id.hex: player.serialize() for player in players_list}
 
     @staticmethod
     def serialize_regions(regions_list: list[MobaRegion]) -> dict[str, dict]:
         return {region.region_id: region.serialize() for region in regions_list}
 
     def generate_moba_teams_file(
-        self, serialized_teams: dict[int, dict[str, str | list[str]]]
+        self, serialized_teams: dict[str, dict[str, str | list[str]]]
     ) -> None:
-        with open(self.settings.moba_teams, "w") as fp:
-            json.dump(serialized_teams, fp, indent=4)
+        self.settings.moba_teams.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.settings.moba_teams, "w", encoding="utf-8") as fp:
+            json.dump(
+                serialized_teams, fp, indent=4, ensure_ascii=False, sort_keys=True
+            )
 
     def generate_moba_champions_file(
-        self, serialized_champions: dict[int, dict[str, str | list[str]]]
+        self, serialized_champions: dict[str, dict[str, str | list[str]]]
     ) -> None:
-        with open(self.settings.moba_champions, "w") as fp:
-            json.dump(serialized_champions, fp, indent=4)
+        self.settings.moba_champions.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.settings.moba_champions, "w", encoding="utf-8") as fp:
+            json.dump(
+                serialized_champions, fp, indent=4, ensure_ascii=False, sort_keys=True
+            )
 
     def generate_moba_players_file(
-        self, serialized_players: dict[int, dict[str, str | list[str]]]
+        self, serialized_players: dict[str, dict[str, str | list[str]]]
     ) -> None:
+        self.settings.moba_players.parent.mkdir(parents=True, exist_ok=True)
         with self.settings.moba_players.open("w", encoding="utf-8") as fp:
-            json.dump(serialized_players, fp, indent=4)
+            json.dump(
+                serialized_players, fp, indent=4, ensure_ascii=False, sort_keys=True
+            )
 
     def generate_moba_regions_file(self, serialized_regions: dict[str, dict]) -> None:
-        with open(self.settings.moba_regions, "w") as fp:
-            json.dump(serialized_regions, fp, indent=4)
+        self.settings.moba_regions.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.settings.moba_regions, "w", encoding="utf-8") as fp:
+            json.dump(
+                serialized_regions, fp, indent=4, ensure_ascii=False, sort_keys=True
+            )
 
     def generate_moba_files(
         self,

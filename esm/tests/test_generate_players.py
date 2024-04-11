@@ -52,7 +52,7 @@ ch = st.lists(
 
 
 @given(ch)
-def test_generate_default_mobaplayer(champions: list[Champion]):
+def test_generate_default_moba_player(champions: list[Champion]):
     names = load_list_from_file(get_default_names_file())
     moba_player_gen = MobaPlayerGenerator(champions_list=champions, names=names)
     for lane in Lanes:
@@ -61,10 +61,10 @@ def test_generate_default_mobaplayer(champions: list[Champion]):
 
 
 @given(ch)
-def test_generate_rand_mobaplayer(champions: list[Champion]):
+def test_generate_rand_moba_player(champions: list[Champion]):
     names = load_list_from_file(get_default_names_file())
     moba_player_gen = MobaPlayerGenerator(champions_list=champions, names=names)
-    players = [moba_player_gen.generate(lane=Lanes(i)) for i in range(5)]
+    players = [moba_player_gen.generate(lane=Lanes(i)) for i in list(Lanes)]
     assert len(players) == 5
     for player in players:
         assert isinstance(player, MobaPlayer)

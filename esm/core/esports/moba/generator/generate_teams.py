@@ -33,7 +33,7 @@ class TeamGenerator(GeneratorInterface):
     def __init__(
         self,
         champions: list[Champion],
-        player_names: list[dict[str, str | float]],
+        player_names: list[dict[str, dict[str | int]]],
         players: Optional[list] = None,
     ):
         self.player_list = players
