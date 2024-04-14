@@ -10,7 +10,7 @@
 
 The idea here is to bring a full-fledged experience in eSports, playing major leagues and big championships, managing players, setting up practices and discovering new talents.
 
-In this game, you will be able set up your team, get them to play in whatever position you would like them to, set up strategies, choose which race/champion/hero they're going to play with, and read match descriptions as they happen live, much like Football Manager on its early days. Managing finances, finding sponsors, boosting your players' morale are also going to play a role in that experience.
+In this game, you will be able to set up your team, get them to play in whatever position you would like them to, set up strategies, choose which race/champion/hero they're going to play with, and read match descriptions as they happen live, much like Football Manager on its early days. Managing finances, finding sponsors, boosting your players' morale are also going to play a role in that experience.
 
 ## INSTALLATION
 
@@ -18,45 +18,12 @@ The game is still not ready to be played. Many features are yet to be implemente
 
 ## SCREENSHOTS
 
-<img src="esm/res/images/main_screen.PNG" width="65%" alt="">
-
-<img src="esm/res/images/debug_match_screen.PNG" width="65%" alt="">
-
-<img src="esm/res/images/match_tester.PNG" width="65%" alt="">
-
-<img src="esm/res/images/debug_championship_screen.PNG" width="65%" alt="">
-
-<img src="esm/res/images/team_select_screen.PNG" width="65%" alt="">
+The UI is being reworked.
 
 ## HOW TO RUN THE DEBUG VERSION
 
-To run the debug version first you need to have Python 3 installed. Use Python 3.7 or higher, there's no guarantee it will work with Python 3.6 or older.
-
-To manage dependencies, we use Pipenv. To install pipenv:
-
-```
-pip install pipenv
-```
-
-Then, clone the repo and run:
-
-```
-pipenv install
-```
-
-And then you can do:
-
-```
-pipenv shell
-```
-
-To get into the python virtual environment shell. And then just run:
-
-```
-python run.py
-```
-
-You can test the Debug Match window, and check other dummy features like New Game, Load Game, and Settings.
+I have removed the debug version because of the project's rewrite. When the new UI is available, I will update this document
+with the new instructions to run the debug build.
 
 ## FEATURES
 
