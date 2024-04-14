@@ -360,5 +360,29 @@ def settings(tmp_path: Path) -> Settings:
 
 
 @pytest.fixture
-def db(settings: Settings) -> DB:
-    return DB(settings)
+def db() -> DB:
+    return DB()
+
+
+@pytest.fixture
+def mock_team_definitions() -> list[dict[str, int | str]]:
+    return [
+        {
+            "name": "KoreanTeam",
+            "nationality": "Korea",
+            "mu": 88,
+            "sigma": 15,
+        },
+        {
+            "name": "GermanTeam",
+            "nationality": "Germany",
+            "mu": 75,
+            "sigma": 20,
+        },
+        {
+            "name": "ChineseTeam",
+            "nationality": "China",
+            "mu": 89,
+            "sigma": 10,
+        },
+    ]

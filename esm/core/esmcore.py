@@ -35,7 +35,7 @@ class ESMCore:
         self.settings = Settings()
         self.settings.load_config_file()
         self.logger = self.initialize_logging()
-        self.db = DB(self.settings)
+        self.db = DB()
         self.game_session = GameSession(self.settings, self.db)
 
     def initialize_logging(self):
