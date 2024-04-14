@@ -37,32 +37,9 @@ def mock_team_definition() -> dict[str, int | str]:
     }
 
 
-def mock_team_definitions() -> list[dict[str, int | str]]:
-    return [
-        {
-            "name": "KoreanTeam",
-            "nationality": "Korea",
-            "mu": 88,
-            "sigma": 15,
-        },
-        {
-            "name": "GermanTeam",
-            "nationality": "Germany",
-            "mu": 75,
-            "sigma": 20,
-        },
-        {
-            "name": "ChineseTeam",
-            "nationality": "China",
-            "mu": 89,
-            "sigma": 10,
-        },
-    ]
-
-
 @pytest.fixture
 def team_generator(
-    mock_champions: list[Champion], names_file: list[dict[str, str | float]]
+    mock_champions: list[Champion], names_file: list[dict[str, dict[str, str | int]]]
 ) -> TeamGenerator:
     return TeamGenerator(champions=mock_champions, player_names=names_file)
 
@@ -72,7 +49,7 @@ def test_team_generator_champion_list_is_empty():
         TeamGenerator(champions=[], player_names=[])
 
 
-def test_generate_team(team_generator):
+def test_generate_team(team_generator: TeamGenerator):
     team_def = mock_team_definition()
     team = team_generator.generate(team_definition=team_def)
     assert isinstance(team, MobaTeam)
@@ -82,9 +59,11 @@ def test_generate_team(team_generator):
         assert isinstance(player, MobaPlayer)
 
 
-def test_generate_multiple_teams(team_generator):
-    teams = [team_generator.generate(team_def) for team_def in mock_team_definitions()]
-    for team, team_def in zip(teams, mock_team_definitions()):
+def test_generate_multiple_teams(
+    team_generator: TeamGenerator, mock_team_definitions: list[dict[str, int | str]]
+):
+    teams = [team_generator.generate(team_def) for team_def in mock_team_definitions]
+    for team, team_def in zip(teams, mock_team_definitions):
         assert isinstance(team, MobaTeam)
         assert team.name == team_def["name"]
         assert team.nationality == team_def["nationality"]

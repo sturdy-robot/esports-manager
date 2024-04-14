@@ -18,56 +18,41 @@ import os
 from pathlib import Path
 
 from .esports.moba.champion import Champion
-from .esports.moba.generator import (
-    ChampionGenerator,
-    TeamGenerator,
-    get_default_champion_defs,
-)
+from .esports.moba.generator import ChampionGenerator, TeamGenerator
 from .esports.moba.mobaregion import MobaRegion
 from .esports.moba.mobateam import MobaTeam
 from .esports.moba.player import MobaPlayer
 from .gamestate import GameState
-from .settings import Settings
-from .utils import load_list_from_file
 
 
 class DB:
-    def __init__(self, settings: Settings):
-        self.settings = settings
-
-    def generate_moba_champions(self) -> list[Champion]:
+    def generate_moba_champions(
+        self, champion_defs: list[dict[str, str | int]]
+    ) -> list[Champion]:
         champion_gen = ChampionGenerator()
-        try:
-            champion_defs = load_list_from_file(self.settings.moba_champion_defs)
-        except FileNotFoundError:
-            champion_defs = get_default_champion_defs()
         return [champion_gen.generate(champion_def) for champion_def in champion_defs]
 
     def generate_moba_teams(
-        self, champions_list: list[Champion]
-    ) -> tuple[list[MobaTeam], list[MobaRegion]]:
-        player_names = load_list_from_file(self.settings.names_file)
+        self,
+        player_names: list[dict[str, dict[str, str | int]]],
+        champions_list: list[Champion],
+        teams_def: list[dict[str, str | int]],
+    ) -> list[MobaTeam]:
         team_gen = TeamGenerator(champions_list, player_names)
+        return [team_gen.generate(team_def) for team_def in teams_def]
 
-        regions = self.get_region_definitions()
-        moba_regions = []
-        teams_list = []
+    def get_moba_region_definitions(
+        self, regions: list[dict[str, str]], directory: Path
+    ) -> list[dict[str, str]]:
         for region in regions:
-            region_teams = []
-            teams_def = load_list_from_file(Path(region["filename"]))
-            for team_def in teams_def:
-                team = team_gen.generate(team_def)
-                region_teams.append(team)
-                teams_list.append(team)
-            moba_region = MobaRegion(
-                region["id"],
-                region["name"],
-                region["short_name"],
-                region_teams,
-            )
-            moba_regions.append(moba_region)
+            filename = region["filename"]
+            path = os.path.join(directory, filename)
+            region["filename"] = path
 
-        return teams_list, moba_regions
+        return regions
+
+    def generate_moba_regions(self):
+        pass
 
     @staticmethod
     def get_moba_players(teams_list: list[MobaTeam]) -> list[MobaPlayer]:
@@ -103,42 +88,19 @@ class DB:
     def serialize_regions(regions_list: list[MobaRegion]) -> dict[str, dict]:
         return {region.region_id: region.serialize() for region in regions_list}
 
-    def generate_moba_teams_file(
-        self, serialized_teams: dict[str, dict[str, str | list[str]]]
+    def generate_moba_file(
+        self, filepath: Path, serialized_data: dict[str, dict[str, str | list[str]]]
     ) -> None:
-        self.settings.moba_teams.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.settings.moba_teams, "w", encoding="utf-8") as fp:
-            json.dump(
-                serialized_teams, fp, indent=4, ensure_ascii=False, sort_keys=True
-            )
-
-    def generate_moba_champions_file(
-        self, serialized_champions: dict[str, dict[str, str | list[str]]]
-    ) -> None:
-        self.settings.moba_champions.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.settings.moba_champions, "w", encoding="utf-8") as fp:
-            json.dump(
-                serialized_champions, fp, indent=4, ensure_ascii=False, sort_keys=True
-            )
-
-    def generate_moba_players_file(
-        self, serialized_players: dict[str, dict[str, str | list[str]]]
-    ) -> None:
-        self.settings.moba_players.parent.mkdir(parents=True, exist_ok=True)
-        with self.settings.moba_players.open("w", encoding="utf-8") as fp:
-            json.dump(
-                serialized_players, fp, indent=4, ensure_ascii=False, sort_keys=True
-            )
-
-    def generate_moba_regions_file(self, serialized_regions: dict[str, dict]) -> None:
-        self.settings.moba_regions.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.settings.moba_regions, "w", encoding="utf-8") as fp:
-            json.dump(
-                serialized_regions, fp, indent=4, ensure_ascii=False, sort_keys=True
-            )
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        with open(filepath, "w", encoding="utf-8") as fp:
+            json.dump(serialized_data, fp, indent=4, ensure_ascii=False, sort_keys=True)
 
     def generate_moba_files(
         self,
+        champions_file: Path,
+        teams_file: Path,
+        players_file: Path,
+        regions_file: Path,
         champions_list: list[Champion],
         teams_list: list[MobaTeam],
         regions: list[MobaRegion],
@@ -149,24 +111,10 @@ class DB:
         serialized_players = self.serialize_players(players_list=players_list)
         serialized_regions = self.serialize_regions(regions_list=regions)
 
-        self.settings.db_dir.mkdir(parents=True, exist_ok=True)
-        self.settings.db_moba_dir.mkdir(parents=True, exist_ok=True)
-
-        self.generate_moba_champions_file(serialized_champions)
-        self.generate_moba_teams_file(serialized_teams)
-        self.generate_moba_players_file(serialized_players)
-        self.generate_moba_regions_file(serialized_regions)
-
-    def get_region_definitions(self) -> list[dict[str, str]]:
-        regions = load_list_from_file(self.settings.moba_region_defs)
-
-        for region in regions:
-            directory = self.settings.moba_team_defs
-            filename = region["filename"]
-            path = os.path.join(directory, filename)
-            region["filename"] = path
-
-        return regions
+        self.generate_moba_file(champions_file, serialized_champions)
+        self.generate_moba_file(teams_file, serialized_teams)
+        self.generate_moba_file(players_file, serialized_players)
+        self.generate_moba_file(regions_file, serialized_regions)
 
     def load_moba_teams(self) -> list[MobaTeam]:
         pass
