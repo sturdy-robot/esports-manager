@@ -16,6 +16,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from esm.core.db import DB
 
 
@@ -48,3 +50,95 @@ def test_generate_team_files(
     with teams_filepath.open("r") as fp:
         actual_teams = json.load(fp)
     assert actual_teams == serialized_teams
+
+
+def test_get_team_definition_from_single_region_def(
+    db: DB,
+    tmp_path: Path,
+) -> None:
+    region_mock_files = [
+        {
+            "id": "testregion",
+            "name": "TestRegion",
+            "short_name": "TR",
+            "filename": "testregion/teams.json",
+        },
+    ]
+    mock_team_file = tmp_path / "testregion" / "teams.json"
+    mock_team_file.mkdir(parents=True)
+    expected_mock_files = [
+        {
+            "id": "testregion",
+            "name": "TestRegion",
+            "short_name": "TR",
+            "filename": mock_team_file.absolute().as_posix(),
+        },
+    ]
+    assert (
+        db.get_moba_region_definitions(region_mock_files, tmp_path)
+        == expected_mock_files
+    )
+
+
+def test_get_team_definition_files_from_region_defs(
+    db: DB,
+    tmp_path: Path,
+) -> None:
+    region_mock_files = [
+        {
+            "id": "testregion",
+            "name": "TestRegion",
+            "short_name": "TR",
+            "filename": "testregion/teams.json",
+        },
+        {
+            "id": "testregion2",
+            "name": "TestRegion2",
+            "short_name": "TR2",
+            "filename": "testregion2/teams2.json",
+        },
+    ]
+    mock_team_file1 = tmp_path / "testregion" / "teams.json"
+    mock_team_file2 = tmp_path / "testregion2" / "teams2.json"
+    mock_team_file1.mkdir(parents=True)
+    mock_team_file2.mkdir(parents=True)
+    expected_mock_files = [
+        {
+            "id": "testregion",
+            "name": "TestRegion",
+            "short_name": "TR",
+            "filename": mock_team_file1.absolute().as_posix(),
+        },
+        {
+            "id": "testregion2",
+            "name": "TestRegion2",
+            "short_name": "TR2",
+            "filename": mock_team_file2.absolute().as_posix(),
+        },
+    ]
+    assert (
+        db.get_moba_region_definitions(region_mock_files, tmp_path)
+        == expected_mock_files
+    )
+
+
+def test_get_region_defs_non_existant_file(
+    db: DB,
+    tmp_path: Path,
+) -> None:
+    region_mock_files = [
+        {
+            "id": "testregion",
+            "name": "TestRegion",
+            "short_name": "TR",
+            "filename": "testregion/teams.json",
+        },
+        {
+            "id": "testregion2",
+            "name": "TestRegion2",
+            "short_name": "TR2",
+            "filename": "testregion2/teams2.json",
+        },
+    ]
+    with pytest.raises(FileNotFoundError):
+        db.get_moba_region_definitions(region_mock_files, tmp_path)

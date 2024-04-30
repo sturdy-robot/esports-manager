@@ -15,6 +15,7 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
 import os
+import uuid
 from pathlib import Path
 
 from .esports.moba.champion import Champion
@@ -47,12 +48,22 @@ class DB:
         for region in regions:
             filename = region["filename"]
             path = os.path.join(directory, filename)
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Could not find the filename: {path}")
             region["filename"] = path
 
         return regions
 
-    def generate_moba_regions(self):
-        pass
+    def generate_moba_region(
+        self, region: dict[str, str], teams: list[MobaTeam]
+    ) -> MobaRegion:
+        return MobaRegion(
+            uuid.uuid4(),
+            region["id"],
+            region["name"],
+            region["short_name"],
+            [team.team_id for team in teams],
+        )
 
     @staticmethod
     def get_moba_players(teams_list: list[MobaTeam]) -> list[MobaPlayer]:
