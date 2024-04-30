@@ -62,8 +62,32 @@ class DB:
             region["id"],
             region["name"],
             region["short_name"],
-            [team.team_id for team in teams],
+            teams,
         )
+
+    def extract_teams_from_region(
+        self,
+        region: dict[str, str],
+        champions: list[Champion],
+        player_names: list[dict[str, dict[str, str | int]]],
+    ) -> list[MobaTeam]:
+        team_file = Path(region["filename"])
+        with team_file.open("r", encoding="utf-8") as fp:
+            teams_list = json.load(fp)
+        return self.generate_moba_teams(player_names, champions, teams_list)
+
+    def extract_regions_from_region_file(
+        self,
+        regions: list[dict[str, str]],
+        champions: list[Champion],
+        player_names: list[dict[str, dict[str, str | int]]],
+    ) -> list[MobaRegion]:
+        return [
+            self.generate_moba_region(
+                region, self.extract_teams_from_region(region, champions, player_names)
+            )
+            for region in regions
+        ]
 
     @staticmethod
     def get_moba_players(teams_list: list[MobaTeam]) -> list[MobaPlayer]:
@@ -97,7 +121,7 @@ class DB:
 
     @staticmethod
     def serialize_regions(regions_list: list[MobaRegion]) -> dict[str, dict]:
-        return {region.region_id: region.serialize() for region in regions_list}
+        return {region.region_id.hex: region.serialize() for region in regions_list}
 
     def generate_moba_file(
         self, filepath: Path, serialized_data: dict[str, dict[str, str | list[str]]]

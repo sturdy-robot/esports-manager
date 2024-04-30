@@ -19,6 +19,9 @@ from pathlib import Path
 import pytest
 
 from esm.core.db import DB
+from esm.core.esports.moba.mobaregion import MobaRegion
+from esm.core.esports.moba.mobateam import MobaPlayer, MobaTeam
+from esm.core.utils import get_default_names_file, load_list_from_file
 
 
 def test_generate_champion_files(
@@ -65,7 +68,8 @@ def test_get_team_definition_from_single_region_def(
         },
     ]
     mock_team_file = tmp_path / "testregion" / "teams.json"
-    mock_team_file.mkdir(parents=True)
+    mock_team_file.parent.mkdir(parents=True)
+    mock_team_file.touch()
     expected_mock_files = [
         {
             "id": "testregion",
@@ -100,8 +104,11 @@ def test_get_team_definition_files_from_region_defs(
     ]
     mock_team_file1 = tmp_path / "testregion" / "teams.json"
     mock_team_file2 = tmp_path / "testregion2" / "teams2.json"
-    mock_team_file1.mkdir(parents=True)
-    mock_team_file2.mkdir(parents=True)
+    mock_team_file1.parent.mkdir(parents=True)
+    mock_team_file2.parent.mkdir(parents=True)
+
+    mock_team_file1.touch()
+    mock_team_file2.touch()
     expected_mock_files = [
         {
             "id": "testregion",
@@ -142,3 +149,76 @@ def test_get_region_defs_non_existant_file(
     ]
     with pytest.raises(FileNotFoundError):
         db.get_moba_region_definitions(region_mock_files, tmp_path)
+
+
+def test_extract_teams_from_region_file(
+    db: DB,
+    mock_champion_defs: list[dict[str, str | int | float]],
+    mock_team_definitions: list[dict[str, str | int]],
+    tmp_path: Path,
+) -> None:
+    mock_team_file = tmp_path / "testregion" / "teams.json"
+    mock_team_file.parent.mkdir(parents=True)
+    region_mock = {
+        "id": "testregion",
+        "name": "TestRegion",
+        "short_name": "TR",
+        "filename": mock_team_file.absolute().as_posix(),
+    }
+
+    with mock_team_file.open("w") as fp:
+        json.dump(mock_team_definitions, fp)
+
+    champions = db.generate_moba_champions(mock_champion_defs)
+    player_names = load_list_from_file(get_default_names_file())
+    teams = db.extract_teams_from_region(region_mock, champions, player_names)
+
+    assert len(teams) > 0
+    assert all(isinstance(team, MobaTeam) for team in teams)
+    for team in teams:
+        for player in team.roster:
+            assert isinstance(player, MobaPlayer)
+
+
+def test_extract_regions_from_region_file(
+    db: DB,
+    mock_champion_defs: list[dict[str, str | int | float]],
+    mock_team_definitions: list[dict[str, str | int]],
+    tmp_path: Path,
+) -> None:
+    mock_team_file1 = tmp_path / "testregion" / "teams.json"
+    mock_team_file2 = tmp_path / "testregion2" / "teams.json"
+    mock_team_file1.parent.mkdir(parents=True)
+    mock_team_file2.parent.mkdir(parents=True)
+    region_mock_file = [
+        {
+            "id": "testregion",
+            "name": "TestRegion",
+            "short_name": "TR",
+            "filename": mock_team_file1.absolute().as_posix(),
+        },
+        {
+            "id": "testregion2",
+            "name": "TestRegion2",
+            "short_name": "TR2",
+            "filename": mock_team_file2.absolute().as_posix(),
+        },
+    ]
+
+    with mock_team_file1.open("w", encoding="utf-8") as fp:
+        json.dump(mock_team_definitions, fp)
+
+    with mock_team_file2.open("w", encoding="utf-8") as fp:
+        json.dump(mock_team_definitions, fp)
+
+    champions = db.generate_moba_champions(mock_champion_defs)
+    player_names = load_list_from_file(get_default_names_file())
+    regions = db.extract_regions_from_region_file(
+        region_mock_file, champions, player_names
+    )
+    assert len(regions) == 2
+    assert all(isinstance(region, MobaRegion) for region in regions)
+    for region in regions:
+        for team in region.teams:
+            assert isinstance(team, MobaTeam)
+        assert len(region.teams) == len(mock_team_definitions)
