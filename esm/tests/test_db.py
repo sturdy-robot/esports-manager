@@ -55,6 +55,39 @@ def test_generate_team_files(
     assert actual_teams == serialized_teams
 
 
+def test_get_players_from_teams(
+    db: DB,
+    mock_champion_defs: list[dict[str, str | int | float]],
+    mock_team_definitions: list[dict[str, str | int]],
+    names_file: list[dict[str, dict[str, str | int]]],
+    tmp_path: Path,
+) -> None:
+    champions = db.generate_moba_champions(mock_champion_defs)
+    teams = db.generate_moba_teams(names_file, champions, mock_team_definitions)
+    players = db.get_moba_players_from_teams(teams)
+    assert len(players) > 0
+    assert all(isinstance(player, MobaPlayer) for player in players)
+
+
+def test_generate_players_file(
+    db: DB,
+    mock_champion_defs: list[dict[str, str | int | float]],
+    mock_team_definitions: list[dict[str, str | int]],
+    names_file: list[dict[str, dict[str, str | int]]],
+    tmp_path: Path,
+) -> None:
+    players_filepath = tmp_path / "moba_players.json"
+    champions = db.generate_moba_champions(mock_champion_defs)
+    teams = db.generate_moba_teams(names_file, champions, mock_team_definitions)
+    players = db.get_moba_players_from_teams(teams)
+    serialized_players = db.serialize_players(players)
+    db.generate_moba_file(players_filepath, serialized_players)
+    assert players_filepath.exists()
+    with players_filepath.open("r") as fp:
+        actual_players = json.load(fp)
+    assert actual_players == serialized_players
+
+
 def test_get_team_definition_from_single_region_def(
     db: DB,
     tmp_path: Path,
@@ -222,3 +255,47 @@ def test_extract_regions_from_region_file(
         for team in region.teams:
             assert isinstance(team, MobaTeam)
         assert len(region.teams) == len(mock_team_definitions)
+
+
+def test_generate_regions_file(
+    db: DB,
+    mock_champion_defs: list[dict[str, str | int | float]],
+    mock_team_definitions: list[dict[str, str | int]],
+    names_file: list[dict[str, dict[str, str | int]]],
+    tmp_path: Path,
+):
+    mock_team_file1 = tmp_path / "testregion" / "teams.json"
+    mock_team_file2 = tmp_path / "testregion2" / "teams.json"
+    mock_regions_file = tmp_path / "moba_regions.json"
+    mock_team_file1.parent.mkdir(parents=True)
+    mock_team_file2.parent.mkdir(parents=True)
+    regions_def = [
+        {
+            "id": "testregion",
+            "name": "TestRegion",
+            "short_name": "TR",
+            "filename": mock_team_file1.absolute().as_posix(),
+        },
+        {
+            "id": "testregion2",
+            "name": "TestRegion2",
+            "short_name": "TR2",
+            "filename": mock_team_file2.absolute().as_posix(),
+        },
+    ]
+
+    with mock_team_file1.open("w", encoding="utf-8") as fp:
+        json.dump(mock_team_definitions, fp)
+
+    with mock_team_file2.open("w", encoding="utf-8") as fp:
+        json.dump(mock_team_definitions, fp)
+
+    regions_def = db.get_moba_region_definitions(regions_def, tmp_path)
+    champions = db.generate_moba_champions(mock_champion_defs)
+    regions = db.extract_regions_from_region_file(regions_def, champions, names_file)
+    serialized_regions = db.serialize_regions(regions)
+    db.generate_moba_file(mock_regions_file, serialized_regions)
+    assert mock_regions_file.exists()
+    with mock_regions_file.open("r") as fp:
+        actual_regions = json.load(fp)
+    assert actual_regions == serialized_regions

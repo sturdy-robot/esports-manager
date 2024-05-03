@@ -90,7 +90,7 @@ class DB:
         ]
 
     @staticmethod
-    def get_moba_players(teams_list: list[MobaTeam]) -> list[MobaPlayer]:
+    def get_moba_players_from_teams(teams_list: list[MobaTeam]) -> list[MobaPlayer]:
         players_list = []
         for team in teams_list:
             for player in team.roster:
