@@ -19,7 +19,7 @@ import uuid
 from typing import Optional
 
 from ..champion import Champion, ChampionDifficulty, ChampionType
-from ..player import LaneMultipliers, Lanes
+from ..mobaplayer import LaneMultipliers, Lanes
 from .default_champion_defs import get_default_champion_names
 from .generator import GeneratorInterface
 

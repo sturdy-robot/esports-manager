@@ -23,7 +23,7 @@ from esm.core.esports.moba.champion import (
     LaneMultipliers,
 )
 from esm.core.esports.moba.generator.generate_players import Lanes, MobaPlayerGenerator
-from esm.core.esports.moba.player import MobaPlayer
+from esm.core.esports.moba.mobaplayer import MobaPlayer
 from esm.core.utils import get_default_names_file, load_list_from_file
 
 ch = st.lists(

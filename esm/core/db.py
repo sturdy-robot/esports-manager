@@ -20,9 +20,9 @@ from pathlib import Path
 
 from .esports.moba.champion import Champion
 from .esports.moba.generator import ChampionGenerator, TeamGenerator
+from .esports.moba.mobaplayer import MobaPlayer
 from .esports.moba.mobaregion import MobaRegion
 from .esports.moba.mobateam import MobaTeam
-from .esports.moba.player import MobaPlayer
 from .gamestate import GameState
 
 

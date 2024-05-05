@@ -17,8 +17,8 @@ import logging
 import random
 from typing import Union
 
+from esm.core.esports.moba.mobaplayer import MobaPlayerSimulation
 from esm.core.esports.moba.mobateam import MobaTeamSimulation
-from esm.core.esports.moba.player import MobaPlayerSimulation
 
 from .general import MobaEvent
 

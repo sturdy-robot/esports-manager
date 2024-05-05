@@ -22,7 +22,7 @@ import pytest
 from esm.core.db import DB
 from esm.core.esports.moba.champion import Champion, ChampionDifficulty, ChampionType
 from esm.core.esports.moba.moba_definitions import LaneMultipliers, Lanes
-from esm.core.esports.moba.player import (
+from esm.core.esports.moba.mobaplayer import (
     ChampionMastery,
     CommunicationAttributes,
     KnowledgeAttributes,

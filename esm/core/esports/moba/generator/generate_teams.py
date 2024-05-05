@@ -21,8 +21,8 @@ from typing import Optional
 from esm.core.esports.moba.generator.generate_champions import Champion
 from esm.core.esports.moba.generator.generate_players import MobaPlayerGenerator
 from esm.core.esports.moba.generator.generator import GeneratorInterface
+from esm.core.esports.moba.mobaplayer import Lanes, MobaPlayer
 from esm.core.esports.moba.mobateam import MobaTeam
-from esm.core.esports.moba.player import Lanes, MobaPlayer
 
 
 class TeamGeneratorError(Exception):
