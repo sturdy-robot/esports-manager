@@ -19,7 +19,7 @@ import uuid
 from abc import ABC, abstractmethod
 from datetime import timedelta
 from queue import Queue
-from typing import Union
+from typing import Optional
 
 from esm.core.esports.moba.mobateam import MobaTeamSimulation
 from esm.core.esports.moba.simulation.commentaries import Commentaries
@@ -65,9 +65,6 @@ class MobaEvent(ABC):
     def _get_probable_team(
         team1: MobaTeamSimulation, team2: MobaTeamSimulation
     ) -> tuple[MobaTeamSimulation, MobaTeamSimulation]:
-        """
-        Gets the team with a higher probability to attack the other team
-        """
         attack_team = random.choices([team1, team2], [team1.win_prob, team2.win_prob])[
             0
         ]
@@ -75,11 +72,8 @@ class MobaEvent(ABC):
         return attack_team, def_team
 
     @staticmethod
-    def _get_team_players(team1, team2) -> list:
-        """
-        Gets all the players from each team
-        """
-        return [team1.roster, team2.roster]
+    def _get_team_players(team1: MobaTeamSimulation, team2: MobaTeamSimulation) -> list:
+        return [team1.players, team2.players]
 
     def get_commentary(
         self,
@@ -125,7 +119,7 @@ class NothingEvent(MobaEvent):
         self,
         team1: MobaTeamSimulation,
         team2: MobaTeamSimulation,
-        which_nexus: Union[MobaTeamSimulation, None],
+        which_nexus: Optional[MobaTeamSimulation],
     ):
         pass
 

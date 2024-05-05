@@ -13,12 +13,19 @@
 #
 #      You should have received a copy of the GNU General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import logging
 import random
 from queue import Queue
 
-from esm.core.esports.moba.simulation.events import *
+from esm.core.esports.moba.simulation.events import (
+    InhibEvent,
+    JungleEvent,
+    KillEvent,
+    MobaEvent,
+    NexusEvent,
+    NothingEvent,
+    TowerEvent,
+)
 from esm.core.esports.moba.simulation.moba_events_details import get_moba_events
 
 logger = logging.getLogger(__name__)
@@ -46,18 +53,15 @@ def generate_event(
         return NexusEvent.get_from_dict(event_chosen, game_time, show_commentary, queue)
 
 
-class MobaEventHandler:
-    def __init__(self, show_commentary: bool = False, queue: Queue = None):
-        """
-        Initializes the event handler.
-        """
+class MobaSimulationEngine:
+    def __init__(self, show_commentary: bool = False):
         self.events = get_moba_events()
         self.commentaries = None
         self.event = None
         self.enabled_events = []
         self.event_history = []
         self.show_commentary = show_commentary
-        self.queue = queue if self.show_commentary else None
+        self.queue = Queue() if self.show_commentary else None
 
     def get_game_state(
         self, game_time, which_nexus_exposed, is_any_inhib_open, towers_number
@@ -83,9 +87,6 @@ class MobaEventHandler:
             self.get_enabled_events(["NEXUS ASSAULT"])
 
     def check_jungle(self, game_time: float) -> None:
-        """
-        Checks if the jungle event is available
-        """
         jungle_events = ["BARON", "DRAGON", "HERALD"]
         jungle_names = [
             event for event in self.events if event["name"] in jungle_events
@@ -102,35 +103,29 @@ class MobaEventHandler:
                 self.enabled_events.remove(event)
 
     def remove_enabled_event(self, name):
-        """
-        Removes no longer available event from the list of enabled events
-        """
         for event in self.enabled_events:
             if event["name"] == name:
                 self.enabled_events.remove(event)
 
     def get_enabled_events(self, names):
-        """
-        Adds events to the list of enabled events
-        """
         for event in self.events:
             for name in names:
                 if event["name"] == name and event not in self.enabled_events:
                     self.enabled_events.append(event)
 
     def get_event_priorities(self):
-        """
-        Gets the priority of events
-        """
         return [event["priority"] for event in self.enabled_events]
 
     def generate_event(self, game_time: float):
-        """
-        Generates events for the match based on their priorities and available events.
-        """
         priorities = self.get_event_priorities()
         ev_chosen = random.choices(self.enabled_events, priorities)[0]
         self.event = generate_event(
             ev_chosen, game_time, self.show_commentary, self.queue
         )
         self.event_history.append(self.event)
+
+    def advance_simulation(self):
+        pass
+
+    def run(self):
+        pass
