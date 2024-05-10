@@ -13,3 +13,11 @@
 #
 #      You should have received a copy of the GNU General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import pytest
+
+from esm.core.esports.moba.simulation.mobasimulationengine import MobaSimulationEngine
+
+
+@pytest.fixture
+def moba_simulation_engine() -> MobaSimulationEngine:
+    return MobaSimulationEngine(show_commentary=False)

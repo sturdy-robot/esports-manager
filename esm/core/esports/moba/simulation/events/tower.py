@@ -15,8 +15,7 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 import random
-from queue import Queue
-from typing import Union
+from typing import Optional
 
 from esm.core.esports.moba.mobateam import MobaTeamSimulation
 
@@ -87,7 +86,7 @@ class TowerEvent(MobaEvent):
         self,
         team1: MobaTeamSimulation,
         team2: MobaTeamSimulation,
-        which_nexus: Union[MobaTeamSimulation, None],
+        which_nexus: Optional[MobaTeamSimulation],
     ):
         """
         This method calculates the tower assault outcome

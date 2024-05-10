@@ -15,10 +15,10 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 import random
-from typing import Union
+from typing import Optional
 
+from esm.core.esports.moba.mobaplayer import MobaPlayerSimulation
 from esm.core.esports.moba.mobateam import MobaTeamSimulation
-from esm.core.esports.moba.player import MobaPlayerSimulation
 
 from .general import MobaEvent
 
@@ -139,7 +139,7 @@ class KillEvent(MobaEvent):
         self,
         team1: MobaTeamSimulation,
         team2: MobaTeamSimulation,
-        which_nexus: Union[MobaTeamSimulation, None],
+        which_nexus: Optional[MobaTeamSimulation],
     ):
         """
         This will calculate the kill event

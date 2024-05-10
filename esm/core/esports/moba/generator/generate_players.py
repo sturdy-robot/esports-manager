@@ -21,7 +21,7 @@ from typing import Optional
 
 from ....utils import get_nations
 from ..champion import Champion
-from ..player import (
+from ..mobaplayer import (
     ChampionMastery,
     CommunicationAttributes,
     KnowledgeAttributes,

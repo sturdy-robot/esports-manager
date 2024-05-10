@@ -24,8 +24,8 @@ from ..core.esports.moba.generator.generate_teams import (
     TeamGenerator,
     TeamGeneratorError,
 )
+from ..core.esports.moba.mobaplayer import MobaPlayer
 from ..core.esports.moba.mobateam import MobaTeam
-from ..core.esports.moba.player import MobaPlayer
 
 
 def mock_team_definition() -> dict[str, int | str]:

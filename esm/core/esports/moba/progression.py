@@ -17,8 +17,8 @@ from abc import ABC, abstractmethod
 from typing import Union
 from uuid import UUID
 
+from .mobaplayer import MobaPlayer
 from .mobateam import MobaTeam
-from .player import MobaPlayer
 
 
 class Progression(ABC):

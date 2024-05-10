@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from ...serializable import Serializable
 from .champion import Champion
-from .player import MobaPlayer, MobaPlayerSimulation
+from .mobaplayer import MobaPlayer, MobaPlayerSimulation
 
 
 class PlayerSerializeError(Exception):

@@ -14,7 +14,7 @@
 #      You should have received a copy of the GNU General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from esm.core.esports.moba.simulation.match_live import MatchLive
+from esm.core.esports.moba.simulation.mobamatchsimulation import MobaMatchSimulation
 
 
 class MatchTester:
@@ -22,7 +22,7 @@ class MatchTester:
     MatchTester receives a match and tests it to print statistics of the match results
     """
 
-    def __init__(self, amount_test: int, match: MatchLive):
+    def __init__(self, amount_test: int, match: MobaMatchSimulation):
         self.amount_test = amount_test
         self.match = match
         self.amount_team_kills = [[], []]
