@@ -15,10 +15,10 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum, auto
 from typing import Optional
 from uuid import UUID
 
+from esm.core.esports.moba.mobateam import MobaTeam
 from esm.core.serializable import Serializable
 
 
@@ -26,24 +26,14 @@ class InvalidTeamId(Exception):
     pass
 
 
-class MatchType(Enum):
-    FRIENDLY = auto()
-    PRACTICE = auto()
-    SHOWMATCH = auto()
-    LEAGUE = auto()
-    PLAYOFFS = auto()
-    FINALS = auto()
-
-
 @dataclass
 class MobaMatch(Serializable):
     game_id: UUID
     championship_id: UUID
-    team1: UUID
-    team2: UUID
-    match_type: MatchType
+    team1: MobaTeam
+    team2: MobaTeam
     date: datetime
-    victorious_team: Optional[UUID] = None
+    victorious_team: Optional[MobaTeam] = None
 
     def serialize(self) -> dict:
         if self.victorious_team is not None and self.victorious_team not in [
@@ -53,36 +43,35 @@ class MobaMatch(Serializable):
             raise InvalidTeamId("Team cannot be the victorious team in this match!")
 
         victorious_team = (
-            UUID(hex=self.victorious_team) if self.victorious_team else None
+            self.victorious_team.team_id.hex if self.victorious_team else None
         )
 
         return {
             "game_id": self.game_id.hex,
             "championship_id": self.championship_id.hex,
-            "team1": self.team1.hex,
-            "team2": self.team2.hex,
-            "match_type": self.match_type.value,
+            "team1": self.team1.team_id.hex,
+            "team2": self.team2.team_id.hex,
             "date": self.date.strftime("%Y-%m-%d, %H:%M"),
             "victorious_team": victorious_team,
         }
 
     @classmethod
-    def get_from_dict(cls, dictionary: dict):
+    def get_from_dict(cls, dictionary: dict, team1: MobaTeam, team2: MobaTeam):
         victorious_team = dictionary["victorious_team"]
-        team1 = dictionary["team1"]
-        team2 = dictionary["team2"]
 
-        if victorious_team is not None and victorious_team not in [team1, team2]:
-            raise InvalidTeamId("Team cannot be the victorious team in this match!")
-        else:
-            victorious_team = UUID(hex=victorious_team)
+        if victorious_team:
+            if victorious_team == team1.team_id.hex:
+                victorious_team = team1
+            elif victorious_team == team2.team_id.hex:
+                victorious_team = team2
+            else:
+                raise InvalidTeamId("Team ID in 'victorious_team' field is invalid!")
 
         return cls(
             UUID(hex=dictionary["game_id"]),
             UUID(hex=dictionary["championship_id"]),
-            UUID(hex=team1),
-            UUID(hex=team2),
-            MatchType(dictionary["match_type"]),
+            team1,
+            team2,
             datetime.strptime(dictionary["date"], "%Y-%m-%d, %H:%M"),
             victorious_team,
         )

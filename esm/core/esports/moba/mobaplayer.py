@@ -17,6 +17,7 @@ import datetime
 import uuid
 from dataclasses import asdict, dataclass
 from enum import Enum, auto
+from typing import Optional
 
 from ...serializable import Serializable
 from ..player import Player
@@ -219,20 +220,16 @@ class MobaPlayerStats:
         self.max_kill_streak = 0
 
 
-@dataclass
-class MobaPlayerTeam:
-    player_id: uuid.UUID
-    team_id: uuid.UUID
-
-
-@dataclass
 class MobaPlayerSimulation:
-    player: MobaPlayer
-    champion: Champion
-    lane: Lanes
-    stats: MobaPlayerStats
-    points: int = 0
-    consecutive_kills: int = 0
+    def __init__(
+        self, player: MobaPlayer, lane: Lanes, champion: Optional[Champion] = None
+    ):
+        self.player: MobaPlayer = player
+        self.lane: Lanes = lane
+        self.stats: MobaPlayerStats = MobaPlayerStats()
+        self.points: int = 0
+        self.champion: Optional[Champion] = champion
+        self.consecutive_kills: int = 0
 
     def reset_attributes(self) -> None:
         self.points = 0

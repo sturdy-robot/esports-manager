@@ -14,14 +14,16 @@
 #      You should have received a copy of the GNU General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import uuid
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import pytest
 
 from esm.core.db import DB
 from esm.core.esports.moba.champion import Champion, ChampionDifficulty, ChampionType
+from esm.core.esports.moba.generator import ChampionGenerator, MobaTeamGenerator
 from esm.core.esports.moba.moba_definitions import LaneMultipliers, Lanes
+from esm.core.esports.moba.mobamatch import MobaMatch
 from esm.core.esports.moba.mobaplayer import (
     ChampionMastery,
     CommunicationAttributes,
@@ -30,11 +32,15 @@ from esm.core.esports.moba.mobaplayer import (
     MobaPlayer,
     MobaPlayerAttributes,
     MobaPlayerChampion,
+    MobaPlayerSimulation,
     OffensiveAttributes,
     UtilityAttributes,
 )
+from esm.core.esports.moba.mobateam import MobaTeam, MobaTeamSimulation
+from esm.core.esports.moba.simulation.mobamatchsimulation import MobaMatchSimulation
+from esm.core.esports.moba.simulation.picksbans import PickBanAI, PicksBans
 from esm.core.settings import Settings
-from esm.core.utils import load_list_from_file
+from esm.core.utils import get_default_names_file, load_list_from_file
 from esm.definitions import ROOT_DIR
 
 
@@ -386,3 +392,63 @@ def mock_team_definitions() -> list[dict[str, int | str]]:
             "sigma": 10,
         },
     ]
+
+
+@pytest.fixture
+def moba_champions(
+    mock_champion_defs: list[dict[str, str | int | float]]
+) -> list[Champion]:
+    return [
+        ChampionGenerator().generate(champion_def)
+        for champion_def in mock_champion_defs
+    ]
+
+
+@pytest.fixture
+def mock_moba_teams(
+    mock_team_definitions: list[dict[str, int | str]], moba_champions: list[Champion]
+) -> list[MobaTeam]:
+    names = load_list_from_file(get_default_names_file())
+    teams = [
+        MobaTeamGenerator(moba_champions, player_names=names).generate(team_def)
+        for team_def in mock_team_definitions
+    ]
+    return teams
+
+
+@pytest.fixture
+def moba_match(mock_moba_teams: list[MobaTeam]) -> MobaMatch:
+    return MobaMatch(
+        uuid.uuid4(),
+        uuid.uuid4(),
+        mock_moba_teams[0],
+        mock_moba_teams[1],
+        datetime.strptime("2020-01-01, 10:00", "%Y-%m-%d, %H:%M"),
+        None,
+    )
+
+
+@pytest.fixture
+def moba_match_simulation(moba_match: MobaMatch) -> MobaMatchSimulation:
+    team1 = moba_match.team1
+    team2 = moba_match.team2
+    team1_players = [
+        MobaPlayerSimulation(pl, Lanes(i))
+        for i, pl in zip(list(Lanes), team1.roster[:5])
+    ]
+    team2_players = [
+        MobaPlayerSimulation(pl, Lanes(i))
+        for i, pl in zip(list(Lanes), team2.roster[:5])
+    ]
+    team1_sim = MobaTeamSimulation(team1, team1_players, False)
+    team2_sim = MobaTeamSimulation(team2, team2_players, False)
+    return MobaMatchSimulation(moba_match, team1_sim, team2_sim, show_commentary=False)
+
+
+@pytest.fixture
+def moba_picks_bans(
+    moba_match_simulation: MobaMatchSimulation, moba_champions: list[Champion]
+) -> PicksBans:
+    team1 = moba_match_simulation.team1
+    team2 = moba_match_simulation.team2
+    return PicksBans(team1, team2, moba_champions)

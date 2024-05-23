@@ -18,30 +18,16 @@ from uuid import uuid4
 
 import pytest
 
-from ..core.esports.moba.mobamatch import InvalidTeamId, MatchType, MobaMatch
-
-
-@pytest.fixture
-def moba_match() -> MobaMatch:
-    return MobaMatch(
-        uuid4(),
-        uuid4(),
-        uuid4(),
-        uuid4(),
-        MatchType.FRIENDLY,
-        datetime.strptime("2020-01-01, 10:00", "%Y-%m-%d, %H:%M"),
-        None,
-    )
+from ..core.esports.moba.mobamatch import InvalidTeamId, MobaMatch
 
 
 def test_moba_match_serialize(moba_match: MobaMatch):
-    team1 = moba_match.team1.hex
-    team2 = moba_match.team2.hex
+    team1 = moba_match.team1.team_id.hex
+    team2 = moba_match.team2.team_id.hex
     serialized = moba_match.serialize()
     assert serialized["team1"] == team1
     assert serialized["team2"] == team2
     assert serialized["victorious_team"] is None
-    assert MatchType(serialized["match_type"]) == MatchType.FRIENDLY
 
 
 def test_moba_match_raises_error_for_invalid_victorious_team(moba_match):
@@ -51,7 +37,9 @@ def test_moba_match_raises_error_for_invalid_victorious_team(moba_match):
 
 
 def test_moba_match_raises_error_loading_invalid_victorious_team(moba_match):
+    team1 = moba_match.team1
+    team2 = moba_match.team2
     serialized = moba_match.serialize()
     serialized["victorious_team"] = uuid4().hex
     with pytest.raises(InvalidTeamId):
-        MobaMatch.get_from_dict(serialized)
+        MobaMatch.get_from_dict(serialized, team1, team2)

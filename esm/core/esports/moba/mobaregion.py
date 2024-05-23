@@ -41,7 +41,7 @@ class MobaRegion(Serializable):
     @classmethod
     def get_from_dict(cls, dictionary: dict, teams: list[MobaTeam]):
         return cls(
-            id=UUID(hex=dictionary["region_id"]),
+            region_id=UUID(hex=dictionary["region_id"]),
             region=dictionary["region"],
             name=dictionary["name"],
             short_name=dictionary["short_name"],

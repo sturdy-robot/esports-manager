@@ -23,10 +23,6 @@ from esm.core.esports.moba.mobateam import MobaTeamSimulation
 
 
 class PicksBans:
-    """
-    Picks and Bans module
-    """
-
     def __init__(
         self,
         team1: MobaTeamSimulation,

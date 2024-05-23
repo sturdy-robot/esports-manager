@@ -17,4 +17,4 @@ from .default_champion_defs import get_default_champion_defs
 from .default_player_nick_names import get_default_player_nick_names
 from .generate_champions import ChampionGenerator
 from .generate_players import MobaPlayerGenerator
-from .generate_teams import TeamGenerator
+from .generate_teams import MobaTeamGenerator
