@@ -21,6 +21,14 @@ from esm.core.esports.moba.mobateam import MobaTeamSimulation
 from esm.core.esports.moba.simulation.mobasimulationengine import MobaSimulationEngine
 
 
+class MobaMatchSimulationError(Exception):
+    pass
+
+
+class NoChampionError(Exception):
+    pass
+
+
 class MobaMatchSimulation:
 
     def __init__(
@@ -118,6 +126,10 @@ class MobaMatchSimulation:
         return None
 
     def run(self) -> None:
+        for team in self.teams:
+            for player in team.players:
+                if player.champion is None:
+                    raise NoChampionError("Player has no champion")
         while not self.is_running:
             self.step()
 

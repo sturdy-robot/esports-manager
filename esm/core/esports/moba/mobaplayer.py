@@ -220,14 +220,16 @@ class MobaPlayerStats:
         self.max_kill_streak = 0
 
 
-@dataclass
 class MobaPlayerSimulation:
-    player: MobaPlayer
-    lane: Lanes
-    stats: MobaPlayerStats
-    points: int = 0
-    champion: Optional[Champion] = None
-    consecutive_kills: int = 0
+    def __init__(
+        self, player: MobaPlayer, lane: Lanes, champion: Optional[Champion] = None
+    ):
+        self.player: MobaPlayer = player
+        self.lane: Lanes = lane
+        self.stats: MobaPlayerStats = MobaPlayerStats()
+        self.points: int = 0
+        self.champion: Optional[Champion] = champion
+        self.consecutive_kills: int = 0
 
     def reset_attributes(self) -> None:
         self.points = 0
