@@ -21,8 +21,8 @@ from esm.core.utils import load_list_from_file
 
 from ..core.esports.moba.champion import Champion
 from ..core.esports.moba.generator.generate_teams import (
-    TeamGenerator,
-    TeamGeneratorError,
+    MobaTeamGenerator,
+    MobaTeamGeneratorError,
 )
 from ..core.esports.moba.mobaplayer import MobaPlayer
 from ..core.esports.moba.mobateam import MobaTeam
@@ -40,16 +40,16 @@ def mock_team_definition() -> dict[str, int | str]:
 @pytest.fixture
 def team_generator(
     mock_champions: list[Champion], names_file: list[dict[str, dict[str, str | int]]]
-) -> TeamGenerator:
-    return TeamGenerator(champions=mock_champions, player_names=names_file)
+) -> MobaTeamGenerator:
+    return MobaTeamGenerator(champions=mock_champions, player_names=names_file)
 
 
 def test_team_generator_champion_list_is_empty():
-    with pytest.raises(TeamGeneratorError):
-        TeamGenerator(champions=[], player_names=[])
+    with pytest.raises(MobaTeamGeneratorError):
+        MobaTeamGenerator(champions=[], player_names=[])
 
 
-def test_generate_team(team_generator: TeamGenerator):
+def test_generate_team(team_generator: MobaTeamGenerator):
     team_def = mock_team_definition()
     team = team_generator.generate(team_definition=team_def)
     assert isinstance(team, MobaTeam)
@@ -60,7 +60,7 @@ def test_generate_team(team_generator: TeamGenerator):
 
 
 def test_generate_multiple_teams(
-    team_generator: TeamGenerator, mock_team_definitions: list[dict[str, int | str]]
+    team_generator: MobaTeamGenerator, mock_team_definitions: list[dict[str, int | str]]
 ):
     teams = [team_generator.generate(team_def) for team_def in mock_team_definitions]
     for team, team_def in zip(teams, mock_team_definitions):

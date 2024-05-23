@@ -15,7 +15,6 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum, auto
 from typing import Optional
 from uuid import UUID
 
@@ -26,22 +25,12 @@ class InvalidTeamId(Exception):
     pass
 
 
-class MatchType(Enum):
-    FRIENDLY = auto()
-    PRACTICE = auto()
-    SHOWMATCH = auto()
-    LEAGUE = auto()
-    PLAYOFFS = auto()
-    FINALS = auto()
-
-
 @dataclass
 class MobaMatch(Serializable):
     game_id: UUID
     championship_id: UUID
     team1: UUID
     team2: UUID
-    match_type: MatchType
     date: datetime
     victorious_team: Optional[UUID] = None
 
@@ -61,7 +50,6 @@ class MobaMatch(Serializable):
             "championship_id": self.championship_id.hex,
             "team1": self.team1.hex,
             "team2": self.team2.hex,
-            "match_type": self.match_type.value,
             "date": self.date.strftime("%Y-%m-%d, %H:%M"),
             "victorious_team": victorious_team,
         }
@@ -82,7 +70,6 @@ class MobaMatch(Serializable):
             UUID(hex=dictionary["championship_id"]),
             UUID(hex=team1),
             UUID(hex=team2),
-            MatchType(dictionary["match_type"]),
             datetime.strptime(dictionary["date"], "%Y-%m-%d, %H:%M"),
             victorious_team,
         )

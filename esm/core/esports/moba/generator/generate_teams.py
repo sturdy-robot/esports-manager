@@ -13,8 +13,6 @@
 #
 #      You should have received a copy of the GNU General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-import random
 import uuid
 from typing import Optional
 
@@ -25,11 +23,11 @@ from esm.core.esports.moba.mobaplayer import Lanes, MobaPlayer
 from esm.core.esports.moba.mobateam import MobaTeam
 
 
-class TeamGeneratorError(Exception):
+class MobaTeamGeneratorError(Exception):
     pass
 
 
-class TeamGenerator(GeneratorInterface):
+class MobaTeamGenerator(GeneratorInterface):
     def __init__(
         self,
         champions: list[Champion],
@@ -38,7 +36,7 @@ class TeamGenerator(GeneratorInterface):
     ):
         self.player_list = players
         if not champions:
-            raise TeamGeneratorError("Champion list is empty")
+            raise MobaTeamGeneratorError("Champion list is empty")
         self.player_gen = MobaPlayerGenerator(champions, player_names)
 
     @staticmethod

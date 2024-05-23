@@ -13,9 +13,8 @@
 #
 #      You should have received a copy of the GNU General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import gc
 import time
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 from esm.core.esports.moba.mobamatch import MobaMatch
 from esm.core.esports.moba.mobateam import MobaTeamSimulation
@@ -50,7 +49,6 @@ class MobaMatchSimulation:
         self.reset_teams()
         self.is_match_over = False
         self.engine = MobaSimulationEngine(self.show_commentary)
-        gc.collect()
 
     def check_is_player_match(self) -> bool:
         return any(team.is_players_team for team in self.teams)
@@ -76,7 +74,9 @@ class MobaMatchSimulation:
 
     def get_team_exposed_nexus(
         self,
-    ) -> Union[Tuple[MobaTeamSimulation, MobaTeamSimulation], MobaTeamSimulation, None]:
+    ) -> Optional[
+        Union[Tuple[MobaTeamSimulation, MobaTeamSimulation], MobaTeamSimulation]
+    ]:
         """
         Gets the exposed nexus from one or both of the teams.
         """
@@ -90,7 +90,7 @@ class MobaMatchSimulation:
             return None
 
     def get_towers_number(self) -> int:
-        return sum(team.towers for team in self.teams)
+        return sum(sum(team.towers.values()) for team in self.teams)
 
     def check_match_over(self) -> None:
         """
@@ -106,7 +106,7 @@ class MobaMatchSimulation:
         """
         return any(team.get_exposed_inhibs() for team in self.teams)
 
-    def get_winning_team(self) -> MobaTeamSimulation:
+    def get_winning_team(self) -> Optional[MobaTeamSimulation]:
         if self.is_match_over:
             if self.team1.nexus == 1:
                 self.game.victorious_team = self.game.team1
@@ -114,6 +114,8 @@ class MobaMatchSimulation:
             else:
                 self.game.victorious_team = self.game.team2
                 return self.team2
+
+        return None
 
     def run(self) -> None:
         while not self.is_running:

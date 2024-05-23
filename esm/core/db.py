@@ -19,7 +19,7 @@ import uuid
 from pathlib import Path
 
 from .esports.moba.champion import Champion
-from .esports.moba.generator import ChampionGenerator, TeamGenerator
+from .esports.moba.generator import ChampionGenerator, MobaTeamGenerator
 from .esports.moba.mobaplayer import MobaPlayer
 from .esports.moba.mobaregion import MobaRegion
 from .esports.moba.mobateam import MobaTeam
@@ -39,7 +39,7 @@ class DB:
         champions_list: list[Champion],
         teams_def: list[dict[str, str | int]],
     ) -> list[MobaTeam]:
-        team_gen = TeamGenerator(champions_list, player_names)
+        team_gen = MobaTeamGenerator(champions_list, player_names)
         return [team_gen.generate(team_def) for team_def in teams_def]
 
     def get_moba_region_definitions(

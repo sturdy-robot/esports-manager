@@ -18,7 +18,7 @@ from uuid import uuid4
 
 import pytest
 
-from ..core.esports.moba.mobamatch import InvalidTeamId, MatchType, MobaMatch
+from ..core.esports.moba.mobamatch import InvalidTeamId, MobaMatch
 
 
 @pytest.fixture
@@ -28,7 +28,6 @@ def moba_match() -> MobaMatch:
         uuid4(),
         uuid4(),
         uuid4(),
-        MatchType.FRIENDLY,
         datetime.strptime("2020-01-01, 10:00", "%Y-%m-%d, %H:%M"),
         None,
     )
@@ -41,7 +40,6 @@ def test_moba_match_serialize(moba_match: MobaMatch):
     assert serialized["team1"] == team1
     assert serialized["team2"] == team2
     assert serialized["victorious_team"] is None
-    assert MatchType(serialized["match_type"]) == MatchType.FRIENDLY
 
 
 def test_moba_match_raises_error_for_invalid_victorious_team(moba_match):

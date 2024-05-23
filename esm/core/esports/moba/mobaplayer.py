@@ -17,6 +17,7 @@ import datetime
 import uuid
 from dataclasses import asdict, dataclass
 from enum import Enum, auto
+from typing import Optional
 
 from ...serializable import Serializable
 from ..player import Player
@@ -220,18 +221,12 @@ class MobaPlayerStats:
 
 
 @dataclass
-class MobaPlayerTeam:
-    player_id: uuid.UUID
-    team_id: uuid.UUID
-
-
-@dataclass
 class MobaPlayerSimulation:
     player: MobaPlayer
-    champion: Champion
     lane: Lanes
     stats: MobaPlayerStats
     points: int = 0
+    champion: Optional[Champion] = None
     consecutive_kills: int = 0
 
     def reset_attributes(self) -> None:
