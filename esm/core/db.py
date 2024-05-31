@@ -47,10 +47,10 @@ class DB:
     ) -> list[dict[str, str]]:
         for region in regions:
             filename = region["filename"]
-            path = os.path.join(directory, filename)
+            path = directory / filename
             if not os.path.exists(path):
                 raise FileNotFoundError(f"Could not find the filename: {path}")
-            region["filename"] = path
+            region["filename"] = path.as_posix()
 
         return regions
 
