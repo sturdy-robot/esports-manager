@@ -18,10 +18,11 @@ import random
 import uuid
 from typing import Optional
 
+from esm.core.esports.generator import GeneratorInterface
+
 from ..champion import Champion, ChampionDifficulty, ChampionType
 from ..mobaplayer import LaneMultipliers, Lanes
 from .default_champion_defs import get_default_champion_names
-from .generator import GeneratorInterface
 
 
 class ChampionGeneratorError(Exception):

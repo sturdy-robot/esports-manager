@@ -19,6 +19,9 @@ import uuid
 from datetime import date, timedelta
 from typing import Optional
 
+from esm.core.esports.default_player_nick_names import get_default_player_nick_names
+from esm.core.esports.generator import GeneratorInterface
+
 from ....utils import get_nations
 from ..champion import Champion
 from ..mobaplayer import (
@@ -34,8 +37,6 @@ from ..mobaplayer import (
     OffensiveAttributes,
     UtilityAttributes,
 )
-from .default_player_nick_names import get_default_player_nick_names
-from .generator import GeneratorInterface
 
 
 def generate_attribute_value(mu, sigma) -> int:
