@@ -83,7 +83,7 @@ def test_generate_players_file(
     serialized_players = db.serialize_players(players)
     db.generate_moba_file(players_filepath, serialized_players)
     assert players_filepath.exists()
-    with players_filepath.open("r") as fp:
+    with players_filepath.open("r", encoding="utf-8") as fp:
         actual_players = json.load(fp)
     assert actual_players == serialized_players
 
