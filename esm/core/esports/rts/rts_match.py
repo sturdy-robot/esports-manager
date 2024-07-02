@@ -18,6 +18,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Optional
 
+from esm.core.esports.rts.rts_map import RTSMap
 from esm.core.esports.rts.rts_player import RTSPlayer
 from esm.core.serializable import Serializable
 
@@ -27,28 +28,34 @@ class RTSMatch(Serializable):
     id: uuid.UUID
     player1: RTSPlayer
     player2: RTSPlayer
+    rts_map: RTSMap
     date: datetime.datetime
     winner: Optional[RTSPlayer] = None
 
     def serialize(self) -> dict:
         return {
             "id": self.id.hex,
-            "player1": self.player1.serialize(),
-            "player2": self.player2.serialize(),
+            "player1": self.player1.player_id.int,
+            "player2": self.player2.player_id.int,
+            "map": self.rts_map.map_id.int,
             "date": self.date.strftime("%Y-%m-%d, %H:%M"),
-            "winner": self.winner.serialize() if self.winner else None,
+            "winner": self.winner.player_id.int if self.winner else None,
         }
 
     @classmethod
-    def get_from_dict(cls, dictionary: dict):
+    def get_from_dict(
+        cls, dictionary: dict, player1: RTSPlayer, player2: RTSPlayer, rts_map: RTSMap
+    ):
+        winner = None
+        if dictionary["winner"] is not None:
+            winner = (
+                player1 if dictionary["winner"] == player1.player_id.int else player2
+            )
         return cls(
             id=uuid.UUID(dictionary["id"]),
-            player1=RTSPlayer.get_from_dict(dictionary["player1"]),
-            player2=RTSPlayer.get_from_dict(dictionary["player2"]),
+            player1=player1,
+            player2=player2,
+            rts_map=rts_map,
             date=datetime.datetime.strptime(dictionary["date"], "%Y-%m-%d, %H:%M"),
-            winner=(
-                RTSPlayer.get_from_dict(dictionary["winner"])
-                if dictionary["winner"]
-                else None
-            ),
+            winner=winner,
         )
