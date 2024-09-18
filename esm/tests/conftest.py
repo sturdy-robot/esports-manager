@@ -37,7 +37,7 @@ from esm.core.esports.moba.mobaplayer import (
     UtilityAttributes,
 )
 from esm.core.esports.moba.mobateam import MobaTeam, MobaTeamSimulation
-from esm.core.esports.moba.simulation.mobamatchsimulation import MobaMatchSimulation
+from esm.core.esports.moba.simulation.moba_sim_match import MobaSimMatch
 from esm.core.esports.moba.simulation.picksbans import PicksBans
 from esm.core.settings import Settings
 from esm.core.utils import get_default_names_file, load_list_from_file
@@ -81,9 +81,9 @@ def champion_dict():
         "scaling_factor": 0.5,
         "scaling_peak": 20,
         "skill": 87,
-        "champion_difficulty": ChampionDifficulty.MEDIUM.value,
-        "champion_type1": ChampionType.TANK.value,
-        "champion_type2": ChampionType.FIGHTER.value,
+        "difficulty": ChampionDifficulty.MEDIUM.value,
+        "type1": ChampionType.TANK.value,
+        "type2": ChampionType.FIGHTER.value,
     }
 
 
@@ -165,7 +165,7 @@ def db() -> DB:
 
 
 @pytest.fixture
-def mock_team_definitions() -> list[dict[str, int | str]]:
+def mock_moba_team_definitions() -> list[dict[str, int | str]]:
     return [
         {
             "name": "KoreanTeam",
@@ -190,12 +190,12 @@ def mock_team_definitions() -> list[dict[str, int | str]]:
 
 @pytest.fixture
 def mock_moba_teams(
-    mock_team_definitions: list[dict[str, int | str]], mock_champions: list[Champion]
+    mock_moba_team_definitions, mock_champions: list[Champion]
 ) -> list[MobaTeam]:
     names = load_list_from_file(get_default_names_file())
     teams = [
         MobaTeamGenerator(mock_champions, player_names=names).generate(team_def)
-        for team_def in mock_team_definitions
+        for team_def in mock_moba_team_definitions
     ]
     return teams
 
@@ -213,7 +213,7 @@ def moba_match(mock_moba_teams: list[MobaTeam]) -> MobaMatch:
 
 
 @pytest.fixture
-def moba_match_simulation(moba_match: MobaMatch) -> MobaMatchSimulation:
+def moba_match_simulation(moba_match: MobaMatch) -> MobaSimMatch:
     team1 = moba_match.team1
     team2 = moba_match.team2
     team1_players = [
@@ -226,12 +226,12 @@ def moba_match_simulation(moba_match: MobaMatch) -> MobaMatchSimulation:
     ]
     team1_sim = MobaTeamSimulation(team1, team1_players, False)
     team2_sim = MobaTeamSimulation(team2, team2_players, False)
-    return MobaMatchSimulation(moba_match, team1_sim, team2_sim, show_commentary=False)
+    return MobaSimMatch(moba_match, team1_sim, team2_sim)
 
 
 @pytest.fixture
 def moba_picks_bans(
-    moba_match_simulation: MobaMatchSimulation, mock_champions: list[Champion]
+    moba_match_simulation: MobaSimMatch, mock_champions: list[Champion]
 ) -> PicksBans:
     team1 = moba_match_simulation.team1
     team2 = moba_match_simulation.team2
