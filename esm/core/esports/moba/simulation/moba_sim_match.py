@@ -40,3 +40,5 @@ class MobaSimMatch:
             for player in team.players:
                 if player.champion is None:
                     raise NoChampionError
+
+        self.simulation_engine.run()

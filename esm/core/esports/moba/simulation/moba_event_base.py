@@ -16,9 +16,10 @@
 from abc import ABC, abstractmethod
 from datetime import timedelta
 from enum import Enum, auto
+from typing import Optional
 
 from ..mobateam import MobaTeamSimulation
-from .moba_event_type import MobaEventType
+from .moba_event_type import MobaEventOutcome, MobaEventType
 
 
 class MobaEventPriority(Enum):
@@ -49,3 +50,4 @@ class MobaEventBase:
         self.priority = priority
         self.event_time = event_time
         self.points = points
+        self.outcome: Optional[MobaEventOutcome] = None

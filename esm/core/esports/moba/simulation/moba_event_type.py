@@ -18,8 +18,19 @@ from enum import Enum, auto
 
 class MobaEventType(Enum):
     NOTHING = auto()
-    KILL = auto()
+    FIGHT = auto()
     JUNGLE = auto()
     INHIB_ASSAULT = auto()
     TOWER_ASSAULT = auto()
     NEXUS_ASSAULT = auto()
+
+
+class MobaEventOutcome(Enum):
+    NOTHING = auto()
+    KILL = auto()
+    DEFEND_INHIB = auto()
+    DEFEND_TOWER = auto()
+    DEFEND_NEXUS = auto()
+    TAKE_INHIB = auto()
+    TAKE_TOWER = auto()
+    TAKE_NEXUS = auto()
