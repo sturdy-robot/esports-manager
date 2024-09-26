@@ -20,7 +20,7 @@ from ..moba_event_base import MobaEvent, MobaEventBase, MobaEventPriority
 from ..moba_event_type import MobaEventType
 
 
-class MobaEventKill(MobaEvent, MobaEventBase):
+class MobaEventFight(MobaEvent, MobaEventBase):
     def __init__(
         self,
         team1: MobaTeamSimulation,
@@ -29,7 +29,12 @@ class MobaEventKill(MobaEvent, MobaEventBase):
         points: float,
     ):
         super().__init__(
-            MobaEventType.KILL, team1, team2, MobaEventPriority.LOW, event_time, points
+            MobaEventType.FIGHT,
+            team1,
+            team2,
+            MobaEventPriority.HIGH,
+            event_time,
+            points,
         )
 
     def calculate_event(self):
