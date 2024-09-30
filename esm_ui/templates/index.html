@@ -15,17 +15,27 @@
   ~ You should have received a copy of the GNU General Public License
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask HTMX App</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/bulma.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
-</head>
-<body>
-{% block content %}{% endblock %}
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="background-blur"></div>
+
+<div class="container">
+    <img id="logo" src="{{ url_for('static', filename='img/logo.svg') }}" alt="Project Logo">
+
+    <div>
+        <a href="/new_game">
+            <button>New Game</button>
+        </a>
+        <button hx-get="/load_game">Load Game</button>
+        <button hx-get="/debug_mode">Debug Mode</button>
+    </div>
+</div>
+
+<div class="settings">
+    <a href="/settings">
+        &#9881;
+    </a>
+</div>
+{% endblock %}
+

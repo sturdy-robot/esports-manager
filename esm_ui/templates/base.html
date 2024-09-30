@@ -15,30 +15,18 @@
   ~ You should have received a copy of the GNU General Public License
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
-{% extends "base.html" %}
-
-{% block content %}
-<!-- Background overlay to blur the background image -->
-<div class="background-blur"></div>
-
-<!-- Main content centered using flexbox -->
-<div class="container">
-    <!-- Logo -->
-    <img id="logo" src="{{ url_for('static', filename='img/logo.svg') }}" alt="Project Logo">
-
-    <!-- Buttons for actions, vertically stacked -->
-    <div hx-target="this">
-        <button hx-get="/new_game">New Game</button>
-        <button hx-get="/load_game">Load Game</button>
-        <button hx-get="/debug_mode">Debug Mode</button>
-    </div>
-</div>
-
-<!-- Settings icon in the top right corner -->
-<div class="settings">
-    <a href="/settings">
-        &#9881; <!-- Unicode for gear icon -->
-    </a>
-</div>
-{% endblock %}
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>eSports Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bulma.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+</head>
+<body>
+{% block content %}{% endblock %}
+</body>
+</html>

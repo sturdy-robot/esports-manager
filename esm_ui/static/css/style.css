@@ -32,10 +32,11 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     background-color: rgba(0, 0, 0, 0.5); /* Dark overlay */
-    filter: blur(5rem); /* Blur effect */
+    filter: blur(8px); /* Blur effect */
+    -webkit-filter: blur(8px);
     z-index: 0; /* Send to back */
 }
 
@@ -78,9 +79,9 @@ button:hover {
 /* Top-right settings icon */
 .settings {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    font-size: 30px;
+    top: 1rem;
+    right: 1rem;
+    font-size: 2rem;
     color: white;
     cursor: pointer;
 }

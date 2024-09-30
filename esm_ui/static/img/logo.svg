@@ -114,9 +114,9 @@
      inkscape:document-rotation="0"
      inkscape:current-layer="layer1"
      inkscape:document-units="mm"
-     inkscape:cy="242.48239"
-     inkscape:cx="391.29557"
-     inkscape:zoom="0.66190374"
+     inkscape:cy="199.23592"
+     inkscape:cx="212.83306"
+     inkscape:zoom="5.2952299"
      inkscape:pageshadow="2"
      inkscape:pageopacity="0.0"
      borderopacity="1.0"
@@ -464,5 +464,12 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19.7556px;font-family:Yukarimobile;-inkscape-font-specification:Yukarimobile;fill:#e6e6e6;stroke-width:0.264583"
          id="path1258" />
     </g>
+    <rect
+       style="fill:#18b0f4;fill-opacity:1;stroke-width:0.264583"
+       id="rect1"
+       width="47.917736"
+       height="10.742766"
+       x="11.383077"
+       y="118.37872" />
   </g>
 </svg>
