@@ -25,7 +25,7 @@ def index():
 
 @app.route("/new_game")
 def new_game():
-    return "<p>new game</p>"
+    return render_template("layout.html")
 
 
 @app.route("/load_game")
