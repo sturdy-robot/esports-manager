@@ -16,7 +16,7 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 <aside
-  class="h-full bg-gray-200 dark:bg-gray-800 left-0 top-0 absolute text-black dark:text-white shadow-sm border-r border-slate-300 dark:border-slate-600 transition-all"
+  class="h-full bg-gray-200 dark:bg-slate-900 left-0 top-0 absolute text-black dark:text-white shadow-sm border-r border-slate-300 dark:border-slate-600 transition-all"
   :class="{ 'w-64': expanded, 'w-16': !expanded }"
 >
   <div class="p-4 pb-2 flex justify-between items-center">
@@ -28,7 +28,7 @@
     />
     <button
       @click="expanded = !expanded"
-      class="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+      class="p-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
     >
       <span x-show="expanded">
         <svg
@@ -113,9 +113,11 @@
     </li>
   </ul>
 
-  <div class="absolute bottom-5 px-3">
-    <hr class="h-px my-2 border-0 bg-gray-400 transition-all"
-    :class="{ 'w-56': expanded, 'w-12': !expanded }" />
+  <div class="bottom-8 px-3 my-2">
+    <hr
+      class="h-px my-2 border-0 bg-gray-400 transition-all"
+      :class="{ 'w-56': expanded, 'w-12': !expanded }"
+    />
     <ul>
       <li
         class="relative flex items-center py-2 px-3 my-1 cursor-pointer transition-colors group hover:bg-gray-50 dark:hover:bg-gray-700"
