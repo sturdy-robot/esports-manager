@@ -16,26 +16,24 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<html
+  lang="en"
+  x-data="{darkMode: false }"
+  :class="{'dark' : darkMode, '' : !darkMode}"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>eSports Manager</title>
     <link
-            rel="stylesheet"
-            href="{{ url_for('static', filename='css/output.css') }}"
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/output.css') }}"
     />
     <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/alpine.min.js') }}"></script>
-</head>
-<body
-        class="h-screen flex bg-gray-100 dark:bg-gray-900 dark:text-white"
-        x-data="{ 'darkMode': false }"
-        x-init="darkMode = JSON.parse(localStorage.getItem('darkMode'));
-         $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))"
-        :class="{'dark' : darkMode, '' : !darkMode}"
->
-{% block content %}{% endblock %}
-</body>
+  </head>
+  <body class="h-screen flex bg-gray-100 dark:bg-gray-900 dark:text-white">
+    {% block content %}{% endblock %}
+  </body>
 </html>
