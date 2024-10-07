@@ -114,7 +114,8 @@
   </ul>
 
   <div class="absolute bottom-5 px-3">
-    <hr class="h-px my-2 border-0 bg-gray-400" />
+    <hr class="h-px my-2 border-0 bg-gray-400 transition-all"
+    :class="{ 'w-56': expanded, 'w-12': !expanded }" />
     <ul>
       <li
         class="relative flex items-center py-2 px-3 my-1 cursor-pointer transition-colors group hover:bg-gray-50 dark:hover:bg-gray-700"
