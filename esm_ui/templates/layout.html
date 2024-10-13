@@ -20,7 +20,8 @@
 <div x-data="{expanded: true, page: 'home'}">
   {% block sidebar %}{% include "partials/sidebar.html" %}{% endblock %}
 
-  <div class="flex flex-col w-screen">
+  
+  <div class="flex flex-col w-full h-full">
     {% block navbar %}{% include "partials/navbar.html" %}{% endblock %}
 
     <div class="pt-10 transition-all"

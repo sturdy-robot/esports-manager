@@ -16,7 +16,7 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 <aside
-  class="h-full bg-gray-200 dark:bg-slate-900 left-0 top-0 absolute text-black dark:text-white shadow-sm border-r border-slate-300 dark:border-slate-600 transition-all"
+  class="fixed left-0 top-0 min-h-screen h-full bg-gray-200 dark:bg-slate-900 text-black dark:text-white shadow-sm border-r border-slate-300 dark:border-slate-600 transition-all"
   :class="{ 'w-64': expanded, 'w-16': !expanded }"
 >
   <div class="p-4 pb-2 flex justify-between items-center">
@@ -157,7 +157,7 @@
     </li>
   </ul>
 
-  <div class="bottom-8 px-3 my-2">
+  <div class="absolute bottom-20 px-3 my-2">
     <hr
       class="h-px my-2 border-0 bg-gray-400 transition-all"
       :class="{ 'w-56': expanded, 'w-10': !expanded }"
