@@ -1,13 +1,13 @@
 <nav
-  class="text-black border-b border-b-gray-300 dark:border-b-gray-700 dark:text-white bg-gray-100 dark:bg-slate-800 justify-between transition-all flex flex-items-center px-4 shadow-sm h-[90px] top-0"
+  class="text-black border-b border-b-gray-300 dark:border-b-gray-700 dark:text-white bg-gray-100 dark:bg-slate-700 justify-between transition-all flex flex-items-center px-4 shadow-sm h-[90px] top-0"
   :class="{ 'ml-64': expanded, 'ml-16': !expanded }"
 >
-  <div class="font-bold text-3xl text-center px-4 self-center">G2</div>
+  <div class="font-bold text-3xl text-center px-4 self-center">G2 eSports</div>
 
   <div class="flex items-center space-x-4">
     <button
       @click="toggleDarkMode"
-      class="px-5 py-5 mx-1 bg-gray-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"
+      class="px-5 py-5 mx-1 bg-gray-300 hover:bg-gray-200 dark:bg-slate-600 dark:hover:bg-slate-500"
     >
       <span x-show="darkMode !== true">
         <svg
@@ -37,12 +37,23 @@
       </span>
     </button>
 
-    <button class="flex px-5 py-5 bg-blue-500 hover:bg-blue-400 text-white font-bold uppercase">
+    <button
+      class="flex px-5 py-5 bg-blue-500 hover:bg-blue-400 text-white font-bold uppercase"
+    >
       Continue
       <span class="ml-4">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-          <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm4.28 10.28a.75.75 0 0 0 0-1.06l-3-3a.75.75 0 1 0-1.06 1.06l1.72 1.72H8.25a.75.75 0 0 0 0 1.5h5.69l-1.72 1.72a.75.75 0 1 0 1.06 1.06l3-3Z" clip-rule="evenodd" />
-        </svg>             
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="size-6"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm4.28 10.28a.75.75 0 0 0 0-1.06l-3-3a.75.75 0 1 0-1.06 1.06l1.72 1.72H8.25a.75.75 0 0 0 0 1.5h5.69l-1.72 1.72a.75.75 0 1 0 1.06 1.06l3-3Z"
+            clip-rule="evenodd"
+          />
+        </svg>
       </span>
     </button>
   </div>
