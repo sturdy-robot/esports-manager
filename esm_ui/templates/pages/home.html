@@ -1,5 +1,7 @@
 <div class="flex flex-col">
-  <div class="my-1 mt-2 flex flex-col 2xl:flex-row xl:flex-row lg:flex-row gap-2">
+  <div
+    class="my-1 mt-2 flex flex-col 2xl:flex-row xl:flex-row lg:flex-row gap-2"
+  >
     <div
       class="w-full overflow-hidden shadow-md border bg-slate-100 border-gray-300 dark:bg-slate-900 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-slate-800"
     >
@@ -23,16 +25,15 @@
         </button>
       </div>
     </div>
+  </div>
+  <div class="my-1 flex flex-col 2xl:flex-row xl:flex-row lg:flex-row gap-2">
     <div
       class="w-full overflow-hidden shadow-md border bg-slate-100 border-gray-300 dark:bg-slate-900 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-slate-800"
     >
       <div class="px-6 py-4">
         <div class="font-bold text-4xl mb-3">Calendar</div>
-        
       </div>
     </div>
-  </div>
-  <div class="my-1 flex flex-col 2xl:flex-row xl:flex-row lg:flex-row gap-2">
     <div
       class="py-5 w-full overflow-hidden shadow-md border bg-slate-100 border-gray-300 dark:bg-slate-900 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-slate-800"
     >
@@ -77,6 +78,40 @@
       class="py-5 w-full overflow-hidden shadow-md border bg-slate-100 border-gray-300 dark:bg-slate-900 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-slate-800"
     >
       <div class="px-6 py-4">
+        <div class="font-bold text-3xl mb-3">My statistics</div>
+        <table
+          class="table-auto w-full text-lg text-black my-8 dark:text-slate-100"
+        >
+          <tbody>
+            <tr class="border-b border-slate-300 dark:border-slate-600">
+              <td class="uppercase font-bold">Wins</td>
+              <td class="px-6 text-center">95</td>
+            </tr>
+            <tr class="border-b border-slate-300 dark:border-slate-600">
+              <td class="uppercase font-bold">Losses</td>
+              <td class="px-6 text-center">23</td>
+            </tr>
+            <tr class="border-b border-slate-300 dark:border-slate-600">
+              <td class="uppercase font-bold">Avg. Team KDA</td>
+              <td class="px-6 text-center">2.5</td>
+            </tr>
+            <tr class="border-b border-slate-300 dark:border-slate-600">
+              <td class="uppercase font-bold">Avg. Game Time</td>
+              <td class="px-6 text-center">28 min 35s</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="my-1 flex flex-col flex-items-center h-full 2xl:flex-row xl:flex-row lg:flex-row gap-2"
+  >
+    <div
+      class="py-5 w-full overflow-hidden shadow-md border bg-slate-100 border-gray-300 dark:bg-slate-900 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+    >
+      <div class="px-6 py-4">
         <div class="font-bold text-3xl mb-3">Roster</div>
         <table
           class="table-auto w-full text-lg text-black my-8 dark:text-slate-100"
@@ -106,35 +141,6 @@
               <td class="px-6 uppercase font-bold">Sup</td>
               <td class="px-6">Mikyx</td>
               <td class="px-6">87</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div
-      class="py-5 w-full overflow-hidden shadow-md border bg-slate-100 border-gray-300 dark:bg-slate-900 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-    >
-      <div class="px-6 py-4">
-        <div class="font-bold text-3xl mb-3">My statistics</div>
-        <table
-          class="table-auto w-full text-lg text-black my-8 dark:text-slate-100"
-        >
-          <tbody>
-            <tr class="border-b border-slate-300 dark:border-slate-600">
-              <td class="uppercase font-bold">Wins</td>
-              <td class="px-6 text-center">95</td>
-            </tr>
-            <tr class="border-b border-slate-300 dark:border-slate-600">
-              <td class="uppercase font-bold">Losses</td>
-              <td class="px-6 text-center">23</td>
-            </tr>
-            <tr class="border-b border-slate-300 dark:border-slate-600">
-              <td class="uppercase font-bold">Avg. Team KDA</td>
-              <td class="px-6 text-center">2.5</td>
-            </tr>
-            <tr class="border-b border-slate-300 dark:border-slate-600">
-              <td class="uppercase font-bold">Avg. Game Time</td>
-              <td class="px-6 text-center">28 min 35s</td>
             </tr>
           </tbody>
         </table>
