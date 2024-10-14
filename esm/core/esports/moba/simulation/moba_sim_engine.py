@@ -13,10 +13,11 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import random
 from datetime import timedelta
 
 from ..mobateam import MobaTeamSimulation
-from .events import MobaEventFactory, get_event_definitions
+from .events import MobaEvent, MobaEventFactory, get_event_definitions
 from .moba_event_type import MobaEventType
 
 
@@ -30,8 +31,13 @@ class MobaSimEngine:
         self.event_factory = MobaEventFactory()
         self.match_time: timedelta = timedelta(0)
 
+    def is_match_over(self) -> bool:
+        if self.team1.nexus == 0 or self.team2.nexus == 0:
+            return True
+
+        return False
+
     def get_enabled_events(self) -> None:
-        # These two events will always be enabled
         self.enabled_events = []
 
         for event_type in self.event_definitions:
@@ -55,5 +61,25 @@ class MobaSimEngine:
                 if match_time >= self.event_definitions[event_type]["start_time"]:
                     self.enabled_events.append(event_type)
 
+    def get_event(self) -> MobaEvent:
+        self.priorities = []
+        for event in self.enabled_events:
+            for ev in self.event_definitions:
+                if event == ev:
+                    self.priorities.append(self.event_definitions[event]["priority"])
+
+        chosen_event_type = random.choices(
+            self.enabled_events, weights=self.priorities
+        )[0]
+        event = self.event_factory.create_event(
+            chosen_event_type, self.team1, self.team2, self.match_time
+        )
+        self.event_history.append(event)
+        return event
+
     def run(self):
-        self.get_enabled_events()
+        while not self.is_match_over():
+            self.get_enabled_events()
+            event = self.get_event()
+            event.calculate_event()
+            self.match_time += event.duration
