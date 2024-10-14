@@ -32,7 +32,7 @@ class MobaEventTowerAssault(MobaEvent, MobaEventBase):
             MobaEventType.TOWER_ASSAULT,
             team1,
             team2,
-            MobaEventPriority.LOW,
+            MobaEventPriority.HIGH,
             event_time,
             points,
         )

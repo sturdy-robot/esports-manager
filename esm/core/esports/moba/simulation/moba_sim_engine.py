@@ -14,33 +14,46 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from datetime import timedelta
-from typing import Optional
 
 from ..mobateam import MobaTeamSimulation
-from .events import MobaEventFactory
-from .moba_event_type import MobaEventOutcome
+from .events import MobaEventFactory, get_event_definitions
+from .moba_event_type import MobaEventType
 
 
 class MobaSimEngine:
     def __init__(self, team1: MobaTeamSimulation, team2: MobaTeamSimulation):
         self.team1 = team1
         self.team2 = team2
-        self.events = []
+        self.event_definitions = get_event_definitions()
+        self.enabled_events = []
         self.event_history = []
         self.event_factory = MobaEventFactory()
         self.match_time: timedelta = timedelta(0)
 
-    def get_events(self, outcome: Optional[MobaEventOutcome]):
-        self.events.clear()
+    def get_enabled_events(self) -> None:
+        # These two events will always be enabled
+        self.enabled_events = []
 
-        if outcome:
-            self.event_factory.get_event_from_outcome(
-                self.team1, self.team2, self.match_time, outcome
-            )
+        for event_type in self.event_definitions:
+            match_time = int(self.match_time.seconds / 60)
+            if event_type == MobaEventType.INHIB_ASSAULT:
+                if self.team1.are_inhibs_exposed() or self.team2.are_inhibs_exposed():
+                    self.enabled_events.append(event_type)
+                    continue
+            elif event_type == MobaEventType.NEXUS_ASSAULT:
+                if self.team1.is_nexus_exposed() or self.team2.is_nexus_exposed():
+                    self.enabled_events.append(event_type)
+                    continue
+            elif self.event_definitions[event_type]["end_time"] != 0:
+                if (
+                    self.event_definitions[event_type]["start_time"]
+                    <= match_time
+                    < self.event_definitions[event_type]["end_time"]
+                ):
+                    self.enabled_events.append(event_type)
+            else:
+                if match_time >= self.event_definitions[event_type]["start_time"]:
+                    self.enabled_events.append(event_type)
 
     def run(self):
-        outcome = None
-        if self.event_history:
-            outcome = self.event_history[-1].outcome
-
-        self.get_events(outcome)
+        self.get_enabled_events()

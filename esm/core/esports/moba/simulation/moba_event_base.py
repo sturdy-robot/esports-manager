@@ -51,3 +51,4 @@ class MobaEventBase:
         self.event_time = event_time
         self.points = points
         self.outcome: Optional[MobaEventOutcome] = None
+        self.duration: timedelta = timedelta(0)

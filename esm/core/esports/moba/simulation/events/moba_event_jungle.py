@@ -14,28 +14,56 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from datetime import timedelta
+from enum import Enum, auto
 
 from ...mobateam import MobaTeamSimulation
 from ..moba_event_base import MobaEvent, MobaEventBase, MobaEventPriority
 from ..moba_event_type import MobaEventType
 
 
+class MobaEventJungleError(Exception):
+    pass
+
+
 class MobaEventJungle(MobaEvent, MobaEventBase):
     def __init__(
         self,
+        event_type: MobaEventType,
         team1: MobaTeamSimulation,
         team2: MobaTeamSimulation,
         event_time: timedelta,
         points: float,
     ):
         super().__init__(
-            MobaEventType.JUNGLE,
+            event_type,
             team1,
             team2,
-            MobaEventPriority.LOW,
+            MobaEventPriority.HIGH,
             event_time,
             points,
         )
 
-    def calculate_event(self):
+    def calculate_baron(self):
         pass
+
+    def calculate_dragon(self):
+        pass
+
+    def calculate_voidgrubs(self):
+        pass
+
+    def calculate_herald(self):
+        pass
+
+    def calculate_event(self):
+        if self.event_type == MobaEventType.JUNGLE_VOIDGRUBS:
+            self.calculate_voidgrubs()
+        elif self.event_type == MobaEventType.JUNGLE_BARON:
+            self.calculate_baron()
+        elif self.event_type == MobaEventType.JUNGLE_DRAGON:
+            self.calculate_dragon()
+        elif self.event_type == MobaEventType.JUNGLE_HERALD:
+            self.calculate_herald()
+
+        else:
+            raise MobaEventJungleError("Invalid event type was passed to Jungle event!")

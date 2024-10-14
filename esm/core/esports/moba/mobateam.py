@@ -143,7 +143,7 @@ class MobaTeamSimulation:
         return 0 not in self.inhibitors.values()
 
     def are_inhibs_exposed(self) -> bool:
-        return self.towers.top == 0 or self.towers.mid == 0 or self.towers.bot == 0
+        return self.towers.are_inhibs_exposed()
 
     def get_exposed_inhibs(self):
         return [

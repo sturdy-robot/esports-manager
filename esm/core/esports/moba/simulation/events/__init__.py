@@ -17,7 +17,7 @@ from datetime import timedelta
 
 from ...mobateam import MobaTeamSimulation
 from ..moba_event_base import MobaEvent
-from ..moba_event_type import MobaEventOutcome, MobaEventType
+from ..moba_event_type import MobaEventType
 from .moba_event_fight import MobaEventFight
 from .moba_event_inhib import MobaEventInhibAssault
 from .moba_event_jungle import MobaEventJungle
@@ -26,20 +26,77 @@ from .moba_event_nothing import MobaEventNothing
 from .moba_event_tower import MobaEventTowerAssault
 
 
+def get_event_definitions() -> dict[MobaEventType, dict[str, str | int | float]]:
+    return {
+        MobaEventType.NOTHING: {
+            "points": 0,
+            "priority": 20,
+            "cooldown": 0,
+            "start_time": 0,
+            "end_time": 0,
+        },
+        MobaEventType.FIGHT: {
+            "points": 0,
+            "priority": 5,
+            "cooldown": 0,
+            "start_time": 0,
+            "end_time": 0,
+        },
+        MobaEventType.JUNGLE_VOIDGRUBS: {
+            "points": 15,
+            "priority": 15,
+            "cooldown": 4,
+            "start_time": 6,
+            "end_time": 14,
+        },
+        MobaEventType.JUNGLE_HERALD: {
+            "points": 15,
+            "priority": 15,
+            "cooldown": 0,
+            "start_time": 14,
+            "end_time": 20,
+        },
+        MobaEventType.JUNGLE_BARON: {
+            "points": 15,
+            "priority": 20,
+            "cooldown": 5,
+            "start_time": 20,
+            "end_time": 0,
+        },
+        MobaEventType.JUNGLE_DRAGON: {
+            "points": 15,
+            "priority": 20,
+            "cooldown": 5,
+            "start_time": 5,
+            "end_time": 0,
+        },
+        MobaEventType.TOWER_ASSAULT: {
+            "points": 15,
+            "priority": 15,
+            "cooldown": 5,
+            "start_time": 10,
+            "end_time": 0,
+        },
+        MobaEventType.INHIB_ASSAULT: {
+            "points": 10,
+            "priority": 20,
+            "cooldown": 5,
+            "start_time": 0,
+            "end_time": 0,
+        },
+        MobaEventType.NEXUS_ASSAULT: {
+            "points": 40,
+            "priority": 50,
+            "cooldown": 0,
+            "start_time": 0,
+            "end_time": 0,
+        },
+    }
+
+
 class MobaEventFactory:
     def get_points(self, event_type: MobaEventType) -> float:
-        return 0.0
-
-    def get_event_from_outcome(
-        self,
-        team1: MobaTeamSimulation,
-        team2: MobaTeamSimulation,
-        event_time: timedelta,
-        outcome: MobaEventOutcome,
-    ) -> MobaEvent:
-        if outcome == MobaEventOutcome.NOTHING:
-            return MobaEventNothing(team1, team2, event_time)
-        return MobaEventNothing(team1, team2, event_time)
+        return get_event_definitions()[event_type]["points"]
 
     def create_event(
         self,
@@ -52,9 +109,14 @@ class MobaEventFactory:
             return MobaEventNothing(team1, team2, event_time)
         elif event_type == MobaEventType.FIGHT:
             return MobaEventFight(team1, team2, event_time, self.get_points(event_type))
-        elif event_type == MobaEventType.JUNGLE:
+        elif event_type in [
+            MobaEventType.JUNGLE_VOIDGRUBS,
+            MobaEventType.JUNGLE_HERALD,
+            MobaEventType.JUNGLE_DRAGON,
+            MobaEventType.JUNGLE_BARON,
+        ]:
             return MobaEventJungle(
-                team1, team2, event_time, self.get_points(event_type)
+                event_type, team1, team2, event_time, self.get_points(event_type)
             )
         elif event_type == MobaEventType.INHIB_ASSAULT:
             return MobaEventInhibAssault(
