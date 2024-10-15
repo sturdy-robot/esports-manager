@@ -116,17 +116,6 @@ class MobaInhibitors:
     def are_all_inhibitors_up(self) -> bool:
         return self.top == 1 and self.mid == 1 and self.bot == 1
 
-    def get_exposed_inhibs(self) -> list[str]:
-        exposed = []
-        if self.top == 0:
-            exposed.append("top")
-        if self.mid == 0:
-            exposed.append("mid")
-        if self.bot == 0:
-            exposed.append("bot")
-
-        return exposed
-
     def is_inhibitor_up(self, lane: str):
         if lane == "top":
             return self.top == 1
@@ -174,6 +163,10 @@ class MobaTeamSimulation:
         self.inhibitors: MobaInhibitors = MobaInhibitors()
         self.is_players_team: bool = is_players_team
         self.players: list[MobaPlayerSimulation] = players
+        self.dragons = []
+        self.grubs = 0
+        self.herald = 0
+        self.ancient_drake = False
         self.player_lanes = {
             Lanes.TOP: None,
             Lanes.JNG: None,
@@ -205,7 +198,15 @@ class MobaTeamSimulation:
         return self.towers.are_inhibs_exposed()
 
     def get_exposed_inhibs(self) -> list[str]:
-        self.inhibitors.get_exposed_inhibs()
+        exposed = []
+        if self.towers.top == 0 and self.inhibitors.top == 1:
+            exposed.append("top")
+        if self.towers.mid == 0 and self.inhibitors.mid == 1:
+            exposed.append("mid")
+        if self.towers.bot == 0 and self.inhibitors.bot == 1:
+            exposed.append("bot")
+
+        return exposed
 
     def is_nexus_exposed(self) -> bool:
         return self.towers.base == 0 and not self.are_all_inhibitors_up()
@@ -223,6 +224,8 @@ class MobaTeamSimulation:
 
         self.towers.reset()
         self.inhibitors.reset()
+        self.dragons = 0
+        self.ancient_drake = False
 
         self.win_prob = 0.0
         self.nexus = 1

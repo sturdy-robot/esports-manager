@@ -48,8 +48,11 @@ class MobaSimEngine:
             match_time = int(self.match_time.seconds / 60)
             if event_type == MobaEventType.INHIB_ASSAULT:
                 if self.team1.are_inhibs_exposed() or self.team2.are_inhibs_exposed():
-                    self.enabled_events.append(event_type)
-                    continue
+                    exposed = self.team1.get_exposed_inhibs()
+                    exposed += self.team2.get_exposed_inhibs()
+                    if exposed != []:
+                        self.enabled_events.append(event_type)
+                        continue
             elif event_type == MobaEventType.NEXUS_ASSAULT:
                 if self.team1.is_nexus_exposed() or self.team2.is_nexus_exposed():
                     self.enabled_events.append(event_type)

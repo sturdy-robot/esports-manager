@@ -120,9 +120,6 @@ def test_get_enabled_events_with_inhibs_exposed(
     sim_engine = moba_match_simulation.simulation_engine
     sim_engine.match_time = timedelta(minutes=22)
     sim_engine.team1.towers.top = 0
-    sim_engine.team1.inhibitors.take_down_inhib(
-        "top", sim_engine.match_time, timedelta(5)
-    )
     expected_enabled_events = [
         MobaEventType.NOTHING,
         MobaEventType.FIGHT,
@@ -151,8 +148,40 @@ def test_get_enabled_events_with_nexus_exposed(
         MobaEventType.JUNGLE_BARON,
         MobaEventType.JUNGLE_DRAGON,
         MobaEventType.TOWER_ASSAULT,
-        MobaEventType.INHIB_ASSAULT,
         MobaEventType.NEXUS_ASSAULT,
+    ]
+    sim_engine.get_enabled_events()
+    assert sim_engine.enabled_events == expected_enabled_events
+
+
+def test_get_enabled_events_after_inhibitor_cooldown(
+    moba_match_simulation: MobaSimMatch,
+) -> None:
+    sim_engine = moba_match_simulation.simulation_engine
+    sim_engine.match_time = timedelta(minutes=22)
+    sim_engine.team1.towers.top = 0
+    sim_engine.team1.inhibitors.take_down_inhib(
+        "top", sim_engine.match_time, timedelta(5)
+    )
+    expected_enabled_events = [
+        MobaEventType.NOTHING,
+        MobaEventType.FIGHT,
+        MobaEventType.JUNGLE_BARON,
+        MobaEventType.JUNGLE_DRAGON,
+        MobaEventType.TOWER_ASSAULT,
+    ]
+    # If the only exposed inhib is down, no INHIB_ASSAULT should be enabled
+    sim_engine.get_enabled_events()
+    assert sim_engine.enabled_events == expected_enabled_events
+    sim_engine.match_time = timedelta(minutes=22) + timedelta(5)
+    sim_engine.update_cooldowns()
+    expected_enabled_events = [
+        MobaEventType.NOTHING,
+        MobaEventType.FIGHT,
+        MobaEventType.JUNGLE_BARON,
+        MobaEventType.JUNGLE_DRAGON,
+        MobaEventType.TOWER_ASSAULT,
+        MobaEventType.INHIB_ASSAULT,
     ]
     sim_engine.get_enabled_events()
     assert sim_engine.enabled_events == expected_enabled_events
