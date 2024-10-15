@@ -120,7 +120,9 @@ def test_get_enabled_events_with_inhibs_exposed(
     sim_engine = moba_match_simulation.simulation_engine
     sim_engine.match_time = timedelta(minutes=22)
     sim_engine.team1.towers.top = 0
-    sim_engine.team1.inhibitors["top"] = 0
+    sim_engine.team1.inhibitors.take_down_inhib(
+        "top", sim_engine.match_time, timedelta(5)
+    )
     expected_enabled_events = [
         MobaEventType.NOTHING,
         MobaEventType.FIGHT,
@@ -139,7 +141,9 @@ def test_get_enabled_events_with_nexus_exposed(
     sim_engine = moba_match_simulation.simulation_engine
     sim_engine.match_time = timedelta(minutes=22)
     sim_engine.team1.towers.top = 0
-    sim_engine.team1.inhibitors["top"] = 0
+    sim_engine.team1.inhibitors.take_down_inhib(
+        "top", sim_engine.match_time, timedelta(5)
+    )
     sim_engine.team1.towers.base = 0
     expected_enabled_events = [
         MobaEventType.NOTHING,

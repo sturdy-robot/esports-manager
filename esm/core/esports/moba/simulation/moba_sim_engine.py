@@ -37,6 +37,10 @@ class MobaSimEngine:
 
         return False
 
+    def update_cooldowns(self):
+        self.team1.inhibitors.update_cooldown(self.match_time)
+        self.team2.inhibitors.update_cooldown(self.match_time)
+
     def get_enabled_events(self) -> None:
         self.enabled_events = []
 
@@ -79,6 +83,7 @@ class MobaSimEngine:
 
     def run(self):
         while not self.is_match_over():
+            self.update_cooldowns()
             self.get_enabled_events()
             event = self.get_event()
             event.calculate_event()
