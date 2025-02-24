@@ -50,7 +50,7 @@ def load_game():
 
 @app.route("/debug_mode")
 def debug_mode():
-    return "<p>debug mode</p>"
+    return render_template("pages/game_sim.html")
 
 
 @app.route("/settings")
