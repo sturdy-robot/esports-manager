@@ -21,19 +21,20 @@
 - [x] Activity scheduling (`esm-engine`) — ScrimBlock/SoloQueue/RestDay, 4 daily slots, effect aggregation
 - [x] Match simulation engine (`esm-engine`) — Monte Carlo events, 3 phases, power-weighted outcomes, gold tracking, deterministic
 - [x] Draft system (`esm-engine`) — state machine, 3-ban/5-ban/Fearless formats, snake pick order, duplicate rejection
+- [x] Economy system (`esm-engine`) — transactions, balance tracking, financial reporting, debt detection
+- [x] Save/Load roundtrip (`esm-core`) — full GameState JSON serialization verified (calendar, RNG state, teams, inbox)
+- [x] Entity ID system (`esm-models`) — EntityId value object, deterministic IdGenerator
+- [x] Draft AI evaluation (`esm-ai`) — composite scoring (meta × mastery + synergy + counter), randomized selection
 
 ### 🔧 In Progress
 
-- [ ] Economy / financial basics (`esm-engine`)
-- [ ] Save/Load serialization roundtrip (`esm-core`)
+- [ ] Wire EntityId into core entities (Player, Team, Champion, Staff) — deferred to DB layer
+- [ ] SQLite schema & migrations (`esm-db`)
 
 ### 📋 Backlog — 0.1.0-alpha
 
-- [ ] Entity ID system (unique IDs for DB/cross-references)
-- [ ] SQLite schema & migrations (`esm-db`)
 - [ ] JSON data pack loading & validation (`esm-data`)
 - [ ] Transfer & contract orchestration (`esm-engine` + `esm-ai`)
-- [ ] Draft AI evaluation logic (`esm-ai`)
 - [ ] Staff influence hooks into simulation (`esm-engine`)
 
 ### 📋 Backlog — Future
@@ -45,7 +46,8 @@
 
 ## Test Coverage
 
-- **208 tests** across the workspace, 0 failures
-- `esm-core`: 82 tests (calendar, RNG, game state, inbox, turn processor, board)
-- `esm-models`: 74 tests (player, manager, champion, team, staff, contract)
-- `esm-engine`: 52 tests (activity, match simulation, draft)
+- **248 tests** across the workspace, 0 failures
+- `esm-core`: 92 tests (calendar, RNG, game state, inbox, turn processor, board, save/load)
+- `esm-models`: 84 tests (player, manager, champion, team, staff, contract, entity ID)
+- `esm-engine`: 64 tests (activity, match simulation, draft, economy)
+- `esm-ai`: 8 tests (draft AI evaluation and selection)
