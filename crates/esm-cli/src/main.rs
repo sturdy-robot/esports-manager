@@ -4,23 +4,34 @@ use std::process;
 use esm_core::game_state::GameState;
 use esm_core::turn::TurnProcessor;
 use esm_data::datapack::DataPack;
-use esm_engine::match_sim::{MatchSimulator, TeamSide};
+use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine};
+use esm_engine::moba_match::state::TeamSide;
 use esm_engine::tournament::{BracketKind, Tournament, TournamentFormat};
 use esm_models::manager::{Manager, ManagerArchetype};
+use esm_models::moba::player::{MobaPlayer, MobaPlayerAttributes, MobaRole, RoleAssignment};
+use esm_models::moba::team::MobaTeam;
+use esm_models::player::BoundedAttribute;
 use esm_models::team::Team;
 
-fn compute_team_power(team: &Team) -> u32 {
-    let mut total: u32 = 0;
-    for player in team.roster() {
-        let a = player.attributes();
-        total += a.physical.endurance.value() as u32;
-        total += a.physical.reaction_time.value() as u32;
-        total += a.mental.decision_making.value() as u32;
-        total += a.mental.clutch.value() as u32;
-        total += a.technical.mechanics.value() as u32;
-        total += a.technical.teamfighting.value() as u32;
-    }
-    total
+fn extract_team_attrs(moba_team: &MobaTeam) -> Vec<[u8; 9]> {
+    moba_team
+        .roster()
+        .iter()
+        .map(|p| {
+            let a = p.attributes();
+            [
+                a.endurance.value(),
+                a.reaction_time.value(),
+                a.decision_making.value(),
+                a.clutch.value(),
+                a.discipline.value(),
+                a.tilt_resistance.value(),
+                a.mechanics.value(),
+                a.vision_control.value(),
+                a.teamfighting.value(),
+            ]
+        })
+        .collect()
 }
 
 fn main() {
@@ -60,11 +71,16 @@ fn main() {
     println!("Seed: {seed}");
     println!();
 
-    // Build teams from data pack
-    let teams = build_teams_from_pack(&pack);
-    let team_names: Vec<String> = teams.iter().map(|t| t.name().to_string()).collect();
+    // Build MOBA teams from data pack
+    let moba_teams = build_moba_teams_from_pack(&pack);
+    let team_names: Vec<String> = moba_teams.iter().map(|t| t.name().to_string()).collect();
 
-    // Create game state (player manages first team)
+    // Build legacy teams for GameState (still needed for calendar/turn processing)
+    let legacy_teams: Vec<Team> = moba_teams
+        .iter()
+        .map(|mt| Team::new(mt.name().to_string(), mt.tag().to_string(), vec![]))
+        .collect();
+
     let manager = Manager::new(
         "Player".to_string(),
         "Human".to_string(),
@@ -73,9 +89,8 @@ fn main() {
         ManagerArchetype::Balanced,
     );
 
-    let mut state = GameState::new(2025, seed, manager, 0, teams);
+    let mut state = GameState::new(2025, seed, manager, 0, legacy_teams);
 
-    // Create double round-robin tournament (Bo1) starting on day 3
     let mut tournament = Tournament::new(
         "LCK Spring 2025".to_string(),
         team_names,
@@ -94,7 +109,7 @@ fn main() {
     println!("--- Simulating season... ---");
     println!();
 
-    // Run the season
+    let config = MobaMatchConfig::default();
     let max_days = 120;
     let mut matches_played = 0;
 
@@ -109,30 +124,78 @@ fn main() {
             .collect();
 
         for (match_id, blue_idx, red_idx) in todays {
-            let blue_name = state.teams()[blue_idx].name().to_string();
-            let red_name = state.teams()[red_idx].name().to_string();
-            let blue_power = compute_team_power(&state.teams()[blue_idx]);
-            let red_power = compute_team_power(&state.teams()[red_idx]);
+            let blue_name = moba_teams[blue_idx].name().to_string();
+            let red_name = moba_teams[red_idx].name().to_string();
+            let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
+            let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
 
-            let result = MatchSimulator::simulate(state.rng_mut(), blue_power, red_power);
+            let result =
+                MobaMatchEngine::simulate(state.rng_mut(), &blue_attrs, &red_attrs, &config);
 
             let (bw, rw, winner_name) = match result.winner {
-                TeamSide::Blue => (1u32, 0u32, &blue_name),
-                TeamSide::Red => (0u32, 1u32, &red_name),
+                TeamSide::Blue => (1u32, 0u32, blue_name.clone()),
+                TeamSide::Red => (0u32, 1u32, red_name.clone()),
             };
 
             tournament.record_result(match_id, bw, rw);
             matches_played += 1;
 
             println!(
-                "  Day {:>3} | {} vs {} — {} wins ({} min, {} events)",
+                "  Day {:>3} | {} vs {} — {} wins ({} min, {} events, B:{} R:{} gold)",
                 day,
                 blue_name,
                 red_name,
                 winner_name,
                 result.duration_minutes,
-                result.events.len()
+                result.events.len(),
+                result.blue_team_gold,
+                result.red_team_gold,
             );
+
+            // Print key commentary moments
+            for event in &result.events {
+                if let Some(commentary) = event.commentary() {
+                    let text = commentary.text();
+                    if text.contains("FIRST BLOOD")
+                        || text.contains("BARON")
+                        || text.contains("Dragon Soul")
+                        || text.contains("ACE")
+                        || text.contains("Nexus")
+                    {
+                        println!("           🎙️ {text}");
+                    }
+                }
+            }
+
+            // Print top performer
+            let all_players: Vec<_> = result
+                .blue_players
+                .iter()
+                .chain(result.red_players.iter())
+                .collect();
+            if let Some(mvp) = all_players.iter().max_by(|a, b| {
+                a.kda()
+                    .partial_cmp(&b.kda())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            }) {
+                let side = if mvp.player_index() < 5 {
+                    &blue_name
+                } else {
+                    &red_name
+                };
+                println!(
+                    "           ⭐ MVP: {} Player{} — {:.1} KDA ({}/{}/{}), {} CS, {} gold",
+                    side,
+                    mvp.player_index() % 5 + 1,
+                    mvp.kda(),
+                    mvp.kills(),
+                    mvp.deaths(),
+                    mvp.assists(),
+                    mvp.cs(),
+                    mvp.gold(),
+                );
+            }
+            println!();
         }
 
         if tournament.is_complete() {
@@ -141,7 +204,6 @@ fn main() {
     }
 
     // Print results
-    println!();
     println!("=== Season Complete ===");
     println!();
     println!("Days played: {}", state.calendar().days_elapsed());
@@ -149,7 +211,10 @@ fn main() {
     println!();
     println!("--- Final Standings ---");
     println!();
-    println!("  {:<4} {:<16} {:>4} {:>4} {:>6}", "Rank", "Team", "W", "L", "Win%");
+    println!(
+        "  {:<4} {:<16} {:>4} {:>4} {:>6}",
+        "Rank", "Team", "W", "L", "Win%"
+    );
     println!("  {}", "-".repeat(38));
 
     for (i, standing) in tournament.standings().iter().enumerate() {
@@ -170,62 +235,63 @@ fn main() {
     }
 
     println!();
-    println!("Your team ({}) finished at rank {}.",
-        state.player_team().name(),
-        tournament.standings().iter().position(|s| s.team_idx == state.player_team_index()).map(|p| p + 1).unwrap_or(0),
+    println!(
+        "Your team ({}) finished at rank {}.",
+        moba_teams[state.player_team_index()].name(),
+        tournament
+            .standings()
+            .iter()
+            .position(|s| s.team_idx == state.player_team_index())
+            .map(|p| p + 1)
+            .unwrap_or(0),
     );
 }
 
-fn build_teams_from_pack(pack: &DataPack) -> Vec<Team> {
-    use esm_models::player::{
-        BoundedAttribute, MentalAttributes, PhysicalAttributes, Player, PlayerAttributes, Role,
-        TechnicalAttributes,
-    };
+fn parse_role(s: &str) -> MobaRole {
+    match s {
+        "Top" => MobaRole::Top,
+        "Jungle" => MobaRole::Jungle,
+        "Mid" => MobaRole::Mid,
+        "Bot" => MobaRole::Bot,
+        "Support" => MobaRole::Support,
+        _ => MobaRole::Mid,
+    }
+}
 
+fn build_moba_teams_from_pack(pack: &DataPack) -> Vec<MobaTeam> {
     let mut teams = Vec::new();
 
     for team_data in &pack.teams {
-        let players: Vec<Player> = pack
+        let players: Vec<MobaPlayer> = pack
             .players
             .iter()
             .filter(|p| p.team == team_data.name)
             .map(|p| {
-                let role = match p.role.as_str() {
-                    "Top" => Role::Top,
-                    "Jungle" => Role::Jungle,
-                    "Mid" => Role::Mid,
-                    "Bot" => Role::Bot,
-                    "Support" => Role::Support,
-                    _ => Role::Mid,
-                };
+                let primary = parse_role(&p.role);
+                let secondary: Vec<MobaRole> =
+                    p.secondary_roles.iter().map(|r| parse_role(r)).collect();
 
-                Player::new(
+                MobaPlayer::new(
                     p.nickname.clone(),
                     p.first_name.clone(),
                     p.last_name.clone(),
-                    role,
-                    PlayerAttributes {
-                        physical: PhysicalAttributes {
-                            endurance: BoundedAttribute::new(p.endurance),
-                            reaction_time: BoundedAttribute::new(p.reaction_time),
-                        },
-                        mental: MentalAttributes {
-                            decision_making: BoundedAttribute::new(p.decision_making),
-                            clutch: BoundedAttribute::new(p.clutch),
-                            discipline: BoundedAttribute::new(p.discipline),
-                            tilt_resistance: BoundedAttribute::new(p.tilt_resistance),
-                        },
-                        technical: TechnicalAttributes {
-                            mechanics: BoundedAttribute::new(p.mechanics),
-                            vision_control: BoundedAttribute::new(p.vision_control),
-                            teamfighting: BoundedAttribute::new(p.teamfighting),
-                        },
+                    RoleAssignment::new(primary, secondary),
+                    MobaPlayerAttributes {
+                        endurance: BoundedAttribute::new(p.endurance),
+                        reaction_time: BoundedAttribute::new(p.reaction_time),
+                        decision_making: BoundedAttribute::new(p.decision_making),
+                        clutch: BoundedAttribute::new(p.clutch),
+                        discipline: BoundedAttribute::new(p.discipline),
+                        tilt_resistance: BoundedAttribute::new(p.tilt_resistance),
+                        mechanics: BoundedAttribute::new(p.mechanics),
+                        vision_control: BoundedAttribute::new(p.vision_control),
+                        teamfighting: BoundedAttribute::new(p.teamfighting),
                     },
                 )
             })
             .collect();
 
-        teams.push(Team::new(
+        teams.push(MobaTeam::new(
             team_data.name.clone(),
             team_data.tag.clone(),
             players,
