@@ -47,26 +47,42 @@
 - [x] GameSession struct (esm-db) — save/load GameState to/from SQLite (calendar, RNG, manager, teams JSON, inbox)
 - [x] SaveManager (esm-db) — saves folder, `saves.json` index, FNV-1a checksum validation
 
-### �📋 Backlog — 0.1.0-alpha
+### ✅ Done — Frontend (Tauri + React)
+
+- [x] Vitest + Testing Library test infrastructure (jsdom, test helpers)
+- [x] Main Menu screen — New Game / Load Game / Settings / Exit with Broadcast Arena styling
+- [x] App-level navigation state machine (main-menu → new-game → team-selection → load-game → settings → playing)
+- [x] Manager Creation form — identity fields, esport type radio selector, validation
+- [x] Team Selection screen — card grid with badge/reputation/player count, selection glow
+- [x] Load Game screen — save list, checksum badges, empty state, loading indicator, delete
+- [x] Settings screen — saves folder path, theme toggle
+- [x] TopBar with game clock (date + phase), team badge, Continue button, Save & Exit
+- [x] GameShell layout — Sidebar + TopBar + Dashboard extracted from original App
+- [x] Tauri commands: new_game, list_saves, load_save, delete_save, get_game_info
+- [x] TypeScript API layer (src/lib/api.ts) matching Rust DTOs
+- [x] build_teams_from_datapack() helper in esm-db for DataPack→Team conversion
+
+### 📋 Backlog — 0.1.0-alpha
 
 - [ ] Wire EntityId into core entities (deferred to when DB integration demands it)
 - [ ] Random generation: player names, team names, roster filling from config JSON files (esm-data)
 - [ ] Separate config file schemas: teams.json, tournaments.json, player_names.json, etc.
 - [ ] Full game loop: new game → data import → team selection → play season (CLI or Tauri)
+- [ ] Wire frontend screens to Tauri API (list saves on Load Game mount, new game full pipeline)
+- [ ] Advance turn command (Tauri → TurnProcessor → update UI state)
 
 ### 📋 Backlog — Future
 
-- [ ] Tauri desktop integration (scaffold in crates/esm-ui)
-- [ ] React frontend (Vite + TailwindCSS + Broadcast Arena design)
 - [ ] Modding / custom data pack ecosystem
 - [ ] RTS / FPS game mode support
 
 ## Test Coverage
 
-- **614 tests** across the workspace, 0 failures
+- **668 tests** across the workspace (618 Rust + 50 frontend), 0 failures
 - `esm-core`: 106 tests (calendar, RNG, game state, inbox, turn processor, board, save/load, string conversions)
 - `esm-models`: 132 tests (player, manager, champion, team, staff, contract, entity ID, esport type)
 - `esm-engine`: 272 tests (activity, match sim, draft, economy, tournament, transfer, staff influence, patch, game loop integration)
 - `esm-ai`: 8 tests (draft AI evaluation and selection)
-- `esm-db`: 81 tests (migrations V1–V4, schema, repository CRUD, session repository, GameSession save/load, SaveManager, data pack import)
+- `esm-db`: 85 tests (migrations V1–V4, schema, repository CRUD, session repository, GameSession, SaveManager, import + build_teams)
 - `esm-data`: 15 tests (JSON parsing, validation pipeline)
+- `esm-ui`: 50 frontend tests (MainMenu, NewGame, LoadGame, TeamSelection, Settings, TopBar, App navigation)
