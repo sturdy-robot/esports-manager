@@ -5,7 +5,7 @@ import { LoadGame } from '@/components/LoadGame'
 import { TeamSelection } from '@/components/TeamSelection'
 import { Settings } from '@/components/Settings'
 import { GameShell } from '@/components/GameShell'
-import { useListSaves, useDeleteSave, useLoadSave, useNewGame } from '@/lib/use-api'
+import { useListSaves, useDeleteSave, useLoadSave, useNewGame, useSaveGame } from '@/lib/use-api'
 import type { MenuTarget } from '@/components/MainMenu'
 import type { ManagerFormData } from '@/components/NewGame'
 import type { TeamOption } from '@/components/TeamSelection'
@@ -33,12 +33,14 @@ function App() {
   const [screen, setScreen] = useState<AppScreen>('main-menu')
   const [gameInfo, setGameInfo] = useState<GameInfo | null>(null)
   const [managerData, setManagerData] = useState<ManagerFormData | null>(null)
+  const [saveName, setSaveName] = useState<string | null>(null)
 
   // API hooks
   const { saves, loading: savesLoading, refresh: refreshSaves } = useListSaves()
   const { deleteSave } = useDeleteSave()
   const { loadSave } = useLoadSave()
   const { createGame } = useNewGame()
+  const { saveGame } = useSaveGame()
 
   const handleMenuNavigate = (target: MenuTarget) => {
     if (target === 'exit') {
@@ -65,6 +67,7 @@ function App() {
 
   const handleTeamSelected = async (teamIndex: number) => {
     if (!managerData) return
+    const name = `${managerData.nickname}_${Date.now()}`
     const info = await createGame({
       first_name: managerData.firstName,
       last_name: managerData.lastName,
@@ -73,14 +76,24 @@ function App() {
       esport_type: managerData.esportType,
       datapack_path: 'data/sample_datapack.json',
       team_index: teamIndex,
-      save_name: `${managerData.nickname}_${Date.now()}`,
+      save_name: name,
     })
+    setSaveName(name)
     goToPlaying(info)
   }
 
   const handleLoadSave = async (name: string) => {
     const info = await loadSave(name)
-    if (info) goToPlaying(info)
+    if (info) {
+      setSaveName(name)
+      goToPlaying(info)
+    }
+  }
+
+  const handleSave = async () => {
+    if (saveName) {
+      await saveGame(saveName)
+    }
   }
 
   const handleDeleteSave = async (name: string) => {
@@ -125,6 +138,7 @@ function App() {
           year={gameInfo?.year}
           month={gameInfo?.month}
           day={gameInfo?.day}
+          onSave={handleSave}
           onExitToMenu={goToMenu}
         />
       )

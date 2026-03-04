@@ -188,6 +188,15 @@ fn delete_save(name: String, state: State<'_, AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn save_game(name: String, state: State<'_, AppState>) -> Result<(), String> {
+    let lock = state.game_state.lock().unwrap();
+    let gs = lock.as_ref().ok_or("No active game session")?;
+    SaveManager::create_save(&state.saves_dir, &name, gs)
+        .map_err(|e| format!("Failed to save game: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
 fn get_game_info(state: State<'_, AppState>) -> Result<GameInfo, String> {
     let lock = state.game_state.lock().unwrap();
     let gs = lock.as_ref().ok_or("No active game session")?;
@@ -254,6 +263,7 @@ pub fn run() {
             new_game,
             load_save,
             delete_save,
+            save_game,
             get_game_info,
         ])
         .run(tauri::generate_context!())

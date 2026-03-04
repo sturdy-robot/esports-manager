@@ -55,9 +55,31 @@ export function MainMenu({ onNavigate }: MainMenuProps) {
 
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen w-full animate-fade-in-up"
+      className="flex flex-col items-center justify-center min-h-screen w-full animate-fade-in-up relative"
       style={{ backgroundColor: "var(--bg-base)" }}
     >
+      {/* Theme toggle — top right */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-6 right-6 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer border transition-colors"
+        style={{
+          borderColor: 'var(--border-subtle)',
+          backgroundColor: 'transparent',
+          color: 'var(--text-secondary)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'var(--color-accent-cyan)'
+          e.currentTarget.style.color = 'var(--text-primary)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'var(--border-subtle)'
+          e.currentTarget.style.color = 'var(--text-secondary)'
+        }}
+        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      >
+        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
+
       {/* Logo + Title */}
       <div className="flex flex-col items-center gap-2 mb-12">
         <h1 className="text-4xl font-bold tracking-tight accent-gradient-text">
@@ -98,31 +120,6 @@ export function MainMenu({ onNavigate }: MainMenuProps) {
           onClick={() => onNavigate("exit")}
         />
       </div>
-
-      {/* Theme toggle */}
-      <button
-        onClick={toggleTheme}
-        className="flex items-center gap-2 mt-8 px-4 py-2 rounded-md cursor-pointer border transition-colors"
-        style={{
-          borderColor: 'var(--border-subtle)',
-          backgroundColor: 'transparent',
-          color: 'var(--text-secondary)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'var(--color-accent-cyan)'
-          e.currentTarget.style.color = 'var(--text-primary)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = 'var(--border-subtle)'
-          e.currentTarget.style.color = 'var(--text-secondary)'
-        }}
-        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-      >
-        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-        <span className="text-xs font-medium">
-          {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-        </span>
-      </button>
     </div>
   );
 }

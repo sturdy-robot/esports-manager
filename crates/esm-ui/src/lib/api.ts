@@ -59,6 +59,10 @@ export async function deleteSave(name: string): Promise<void> {
   return invoke<void>("delete_save", { name });
 }
 
+export async function saveGame(name: string): Promise<void> {
+  return invoke<void>("save_game", { name });
+}
+
 export async function getGameInfo(): Promise<GameInfo> {
   return invoke<GameInfo>("get_game_info");
 }

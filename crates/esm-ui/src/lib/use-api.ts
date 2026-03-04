@@ -44,6 +44,7 @@ interface ApiAdapter {
   loadSave(name: string): Promise<GameInfo>;
   deleteSave(name: string): Promise<void>;
   newGame(params: NewGameParams): Promise<GameInfo>;
+  saveGame(name: string): Promise<void>;
   loadDatapack(path: string): Promise<TeamInfo[]>;
   getGameInfo(): Promise<GameInfo>;
 }
@@ -55,6 +56,7 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     loadSave: api.loadSave,
     deleteSave: api.deleteSave,
     newGame: api.newGame,
+    saveGame: api.saveGame,
     loadDatapack: api.loadDatapack,
     getGameInfo: api.getGameInfo,
   };
@@ -79,6 +81,10 @@ const mockAdapter: ApiAdapter = {
   async newGame(_params: NewGameParams) {
     await delay(400);
     return { ...MOCK_GAME_INFO };
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async saveGame(_name: string) {
+    await delay(200);
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async loadDatapack(_path: string) {
@@ -189,6 +195,26 @@ export function useNewGame() {
   }, []);
 
   return { createGame, creating, error };
+}
+
+export function useSaveGame() {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const saveGame = useCallback(async (name: string) => {
+    setSaving(true);
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      await adapter.saveGame(name);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
+  return { saveGame, saving, error };
 }
 
 export function useLoadDatapack() {

@@ -69,24 +69,40 @@ export function Sidebar({ activeItem, onNavigate, onExitToMenu }: SidebarProps) 
         backgroundColor: 'var(--bg-surface)',
       }}
     >
-      {/* Logo */}
+      {/* Logo + collapse toggle */}
       <div
-        className="flex items-center gap-2 px-4 h-14 border-b"
+        className="flex items-center justify-between px-4 h-14 border-b"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
         {!collapsed && (
-          <span className="text-base font-bold tracking-tight accent-gradient-text">
-            ESM
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-base font-bold tracking-tight accent-gradient-text">
+              ESM
+            </span>
+            <span
+              className="text-xs font-medium"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              eSports Manager
+            </span>
+          </div>
         )}
-        {!collapsed && (
-          <span
-            className="text-xs font-medium"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            eSports Manager
-          </span>
-        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex items-center justify-center w-7 h-7 rounded cursor-pointer border-none transition-colors"
+          style={{
+            color: 'var(--text-muted)',
+            backgroundColor: 'transparent',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--text-primary)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-muted)'
+          }}
+        >
+          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </button>
       </div>
 
       {/* Navigation */}
@@ -161,18 +177,6 @@ export function Sidebar({ activeItem, onNavigate, onExitToMenu }: SidebarProps) 
         </button>
       )}
 
-      {/* Collapse toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center justify-center h-10 border-t cursor-pointer border-none"
-        style={{
-          borderTop: '1px solid var(--border-subtle)',
-          color: 'var(--text-muted)',
-          backgroundColor: 'transparent',
-        }}
-      >
-        {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-      </button>
     </aside>
   )
 }
