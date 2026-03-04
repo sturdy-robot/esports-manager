@@ -29,17 +29,17 @@
 - [x] SQLite schema & migrations (`esm-db`) — refinery-managed, V1 schema with CHECK constraints
 - [x] Repository layer (`esm-db`) — PlayerRow/TeamRow CRUD (insert, get, list, update, delete)
 - [x] JSON data pack loading (`esm-data`) — parse + validate teams/players/champions with referential integrity
-
-### 🔧 In Progress
-
-- [ ] Wire EntityId into core entities (deferred to when DB integration demands it)
+- [x] DataPack → Database import pipeline (`esm-db`) — transactional import of teams, players, champions with tag support
+- [x] Tournament system (`esm-engine`) — RoundRobin/DoubleRoundRobin, Bo1/Bo3/Bo5, scheduling, standings
+- [x] Transfer negotiation engine (`esm-engine`) — buyout evaluation, agent contract offer logic, negotiation state machine
+- [x] Staff influence hooks (`esm-engine`) — delegation quality, training multiplier, morale buffer, stamina reduction, scouting accuracy
 
 ### 📋 Backlog — 0.1.0-alpha
 
-- [ ] Transfer & contract orchestration (`esm-engine` + `esm-ai`)
-- [ ] Staff influence hooks into simulation (`esm-engine`)
-- [ ] DataPack → Database import pipeline (`esm-data` + `esm-db`)
-- [ ] Match scheduling & tournament structure
+- [ ] Wire EntityId into core entities (deferred to when DB integration demands it)
+- [ ] Integrate tournament schedule into GameState / TurnProcessor
+- [ ] Full game loop: new game → data import → play season → end screen
+- [ ] Patch/meta shifting system
 
 ### 📋 Backlog — Future
 
@@ -50,10 +50,10 @@
 
 ## Test Coverage
 
-- **286 tests** across the workspace, 0 failures
+- **335 tests** across the workspace, 0 failures
 - `esm-core`: 92 tests (calendar, RNG, game state, inbox, turn processor, board, save/load)
 - `esm-models`: 84 tests (player, manager, champion, team, staff, contract, entity ID)
-- `esm-engine`: 64 tests (activity, match simulation, draft, economy)
+- `esm-engine`: 121 tests (activity, match sim, draft, economy, tournament, transfer, staff influence)
 - `esm-ai`: 8 tests (draft AI evaluation and selection)
-- `esm-db`: 26 tests (migrations, schema validation, repository CRUD)
+- `esm-db`: 35 tests (migrations, schema, repository CRUD, data pack import)
 - `esm-data`: 12 tests (JSON parsing, validation pipeline)
