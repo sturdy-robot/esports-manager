@@ -1,0 +1,16 @@
+[workspace]
+members = [
+    "crates/esm-core",
+    "crates/esm-models",
+    "crates/esm-engine",
+    "crates/esm-db",
+    "crates/esm-ai",
+    "crates/esm-data",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/sturdy-robot/esports-manager"

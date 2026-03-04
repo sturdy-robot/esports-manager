@@ -1,0 +1,11 @@
+[package]
+name = "esm-engine"
+description = "Match simulation, draft system, training progression, and economic simulation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+esm-core = { path = "../esm-core" }
+esm-models = { path = "../esm-models" }
+serde = { version = "1", features = ["derive"] }

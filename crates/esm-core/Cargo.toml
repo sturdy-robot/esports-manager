@@ -1,0 +1,10 @@
+[package]
+name = "esm-core"
+description = "Core game state, turn processing, calendar system, event dispatcher, and RNG engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+esm-models = { path = "../esm-models" }
+serde = { version = "1", features = ["derive"] }

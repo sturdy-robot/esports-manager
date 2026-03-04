@@ -1,0 +1,10 @@
+[package]
+name = "esm-db"
+description = "SQLite schema management, migrations, repository layer, and save system"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+esm-models = { path = "../esm-models" }
+serde = { version = "1", features = ["derive"] }
