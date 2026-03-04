@@ -1,6 +1,7 @@
 use esm_core::game_state::GameState;
 use esm_core::inbox::{Message, MessageCategory, MessagePriority};
 use esm_core::turn::{TurnError, TurnProcessor};
+use esm_models::esport_type::EsportType;
 use esm_models::manager::{Manager, ManagerArchetype};
 use esm_models::player::{
     BoundedAttribute, MentalAttributes, PhysicalAttributes, Player, PlayerAttributes, Role,
@@ -64,7 +65,7 @@ fn make_manager() -> Manager {
 
 fn make_game_state() -> GameState {
     let teams = vec![make_team("Alpha"), make_team("Bravo")];
-    GameState::new(2025, 42, make_manager(), 0, teams)
+    GameState::new(2025, 42, EsportType::Moba, make_manager(), 0, teams)
 }
 
 // ---------------------------------------------------------------------------

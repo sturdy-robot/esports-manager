@@ -7,6 +7,7 @@ use esm_data::datapack::DataPack;
 use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine};
 use esm_engine::moba_match::state::TeamSide;
 use esm_engine::tournament::{BracketKind, Tournament, TournamentFormat};
+use esm_models::esport_type::EsportType;
 use esm_models::manager::{Manager, ManagerArchetype};
 use esm_models::moba::player::{MobaPlayer, MobaPlayerAttributes, MobaRole, RoleAssignment};
 use esm_models::moba::team::MobaTeam;
@@ -89,7 +90,7 @@ fn main() {
         ManagerArchetype::Balanced,
     );
 
-    let mut state = GameState::new(2025, seed, manager, 0, legacy_teams);
+    let mut state = GameState::new(2025, seed, EsportType::Moba, manager, 0, legacy_teams);
 
     let mut tournament = Tournament::new(
         "LCK Spring 2025".to_string(),

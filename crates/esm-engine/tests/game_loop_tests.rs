@@ -2,6 +2,7 @@ use esm_core::game_state::GameState;
 use esm_core::turn::TurnProcessor;
 use esm_engine::match_sim::{MatchSimulator, TeamSide};
 use esm_engine::tournament::{BracketKind, Tournament, TournamentFormat};
+use esm_models::esport_type::EsportType;
 use esm_models::manager::{Manager, ManagerArchetype};
 use esm_models::player::{
     BoundedAttribute, MentalAttributes, PhysicalAttributes, Player, PlayerAttributes, Role,
@@ -84,6 +85,7 @@ impl GameSession {
         let state = GameState::new(
             2025,
             42,
+            EsportType::Moba,
             Manager::new(
                 "TestMgr".to_string(),
                 "John".to_string(),
@@ -228,6 +230,7 @@ fn game_loop_deterministic_season() {
         let mut state = GameState::new(
             2025,
             seed,
+            EsportType::Moba,
             Manager::new(
                 "M".into(),
                 "J".into(),
@@ -297,6 +300,7 @@ fn game_loop_stronger_team_tends_to_win_more() {
         let mut state = GameState::new(
             2025,
             seed,
+            EsportType::Moba,
             Manager::new(
                 "M".into(),
                 "J".into(),

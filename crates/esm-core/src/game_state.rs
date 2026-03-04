@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::calendar::Calendar;
 use crate::inbox::Inbox;
 use crate::rng::GameRng;
+use esm_models::esport_type::EsportType;
 use esm_models::manager::Manager;
 use esm_models::team::Team;
 
@@ -14,6 +15,7 @@ use esm_models::team::Team;
 pub struct GameState {
     calendar: Calendar,
     rng: GameRng,
+    esport_type: EsportType,
     inbox: Inbox,
     manager: Manager,
     player_team_index: usize,
@@ -27,6 +29,7 @@ impl GameState {
     pub fn new(
         start_year: u32,
         seed: u64,
+        esport_type: EsportType,
         manager: Manager,
         player_team_index: usize,
         teams: Vec<Team>,
@@ -34,6 +37,7 @@ impl GameState {
         Self {
             calendar: Calendar::new(start_year, 1, 1),
             rng: GameRng::from_seed(seed),
+            esport_type,
             inbox: Inbox::new(),
             manager,
             player_team_index,
@@ -43,6 +47,10 @@ impl GameState {
 
     pub fn calendar(&self) -> &Calendar {
         &self.calendar
+    }
+
+    pub fn esport_type(&self) -> EsportType {
+        self.esport_type
     }
 
     pub fn rng(&self) -> &GameRng {

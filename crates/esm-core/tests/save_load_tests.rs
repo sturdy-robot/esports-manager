@@ -1,6 +1,7 @@
 use esm_core::game_state::GameState;
 use esm_core::inbox::{Message, MessageCategory, MessagePriority};
 use esm_core::turn::TurnProcessor;
+use esm_models::esport_type::EsportType;
 use esm_models::manager::{Manager, ManagerArchetype};
 use esm_models::player::{
     BoundedAttribute, Confidence, MentalAttributes, PhysicalAttributes, Player, PlayerAttributes,
@@ -57,6 +58,7 @@ fn make_game_state() -> GameState {
     GameState::new(
         2025,
         12345,
+        EsportType::Moba,
         Manager::new(
             "SaveTest".to_string(),
             "Jane".to_string(),

@@ -1,6 +1,7 @@
 use esm_core::calendar::DayPhase;
 use esm_core::game_state::GameState;
 use esm_core::inbox::{Message, MessageCategory, MessagePriority};
+use esm_models::esport_type::EsportType;
 use esm_models::manager::{Manager, ManagerArchetype};
 use esm_models::player::{
     BoundedAttribute, MentalAttributes, PhysicalAttributes, Player, PlayerAttributes, Role,
@@ -64,7 +65,7 @@ fn make_manager() -> Manager {
 
 fn make_game_state() -> GameState {
     let teams = vec![make_team("Alpha"), make_team("Bravo"), make_team("Charlie")];
-    GameState::new(2025, 42, make_manager(), 0, teams)
+    GameState::new(2025, 42, EsportType::Moba, make_manager(), 0, teams)
 }
 
 // ---------------------------------------------------------------------------
@@ -89,6 +90,12 @@ fn game_state_starts_in_morning_phase() {
 fn game_state_stores_seed() {
     let gs = make_game_state();
     assert_eq!(gs.rng().seed(), 42);
+}
+
+#[test]
+fn game_state_stores_esport_type() {
+    let gs = make_game_state();
+    assert_eq!(gs.esport_type(), EsportType::Moba);
 }
 
 #[test]
