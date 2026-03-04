@@ -27,4 +27,5 @@ esm-core = { path = "../../esm-core" }
 esm-models = { path = "../../esm-models" }
 esm-engine = { path = "../../esm-engine" }
 esm-data = { path = "../../esm-data" }
+esm-db = { path = "../../esm-db" }
 esm-ai = { path = "../../esm-ai" }

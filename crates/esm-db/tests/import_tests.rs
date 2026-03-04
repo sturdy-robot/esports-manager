@@ -167,3 +167,46 @@ fn import_into_fresh_db_succeeds() {
     let result = DataPackImporter::import(db.conn(), &pack);
     assert!(result.is_ok());
 }
+
+// ---------------------------------------------------------------------------
+// build_teams_from_datapack
+// ---------------------------------------------------------------------------
+
+use esm_db::import::build_teams_from_datapack;
+
+#[test]
+fn build_teams_creates_correct_number_of_teams() {
+    let pack = DataPack::from_json(&sample_datapack_json()).unwrap();
+    pack.validate().unwrap();
+    let teams = build_teams_from_datapack(&pack);
+    assert_eq!(teams.len(), 2);
+}
+
+#[test]
+fn build_teams_team_names_match() {
+    let pack = DataPack::from_json(&sample_datapack_json()).unwrap();
+    let teams = build_teams_from_datapack(&pack);
+    assert_eq!(teams[0].name(), "T1");
+    assert_eq!(teams[1].name(), "Gen.G");
+}
+
+#[test]
+fn build_teams_rosters_are_populated() {
+    let pack = DataPack::from_json(&sample_datapack_json()).unwrap();
+    let teams = build_teams_from_datapack(&pack);
+    assert_eq!(teams[0].roster().len(), 2); // Faker + Zeus
+    assert_eq!(teams[1].roster().len(), 1); // Chovy
+}
+
+#[test]
+fn build_teams_player_attributes_mapped() {
+    let pack = DataPack::from_json(&sample_datapack_json()).unwrap();
+    let teams = build_teams_from_datapack(&pack);
+    // Faker is in T1 and should have mechanics=97
+    let faker = teams[0]
+        .roster()
+        .iter()
+        .find(|p| p.nickname() == "Faker")
+        .unwrap();
+    assert_eq!(faker.attributes().technical.mechanics.value(), 97);
+}

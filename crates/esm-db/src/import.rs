@@ -1,7 +1,68 @@
 use std::collections::HashMap;
 
 use esm_data::datapack::DataPack;
+use esm_models::player::{
+    BoundedAttribute, MentalAttributes, PhysicalAttributes, Player, PlayerAttributes, Role,
+    TechnicalAttributes,
+};
+use esm_models::team::Team;
 use rusqlite::{params, Connection};
+
+/// Build domain `Team` objects (with full `Player` rosters) from a validated
+/// `DataPack`. This is used by the new-game flow to create a `GameState`
+/// without touching the database.
+pub fn build_teams_from_datapack(pack: &DataPack) -> Vec<Team> {
+    let mut teams: Vec<Team> = Vec::new();
+
+    for td in &pack.teams {
+        let roster: Vec<Player> = pack
+            .players
+            .iter()
+            .filter(|p| p.team == td.name)
+            .map(|p| {
+                let role = parse_role(&p.role);
+                Player::new(
+                    p.nickname.clone(),
+                    p.first_name.clone(),
+                    p.last_name.clone(),
+                    role,
+                    PlayerAttributes {
+                        physical: PhysicalAttributes {
+                            endurance: BoundedAttribute::new(p.endurance),
+                            reaction_time: BoundedAttribute::new(p.reaction_time),
+                        },
+                        mental: MentalAttributes {
+                            decision_making: BoundedAttribute::new(p.decision_making),
+                            clutch: BoundedAttribute::new(p.clutch),
+                            discipline: BoundedAttribute::new(p.discipline),
+                            tilt_resistance: BoundedAttribute::new(p.tilt_resistance),
+                        },
+                        technical: TechnicalAttributes {
+                            mechanics: BoundedAttribute::new(p.mechanics),
+                            vision_control: BoundedAttribute::new(p.vision_control),
+                            teamfighting: BoundedAttribute::new(p.teamfighting),
+                        },
+                    },
+                )
+            })
+            .collect();
+
+        teams.push(Team::new(td.name.clone(), td.tag.clone(), roster));
+    }
+
+    teams
+}
+
+fn parse_role(s: &str) -> Role {
+    match s.to_lowercase().as_str() {
+        "top" => Role::Top,
+        "jungle" | "jg" => Role::Jungle,
+        "mid" | "middle" => Role::Mid,
+        "bot" | "adc" => Role::Bot,
+        "support" | "sup" => Role::Support,
+        _ => Role::Mid, // fallback
+    }
+}
 
 /// Imports a validated DataPack into the database.
 pub struct DataPackImporter;
