@@ -1,5 +1,6 @@
 use esm_core::calendar::DayPhase;
 use esm_core::game_state::GameState;
+use esm_core::inbox::{Message, MessageCategory, MessagePriority};
 use esm_models::manager::{Manager, ManagerArchetype};
 use esm_models::player::{
     BoundedAttribute, MentalAttributes, PhysicalAttributes, Player, PlayerAttributes, Role,
@@ -165,6 +166,71 @@ fn team_by_name_returns_matching_team() {
 fn team_by_name_returns_none_for_unknown() {
     let gs = make_game_state();
     assert!(gs.team_by_name("Unknown").is_none());
+}
+
+// ---------------------------------------------------------------------------
+// Inbox integration
+// ---------------------------------------------------------------------------
+
+#[test]
+fn game_state_starts_with_empty_inbox() {
+    let gs = make_game_state();
+    assert!(gs.inbox().is_empty());
+}
+
+#[test]
+fn game_state_can_continue_with_empty_inbox() {
+    let gs = make_game_state();
+    assert!(gs.can_continue());
+}
+
+#[test]
+fn game_state_cannot_continue_with_blocking_message() {
+    let mut gs = make_game_state();
+    gs.inbox_mut().push(Message::new(
+        "Roster Gap".to_string(),
+        "Fill mid lane.".to_string(),
+        MessagePriority::HardBlock,
+        MessageCategory::Board,
+        0,
+    ));
+    assert!(!gs.can_continue());
+}
+
+#[test]
+fn game_state_can_continue_after_resolving_blocking_message() {
+    let mut gs = make_game_state();
+    gs.inbox_mut().push(Message::new(
+        "Roster Gap".to_string(),
+        "Fill mid lane.".to_string(),
+        MessagePriority::HardBlock,
+        MessageCategory::Board,
+        0,
+    ));
+    assert!(!gs.can_continue());
+
+    gs.inbox_mut().resolve_at(0);
+    assert!(gs.can_continue());
+}
+
+#[test]
+fn game_state_can_continue_with_non_blocking_messages() {
+    let mut gs = make_game_state();
+    gs.inbox_mut().push(Message::new(
+        "News".to_string(),
+        "Patch notes.".to_string(),
+        MessagePriority::ReadOptional,
+        MessageCategory::News,
+        0,
+    ));
+    gs.inbox_mut().push(Message::new(
+        "Transfer".to_string(),
+        "Player wants out.".to_string(),
+        MessagePriority::RequiresResponse,
+        MessageCategory::Transfer,
+        0,
+    ));
+    assert!(gs.can_continue());
 }
 
 // ---------------------------------------------------------------------------

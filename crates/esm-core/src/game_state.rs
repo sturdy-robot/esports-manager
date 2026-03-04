@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::calendar::Calendar;
+use crate::inbox::Inbox;
 use crate::rng::GameRng;
 use esm_models::manager::Manager;
 use esm_models::team::Team;
@@ -13,6 +14,7 @@ use esm_models::team::Team;
 pub struct GameState {
     calendar: Calendar,
     rng: GameRng,
+    inbox: Inbox,
     manager: Manager,
     player_team_index: usize,
     teams: Vec<Team>,
@@ -32,6 +34,7 @@ impl GameState {
         Self {
             calendar: Calendar::new(start_year, 1, 1),
             rng: GameRng::from_seed(seed),
+            inbox: Inbox::new(),
             manager,
             player_team_index,
             teams,
@@ -80,6 +83,19 @@ impl GameState {
 
     pub fn team_by_name(&self, name: &str) -> Option<&Team> {
         self.teams.iter().find(|t| t.name() == name)
+    }
+
+    pub fn inbox(&self) -> &Inbox {
+        &self.inbox
+    }
+
+    pub fn inbox_mut(&mut self) -> &mut Inbox {
+        &mut self.inbox
+    }
+
+    /// Returns `true` if no unresolved HardBlock messages prevent turn advancement.
+    pub fn can_continue(&self) -> bool {
+        self.inbox.can_continue()
     }
 
     /// Advance the calendar by one phase (Morning → Afternoon → Evening → next day Morning).
