@@ -147,14 +147,18 @@ function PlayerRow({
   )
 }
 
-function RosterPreview() {
-  const players = [
-    { name: 'Zeus', role: 'Top', kda: '3.2', winRate: 67 },
-    { name: 'Oner', role: 'Jungle', kda: '4.1', winRate: 72 },
-    { name: 'Faker', role: 'Mid', kda: '5.8', winRate: 78 },
-    { name: 'Gumayusi', role: 'Bot', kda: '4.5', winRate: 64 },
-    { name: 'Keria', role: 'Support', kda: '6.2', winRate: 72 },
-  ]
+interface RosterPreviewProps {
+  players?: { name: string; role: string }[]
+}
+
+function RosterPreview({ players: playersProp }: RosterPreviewProps) {
+  const players = (playersProp ?? [
+    { name: 'Zeus', role: 'Top' },
+    { name: 'Oner', role: 'Jungle' },
+    { name: 'Faker', role: 'Mid' },
+    { name: 'Gumayusi', role: 'Bot' },
+    { name: 'Keria', role: 'Support' },
+  ]).map((p) => ({ ...p, kda: '—', winRate: 0 }))
 
   return (
     <div
@@ -217,6 +221,7 @@ interface DashboardProps {
   budget?: string
   inboxCount?: number
   urgentCount?: number
+  rosterPlayers?: { name: string; role: string }[]
 }
 
 export function Dashboard({
@@ -226,6 +231,7 @@ export function Dashboard({
   budget = '$1.2M',
   inboxCount = 3,
   urgentCount = 1,
+  rosterPlayers,
 }: DashboardProps) {
   return (
     <div className="flex flex-col gap-6 animate-fade-in-up">
@@ -264,7 +270,7 @@ export function Dashboard({
       {/* Two-column layout */}
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-2">
-          <RosterPreview />
+          <RosterPreview players={rosterPlayers} />
         </div>
         <div>
           <UpcomingMatch />

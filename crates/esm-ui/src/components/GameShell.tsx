@@ -144,7 +144,16 @@ export function GameShell({
   const renderPage = () => {
     switch (activePage) {
       case "dashboard":
-        return <Dashboard />;
+        return (
+          <Dashboard
+            inboxCount={inboxMapped.length}
+            urgentCount={inboxMapped.filter((m) => m.priority === "Urgent").length}
+            rosterPlayers={rosterPlayers.map((p) => ({
+              name: p.nickname,
+              role: p.role,
+            }))}
+          />
+        );
       case "roster":
         return <Roster players={rosterPlayers} />;
       case "schedule":
