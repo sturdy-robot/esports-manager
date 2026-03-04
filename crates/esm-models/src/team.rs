@@ -34,6 +34,10 @@ impl Team {
         &self.roster
     }
 
+    pub fn roster_mut(&mut self) -> &mut [Player] {
+        &mut self.roster
+    }
+
     pub fn synergy(&self) -> BoundedAttribute {
         self.synergy
     }

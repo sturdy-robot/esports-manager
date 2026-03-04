@@ -143,6 +143,16 @@ impl Inbox {
             .collect()
     }
 
+    /// Auto-resolve all unresolved `RequiresResponse` messages with the default
+    /// negative/neutral outcome. Called by the turn processor at end-of-day.
+    pub fn resolve_all_actionable(&mut self) {
+        for msg in &mut self.messages {
+            if msg.priority() == MessagePriority::RequiresResponse && !msg.is_resolved() {
+                msg.resolve();
+            }
+        }
+    }
+
     /// Resolve the message at the given index. Returns `false` if out of bounds.
     pub fn resolve_at(&mut self, index: usize) -> bool {
         if let Some(msg) = self.messages.get_mut(index) {
