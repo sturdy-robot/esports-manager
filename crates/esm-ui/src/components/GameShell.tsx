@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import { Dashboard } from "@/components/Dashboard";
+import { Roster } from "@/components/Roster";
+import type { RosterPlayer } from "@/components/Roster";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -13,6 +15,15 @@ const pageTitles: Record<string, string> = {
   staff: "Staff",
   scouting: "Scouting",
 };
+
+// Placeholder roster until wired to Tauri backend
+const PLACEHOLDER_ROSTER: RosterPlayer[] = [
+  { nickname: "Zeus", firstName: "Woo-je", lastName: "Choi", role: "Top", stamina: 75, morale: 85, mechanics: 88, vision: 80, teamfighting: 85 },
+  { nickname: "Oner", firstName: "Hyeon-jun", lastName: "Moon", role: "Jungle", stamina: 90, morale: 78, mechanics: 85, vision: 91, teamfighting: 88 },
+  { nickname: "Faker", firstName: "Sang-hyeok", lastName: "Lee", role: "Mid", stamina: 82, morale: 90, mechanics: 97, vision: 88, teamfighting: 92 },
+  { nickname: "Gumayusi", firstName: "Min-hyeok", lastName: "Lee", role: "Bot", stamina: 88, morale: 82, mechanics: 90, vision: 78, teamfighting: 86 },
+  { nickname: "Keria", firstName: "Min-seok", lastName: "Ryu", role: "Support", stamina: 85, morale: 88, mechanics: 86, vision: 94, teamfighting: 91 },
+];
 
 interface GameShellProps {
   teamName?: string;
@@ -37,6 +48,26 @@ export function GameShell({
     // Placeholder: will invoke Tauri advance_turn command
   };
 
+  const renderPage = () => {
+    switch (activePage) {
+      case "dashboard":
+        return <Dashboard />;
+      case "roster":
+        return <Roster players={PLACEHOLDER_ROSTER} />;
+      default:
+        return (
+          <div className="flex items-center justify-center h-64">
+            <span
+              className="text-lg"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {pageTitles[activePage]} — Coming soon
+            </span>
+          </div>
+        );
+    }
+  };
+
   return (
     <div
       className="flex w-full min-h-screen"
@@ -55,17 +86,7 @@ export function GameShell({
           onSaveAndExit={onSaveAndExit}
         />
         <main className="flex-1 overflow-y-auto p-6">
-          {activePage === "dashboard" && <Dashboard />}
-          {activePage !== "dashboard" && (
-            <div className="flex items-center justify-center h-64">
-              <span
-                className="text-lg"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {pageTitles[activePage]} — Coming soon
-              </span>
-            </div>
-          )}
+          {renderPage()}
         </main>
       </div>
     </div>
