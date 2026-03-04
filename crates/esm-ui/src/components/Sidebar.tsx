@@ -8,6 +8,7 @@ import {
   UserCog,
   Search,
   Inbox,
+  LogOut,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -54,9 +55,10 @@ const navGroups: NavGroup[] = [
 interface SidebarProps {
   activeItem: string
   onNavigate: (id: string) => void
+  onExitToMenu?: () => void
 }
 
-export function Sidebar({ activeItem, onNavigate }: SidebarProps) {
+export function Sidebar({ activeItem, onNavigate, onExitToMenu }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
@@ -134,6 +136,30 @@ export function Sidebar({ activeItem, onNavigate }: SidebarProps) {
           </div>
         ))}
       </nav>
+
+      {/* Exit to Menu */}
+      {onExitToMenu && (
+        <button
+          onClick={onExitToMenu}
+          className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm font-medium cursor-pointer border-none outline-none transition-colors ${collapsed ? 'justify-center' : ''}`}
+          style={{
+            borderTop: '1px solid var(--border-subtle)',
+            color: 'var(--text-secondary)',
+            backgroundColor: 'transparent',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--bg-elevated)'
+            e.currentTarget.style.color = 'var(--color-loss)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent'
+            e.currentTarget.style.color = 'var(--text-secondary)'
+          }}
+        >
+          <LogOut size={18} />
+          {!collapsed && <span>Exit to Menu</span>}
+        </button>
+      )}
 
       {/* Collapse toggle */}
       <button

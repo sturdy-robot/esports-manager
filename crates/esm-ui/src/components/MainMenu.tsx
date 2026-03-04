@@ -1,4 +1,5 @@
-import { Gamepad2, FolderOpen, Settings, LogOut } from "lucide-react";
+import { Gamepad2, FolderOpen, Settings, LogOut, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/lib/use-theme";
 
 export type MenuTarget = "new-game" | "load-game" | "settings" | "exit";
 
@@ -50,6 +51,8 @@ function MenuButton({ icon, label, sublabel, onClick }: MenuButtonProps) {
 }
 
 export function MainMenu({ onNavigate }: MainMenuProps) {
+  const { theme, toggleTheme } = useTheme()
+
   return (
     <div
       className="flex flex-col items-center justify-center min-h-screen w-full animate-fade-in-up"
@@ -95,6 +98,31 @@ export function MainMenu({ onNavigate }: MainMenuProps) {
           onClick={() => onNavigate("exit")}
         />
       </div>
+
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        className="flex items-center gap-2 mt-8 px-4 py-2 rounded-md cursor-pointer border transition-colors"
+        style={{
+          borderColor: 'var(--border-subtle)',
+          backgroundColor: 'transparent',
+          color: 'var(--text-secondary)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'var(--color-accent-cyan)'
+          e.currentTarget.style.color = 'var(--text-primary)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'var(--border-subtle)'
+          e.currentTarget.style.color = 'var(--text-secondary)'
+        }}
+        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      >
+        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+        <span className="text-xs font-medium">
+          {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+        </span>
+      </button>
     </div>
   );
 }

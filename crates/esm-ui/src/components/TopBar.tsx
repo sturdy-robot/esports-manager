@@ -13,8 +13,8 @@ interface TopBarProps {
   day?: number
   phase?: string
   teamName?: string
+  onSave?: () => void
   onContinue?: () => void
-  onSaveAndExit?: () => void
 }
 
 export function TopBar({
@@ -24,8 +24,8 @@ export function TopBar({
   day = 1,
   phase = 'Morning',
   teamName,
+  onSave,
   onContinue,
-  onSaveAndExit,
 }: TopBarProps) {
   const { theme, toggleTheme } = useTheme()
   const monthLabel = MONTH_NAMES[(month - 1) % 12]
@@ -78,25 +78,10 @@ export function TopBar({
           <span>{phase}</span>
         </div>
 
-        {/* Continue button */}
-        {onContinue && (
+        {/* Save */}
+        {onSave && (
           <button
-            onClick={onContinue}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))',
-              color: '#fff',
-            }}
-          >
-            <Play size={12} />
-            Continue
-          </button>
-        )}
-
-        {/* Save & Exit */}
-        {onSaveAndExit && (
-          <button
-            onClick={onSaveAndExit}
+            onClick={onSave}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-colors"
             style={{
               borderColor: 'var(--border-subtle)',
@@ -113,7 +98,7 @@ export function TopBar({
             }}
           >
             <Save size={12} />
-            Save & Exit
+            Save
           </button>
         )}
 
@@ -138,6 +123,21 @@ export function TopBar({
         >
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button>
+
+        {/* Continue — always rightmost */}
+        {onContinue && (
+          <button
+            onClick={onContinue}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))',
+              color: '#fff',
+            }}
+          >
+            <Play size={12} />
+            Continue
+          </button>
+        )}
       </div>
     </header>
   )

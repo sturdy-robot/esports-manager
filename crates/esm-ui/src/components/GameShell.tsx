@@ -100,7 +100,7 @@ interface GameShellProps {
   month?: number;
   day?: number;
   phase?: string;
-  onSaveAndExit?: () => void;
+  onExitToMenu?: () => void;
 }
 
 export function GameShell({
@@ -109,12 +109,16 @@ export function GameShell({
   month = 1,
   day = 1,
   phase = "Morning",
-  onSaveAndExit,
+  onExitToMenu,
 }: GameShellProps) {
   const [activePage, setActivePage] = useState("dashboard");
 
   const handleContinue = () => {
     // Placeholder: will invoke Tauri advance_turn command
+  };
+
+  const handleSave = () => {
+    // Placeholder: will invoke Tauri save command
   };
 
   const renderPage = () => {
@@ -156,7 +160,7 @@ export function GameShell({
       className="flex w-full min-h-screen"
       style={{ backgroundColor: "var(--bg-base)" }}
     >
-      <Sidebar activeItem={activePage} onNavigate={setActivePage} />
+      <Sidebar activeItem={activePage} onNavigate={setActivePage} onExitToMenu={onExitToMenu} />
       <div className="flex flex-col flex-1 min-w-0">
         <TopBar
           title={pageTitles[activePage] || "Dashboard"}
@@ -165,8 +169,8 @@ export function GameShell({
           month={month}
           day={day}
           phase={phase}
+          onSave={handleSave}
           onContinue={handleContinue}
-          onSaveAndExit={onSaveAndExit}
         />
         <main className="flex-1 overflow-y-auto p-6">
           {renderPage()}

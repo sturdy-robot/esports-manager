@@ -125,7 +125,7 @@ function App() {
           year={gameInfo?.year}
           month={gameInfo?.month}
           day={gameInfo?.day}
-          onSaveAndExit={goToMenu}
+          onExitToMenu={goToMenu}
         />
       )
     default:

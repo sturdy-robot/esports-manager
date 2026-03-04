@@ -13,7 +13,7 @@ describe("TopBar", () => {
     phase: "Morning",
     teamName: "T1",
     onContinue: vi.fn(),
-    onSaveAndExit: vi.fn(),
+    onSave: vi.fn(),
   };
 
   it("renders the page title", () => {
@@ -51,18 +51,18 @@ describe("TopBar", () => {
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
-  it("renders Save & Exit button", () => {
+  it("renders Save button", () => {
     renderWithProviders(<TopBar {...defaults} />);
-    expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^save$/i })).toBeInTheDocument();
   });
 
-  it("calls onSaveAndExit when Save & Exit is clicked", async () => {
+  it("calls onSave when Save is clicked", async () => {
     const user = userEvent.setup();
-    const onSaveAndExit = vi.fn();
-    renderWithProviders(<TopBar {...defaults} onSaveAndExit={onSaveAndExit} />);
+    const onSave = vi.fn();
+    renderWithProviders(<TopBar {...defaults} onSave={onSave} />);
 
-    await user.click(screen.getByRole("button", { name: /save/i }));
-    expect(onSaveAndExit).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(onSave).toHaveBeenCalledTimes(1);
   });
 
   it("renders theme toggle button", () => {
