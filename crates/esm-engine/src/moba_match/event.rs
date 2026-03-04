@@ -30,6 +30,7 @@ impl MobaMatchPhase {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MatchEventKind {
+    FarmTick,
     SoloKill {
         killer_idx: usize,
         victim_idx: usize,

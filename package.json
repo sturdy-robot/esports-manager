@@ -1,0 +1,10 @@
+{
+  "name": "esports-manager",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "tauri": "npm run --prefix crates/esm-ui tauri --",
+    "tauri:dev": "npm run --prefix crates/esm-ui tauri -- dev",
+    "tauri:build": "npm run --prefix crates/esm-ui tauri -- build"
+  }
+}
