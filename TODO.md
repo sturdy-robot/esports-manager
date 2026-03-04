@@ -52,12 +52,21 @@
 - [x] Vitest + Testing Library test infrastructure (jsdom, test helpers)
 - [x] Main Menu screen — New Game / Load Game / Settings / Exit with Broadcast Arena styling
 - [x] App-level navigation state machine (main-menu → new-game → team-selection → load-game → settings → playing)
-- [x] Manager Creation form — identity fields, esport type radio selector, validation
+- [x] Manager Creation form — identity fields, esport type radio selector, validation, form data passthrough
 - [x] Team Selection screen — card grid with badge/reputation/player count, selection glow
 - [x] Load Game screen — save list, checksum badges, empty state, loading indicator, delete
 - [x] Settings screen — saves folder path, theme toggle
 - [x] TopBar with game clock (date + phase), team badge, Continue button, Save & Exit
-- [x] GameShell layout — Sidebar + TopBar + Dashboard extracted from original App
+- [x] GameShell layout — Sidebar + TopBar + content routing for all pages
+- [x] Dashboard with props-driven KPI cards (record, streak, budget, inbox count)
+- [x] Roster screen — player table with attributes, role badges, stamina/morale bars
+- [x] Inbox screen — message list with Urgent/Action/Info priority badges, blocking indicator
+- [x] Schedule screen — match cards with date, teams, result/VS, format badge
+- [x] Standings screen — league table with W-L, map diff, streak, rank highlighting
+- [x] Sidebar with Inbox nav item, collapsible, grouped navigation
+- [x] React API hooks (useListSaves, useDeleteSave, useLoadSave, useNewGame, useLoadDatapack) with mock fallbacks
+- [x] Full New Game pipeline wired: Manager Creation → Team Selection → createGame → playing
+- [x] LoadGame wired to live saves list via hooks, delete + refresh, load with GameInfo
 - [x] Tauri commands: new_game, list_saves, load_save, delete_save, get_game_info
 - [x] TypeScript API layer (src/lib/api.ts) matching Rust DTOs
 - [x] build_teams_from_datapack() helper in esm-db for DataPack→Team conversion
@@ -68,8 +77,9 @@
 - [ ] Random generation: player names, team names, roster filling from config JSON files (esm-data)
 - [ ] Separate config file schemas: teams.json, tournaments.json, player_names.json, etc.
 - [ ] Full game loop: new game → data import → team selection → play season (CLI or Tauri)
-- [ ] Wire frontend screens to Tauri API (list saves on Load Game mount, new game full pipeline)
 - [ ] Advance turn command (Tauri → TurnProcessor → update UI state)
+- [ ] Finances screen — budget overview, transactions list
+- [ ] Results screen — past match results with scores
 
 ### 📋 Backlog — Future
 
@@ -78,11 +88,11 @@
 
 ## Test Coverage
 
-- **668 tests** across the workspace (618 Rust + 50 frontend), 0 failures
+- **702 tests** across the workspace (618 Rust + 84 frontend), 0 failures
 - `esm-core`: 106 tests (calendar, RNG, game state, inbox, turn processor, board, save/load, string conversions)
 - `esm-models`: 132 tests (player, manager, champion, team, staff, contract, entity ID, esport type)
 - `esm-engine`: 272 tests (activity, match sim, draft, economy, tournament, transfer, staff influence, patch, game loop integration)
 - `esm-ai`: 8 tests (draft AI evaluation and selection)
 - `esm-db`: 85 tests (migrations V1–V4, schema, repository CRUD, session repository, GameSession, SaveManager, import + build_teams)
 - `esm-data`: 15 tests (JSON parsing, validation pipeline)
-- `esm-ui`: 50 frontend tests (MainMenu, NewGame, LoadGame, TeamSelection, Settings, TopBar, App navigation)
+- `esm-ui`: 84 frontend tests (MainMenu, NewGame, LoadGame, TeamSelection, Settings, TopBar, Dashboard, Roster, Inbox, Schedule, Standings, App navigation)
