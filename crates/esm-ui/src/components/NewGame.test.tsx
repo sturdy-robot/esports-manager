@@ -47,7 +47,7 @@ describe("NewGame", () => {
     expect(btn).toBeEnabled();
   });
 
-  it("calls onStart when Continue is clicked with valid form", async () => {
+  it("calls onStart with form data when Continue is clicked", async () => {
     const user = userEvent.setup();
     const onStart = vi.fn();
     renderWithProviders(<NewGame onBack={vi.fn()} onStart={onStart} />);
@@ -59,6 +59,13 @@ describe("NewGame", () => {
 
     await user.click(screen.getByRole("button", { name: /continue/i }));
     expect(onStart).toHaveBeenCalledTimes(1);
+    expect(onStart).toHaveBeenCalledWith({
+      firstName: "Kim",
+      lastName: "Jeong-gyun",
+      nickname: "kkOma",
+      nationality: "KR",
+      esportType: "Moba",
+    });
   });
 
   it("calls onBack when Back button is clicked", async () => {

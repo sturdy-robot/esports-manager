@@ -5,8 +5,9 @@ import { LoadGame } from '@/components/LoadGame'
 import { TeamSelection } from '@/components/TeamSelection'
 import { Settings } from '@/components/Settings'
 import { GameShell } from '@/components/GameShell'
-import { useListSaves, useDeleteSave, useLoadSave } from '@/lib/use-api'
+import { useListSaves, useDeleteSave, useLoadSave, useNewGame } from '@/lib/use-api'
 import type { MenuTarget } from '@/components/MainMenu'
+import type { ManagerFormData } from '@/components/NewGame'
 import type { TeamOption } from '@/components/TeamSelection'
 import type { GameInfo } from '@/lib/api'
 
@@ -31,11 +32,13 @@ const PLACEHOLDER_TEAMS: TeamOption[] = [
 function App() {
   const [screen, setScreen] = useState<AppScreen>('main-menu')
   const [gameInfo, setGameInfo] = useState<GameInfo | null>(null)
+  const [managerData, setManagerData] = useState<ManagerFormData | null>(null)
 
   // API hooks
   const { saves, loading: savesLoading, refresh: refreshSaves } = useListSaves()
   const { deleteSave } = useDeleteSave()
   const { loadSave } = useLoadSave()
+  const { createGame } = useNewGame()
 
   const handleMenuNavigate = (target: MenuTarget) => {
     if (target === 'exit') {
@@ -55,6 +58,26 @@ function App() {
     setScreen('playing')
   }
 
+  const handleManagerCreated = (data: ManagerFormData) => {
+    setManagerData(data)
+    setScreen('team-selection')
+  }
+
+  const handleTeamSelected = async (teamIndex: number) => {
+    if (!managerData) return
+    const info = await createGame({
+      first_name: managerData.firstName,
+      last_name: managerData.lastName,
+      nickname: managerData.nickname,
+      nationality: managerData.nationality,
+      esport_type: managerData.esportType,
+      datapack_path: 'data/sample_datapack.json',
+      team_index: teamIndex,
+      save_name: `${managerData.nickname}_${Date.now()}`,
+    })
+    goToPlaying(info)
+  }
+
   const handleLoadSave = async (name: string) => {
     const info = await loadSave(name)
     if (info) goToPlaying(info)
@@ -72,7 +95,7 @@ function App() {
       return (
         <NewGame
           onBack={goToMenu}
-          onStart={() => setScreen('team-selection')}
+          onStart={handleManagerCreated}
         />
       )
     case 'team-selection':
@@ -80,7 +103,7 @@ function App() {
         <TeamSelection
           teams={PLACEHOLDER_TEAMS}
           onBack={() => setScreen('new-game')}
-          onSelect={() => goToPlaying()}
+          onSelect={handleTeamSelected}
         />
       )
     case 'load-game':

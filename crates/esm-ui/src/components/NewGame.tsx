@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 
+export interface ManagerFormData {
+  firstName: string;
+  lastName: string;
+  nickname: string;
+  nationality: string;
+  esportType: EsportType;
+}
+
 interface NewGameProps {
   onBack: () => void;
-  onStart: () => void;
+  onStart: (data: ManagerFormData) => void;
 }
 
 type EsportType = "Moba" | "Rts" | "Fps";
@@ -70,7 +78,13 @@ export function NewGame({ onBack, onStart }: NewGameProps) {
 
   const handleContinue = () => {
     if (isValid) {
-      onStart();
+      onStart({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        nickname: nickname.trim(),
+        nationality: nationality.trim(),
+        esportType,
+      });
     }
   };
 
