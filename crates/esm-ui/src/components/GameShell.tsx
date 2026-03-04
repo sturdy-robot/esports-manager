@@ -7,11 +7,13 @@ import { Inbox } from "@/components/Inbox";
 import { Schedule } from "@/components/Schedule";
 import { Standings } from "@/components/Standings";
 import { Finances } from "@/components/Finances";
+import { Staff } from "@/components/Staff";
 import type { RosterPlayer } from "@/components/Roster";
 import type { InboxMessage } from "@/components/Inbox";
 import type { ScheduleMatch } from "@/components/Schedule";
 import type { StandingsEntry } from "@/components/Standings";
 import type { Transaction } from "@/components/Finances";
+import type { StaffMember } from "@/components/Staff";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -24,6 +26,14 @@ const pageTitles: Record<string, string> = {
   staff: "Staff",
   scouting: "Scouting",
 };
+
+// Placeholder staff until wired to Tauri backend
+const PLACEHOLDER_STAFF: StaffMember[] = [
+  { id: "s1", name: "Park Ji-sung", role: "Head Coach", skill: 88 },
+  { id: "s2", name: "Kim Dae-ho", role: "Assistant Coach", skill: 75 },
+  { id: "s3", name: "Lee Min-ji", role: "Positional Coach", skill: 70 },
+  { id: "s4", name: "Choi Yeon-su", role: "Psychologist", skill: 82 },
+];
 
 // Placeholder finances until wired to Tauri backend
 const PLACEHOLDER_TRANSACTIONS: Transaction[] = [
@@ -103,6 +113,8 @@ export function GameShell({
         return <Inbox messages={PLACEHOLDER_INBOX} />;
       case "finances":
         return <Finances balance={1200000} income={75000} expenses={53000} transactions={PLACEHOLDER_TRANSACTIONS} />;
+      case "staff":
+        return <Staff members={PLACEHOLDER_STAFF} />;
       default:
         return (
           <div className="flex items-center justify-center h-64">
