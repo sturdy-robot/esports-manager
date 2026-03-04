@@ -9,6 +9,7 @@ import { Standings } from "@/components/Standings";
 import { Finances } from "@/components/Finances";
 import { Staff } from "@/components/Staff";
 import { Scouting } from "@/components/Scouting";
+import { Results } from "@/components/Results";
 import type { RosterPlayer } from "@/components/Roster";
 import type { InboxMessage } from "@/components/Inbox";
 import type { ScheduleMatch } from "@/components/Schedule";
@@ -16,6 +17,7 @@ import type { StandingsEntry } from "@/components/Standings";
 import type { Transaction } from "@/components/Finances";
 import type { StaffMember } from "@/components/Staff";
 import type { ScoutingTarget } from "@/components/Scouting";
+import type { MatchResult } from "@/components/Results";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -28,6 +30,13 @@ const pageTitles: Record<string, string> = {
   staff: "Staff",
   scouting: "Scouting",
 };
+
+// Placeholder results until wired to Tauri backend
+const PLACEHOLDER_RESULTS: MatchResult[] = [
+  { id: "r1", homeTeam: "T1", awayTeam: "DRX", homeWins: 2, awayWins: 0, day: 3, month: 1, year: 2025, bestOf: 3, playerTeamWon: true },
+  { id: "r2", homeTeam: "Gen.G", awayTeam: "T1", homeWins: 2, awayWins: 1, day: 5, month: 1, year: 2025, bestOf: 3, playerTeamWon: false },
+  { id: "r3", homeTeam: "T1", awayTeam: "KT Rolster", homeWins: 2, awayWins: 1, day: 8, month: 1, year: 2025, bestOf: 3, playerTeamWon: true },
+];
 
 // Placeholder scouting until wired to Tauri backend
 const PLACEHOLDER_SCOUTING: ScoutingTarget[] = [
@@ -126,6 +135,8 @@ export function GameShell({
         return <Staff members={PLACEHOLDER_STAFF} />;
       case "scouting":
         return <Scouting targets={PLACEHOLDER_SCOUTING} />;
+      case "results":
+        return <Results results={PLACEHOLDER_RESULTS} />;
       default:
         return (
           <div className="flex items-center justify-center h-64">
