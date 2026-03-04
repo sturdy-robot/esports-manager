@@ -1,5 +1,6 @@
 pub mod champion;
 pub mod contract;
+pub mod esport_type;
 pub mod id;
 pub mod manager;
 pub mod moba;
