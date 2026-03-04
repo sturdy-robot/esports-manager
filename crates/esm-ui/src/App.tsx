@@ -5,8 +5,10 @@ import { LoadGame } from '@/components/LoadGame'
 import { TeamSelection } from '@/components/TeamSelection'
 import { Settings } from '@/components/Settings'
 import { GameShell } from '@/components/GameShell'
+import { useListSaves, useDeleteSave, useLoadSave } from '@/lib/use-api'
 import type { MenuTarget } from '@/components/MainMenu'
 import type { TeamOption } from '@/components/TeamSelection'
+import type { GameInfo } from '@/lib/api'
 
 type AppScreen =
   | 'main-menu'
@@ -28,17 +30,40 @@ const PLACEHOLDER_TEAMS: TeamOption[] = [
 
 function App() {
   const [screen, setScreen] = useState<AppScreen>('main-menu')
+  const [gameInfo, setGameInfo] = useState<GameInfo | null>(null)
+
+  // API hooks
+  const { saves, loading: savesLoading, refresh: refreshSaves } = useListSaves()
+  const { deleteSave } = useDeleteSave()
+  const { loadSave } = useLoadSave()
 
   const handleMenuNavigate = (target: MenuTarget) => {
     if (target === 'exit') {
       // In Tauri this would close the window; for now, no-op
       return
     }
+    if (target === 'load-game') {
+      refreshSaves()
+    }
     setScreen(target as AppScreen)
   }
 
   const goToMenu = () => setScreen('main-menu')
-  const goToPlaying = () => setScreen('playing')
+
+  const goToPlaying = (info?: GameInfo | null) => {
+    if (info) setGameInfo(info)
+    setScreen('playing')
+  }
+
+  const handleLoadSave = async (name: string) => {
+    const info = await loadSave(name)
+    if (info) goToPlaying(info)
+  }
+
+  const handleDeleteSave = async (name: string) => {
+    await deleteSave(name)
+    refreshSaves()
+  }
 
   switch (screen) {
     case 'main-menu':
@@ -59,11 +84,27 @@ function App() {
         />
       )
     case 'load-game':
-      return <LoadGame onBack={goToMenu} onLoad={() => goToPlaying()} />
+      return (
+        <LoadGame
+          onBack={goToMenu}
+          onLoad={handleLoadSave}
+          saves={saves}
+          loading={savesLoading}
+          onDelete={handleDeleteSave}
+        />
+      )
     case 'settings':
       return <Settings onBack={goToMenu} />
     case 'playing':
-      return <GameShell onSaveAndExit={goToMenu} />
+      return (
+        <GameShell
+          teamName={gameInfo?.team_name}
+          year={gameInfo?.year}
+          month={gameInfo?.month}
+          day={gameInfo?.day}
+          onSaveAndExit={goToMenu}
+        />
+      )
     default:
       return <MainMenu onNavigate={handleMenuNavigate} />
   }
