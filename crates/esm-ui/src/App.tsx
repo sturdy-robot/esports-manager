@@ -34,6 +34,7 @@ function App() {
   const [gameInfo, setGameInfo] = useState<GameInfo | null>(null)
   const [managerData, setManagerData] = useState<ManagerFormData | null>(null)
   const [saveName, setSaveName] = useState<string | null>(null)
+  const [appError, setAppError] = useState<string | null>(null)
 
   // API hooks
   const { saves, loading: savesLoading, refresh: refreshSaves } = useListSaves()
@@ -67,19 +68,30 @@ function App() {
 
   const handleTeamSelected = async (teamIndex: number) => {
     if (!managerData) return
+    setAppError(null)
     const name = `${managerData.nickname}_${Date.now()}`
-    const info = await createGame({
-      first_name: managerData.firstName,
-      last_name: managerData.lastName,
-      nickname: managerData.nickname,
-      nationality: managerData.nationality,
-      esport_type: managerData.esportType,
-      datapack_path: 'data/sample_datapack.json',
-      team_index: teamIndex,
-      save_name: name,
-    })
-    setSaveName(name)
-    goToPlaying(info)
+    try {
+      const info = await createGame({
+        first_name: managerData.firstName,
+        last_name: managerData.lastName,
+        nickname: managerData.nickname,
+        nationality: managerData.nationality,
+        esport_type: managerData.esportType,
+        datapack_path: 'data/sample_datapack.json',
+        team_index: teamIndex,
+        save_name: name,
+      })
+      if (!info) {
+        setAppError('Failed to create new game. Check the console for details.')
+        return
+      }
+      setSaveName(name)
+      goToPlaying(info)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.error('new_game failed:', msg)
+      setAppError(`Failed to create game: ${msg}`)
+    }
   }
 
   const handleLoadSave = async (name: string) => {
@@ -91,8 +103,15 @@ function App() {
   }
 
   const handleSave = async () => {
-    if (saveName) {
+    if (!saveName) {
+      console.error('Cannot save: no save name set')
+      return
+    }
+    try {
       await saveGame(saveName)
+      console.log('Game saved successfully as:', saveName)
+    } catch (e) {
+      console.error('save_game failed:', e)
     }
   }
 
@@ -113,11 +132,23 @@ function App() {
       )
     case 'team-selection':
       return (
-        <TeamSelection
-          teams={PLACEHOLDER_TEAMS}
-          onBack={() => setScreen('new-game')}
-          onSelect={handleTeamSelected}
-        />
+        <>
+          {appError && (
+            <div style={{
+              position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+              zIndex: 9999, padding: '12px 24px', borderRadius: 8,
+              backgroundColor: '#DC2626', color: '#fff', fontSize: 14, fontWeight: 500,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)', cursor: 'pointer',
+            }} onClick={() => setAppError(null)}>
+              {appError}
+            </div>
+          )}
+          <TeamSelection
+            teams={PLACEHOLDER_TEAMS}
+            onBack={() => setScreen('new-game')}
+            onSelect={handleTeamSelected}
+          />
+        </>
       )
     case 'load-game':
       return (

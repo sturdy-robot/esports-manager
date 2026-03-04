@@ -86,7 +86,9 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn load_datapack(path: String) -> Result<Vec<TeamInfo>, String> {
-    let json = std::fs::read_to_string(&path).map_err(|e| format!("Failed to read file: {e}"))?;
+    let resolved = resolve_data_path(&path);
+    let json = std::fs::read_to_string(&resolved)
+        .map_err(|e| format!("Failed to read file '{}': {e}", resolved.display()))?;
     let pack =
         esm_data::datapack::DataPack::from_json(&json).map_err(|e| format!("Parse error: {e}"))?;
     pack.validate()
@@ -124,8 +126,9 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
         .map_err(|e| format!("Invalid esport type: {e}"))?;
 
     // Load data pack to get teams
-    let json = std::fs::read_to_string(&params.datapack_path)
-        .map_err(|e| format!("Failed to read datapack: {e}"))?;
+    let resolved_path = resolve_data_path(&params.datapack_path);
+    let json = std::fs::read_to_string(&resolved_path)
+        .map_err(|e| format!("Failed to read datapack '{}': {e}", resolved_path.display()))?;
     let pack =
         esm_data::datapack::DataPack::from_json(&json).map_err(|e| format!("Parse error: {e}"))?;
     pack.validate()
@@ -222,6 +225,34 @@ fn game_info_from_state(gs: &GameState) -> GameInfo {
         team_name,
         teams_count: gs.teams().len(),
     }
+}
+
+/// Resolve a relative data path against the workspace root.
+/// In dev mode, `CARGO_MANIFEST_DIR` is `crates/esm-ui/src-tauri`,
+/// so the workspace root is three levels up.
+fn resolve_data_path(path: &str) -> PathBuf {
+    let p = PathBuf::from(path);
+    if p.is_absolute() && p.exists() {
+        return p;
+    }
+    // Try as-is first (relative to cwd)
+    if p.exists() {
+        return p;
+    }
+    // Dev mode: resolve relative to workspace root
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    if let Some(workspace_root) = manifest_dir
+        .parent()
+        .and_then(|p| p.parent())
+        .and_then(|p| p.parent())
+    {
+        let resolved = workspace_root.join(path);
+        if resolved.exists() {
+            return resolved;
+        }
+    }
+    // Fallback to the original path (will produce a clear "file not found" error)
+    p
 }
 
 fn default_saves_dir() -> PathBuf {
