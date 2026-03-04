@@ -14,8 +14,28 @@ const pageTitles: Record<string, string> = {
   scouting: "Scouting",
 };
 
-export function GameShell() {
+interface GameShellProps {
+  teamName?: string;
+  year?: number;
+  month?: number;
+  day?: number;
+  phase?: string;
+  onSaveAndExit?: () => void;
+}
+
+export function GameShell({
+  teamName = "T1",
+  year = 2025,
+  month = 1,
+  day = 1,
+  phase = "Morning",
+  onSaveAndExit,
+}: GameShellProps) {
   const [activePage, setActivePage] = useState("dashboard");
+
+  const handleContinue = () => {
+    // Placeholder: will invoke Tauri advance_turn command
+  };
 
   return (
     <div
@@ -24,7 +44,16 @@ export function GameShell() {
     >
       <Sidebar activeItem={activePage} onNavigate={setActivePage} />
       <div className="flex flex-col flex-1 min-w-0">
-        <TopBar title={pageTitles[activePage] || "Dashboard"} />
+        <TopBar
+          title={pageTitles[activePage] || "Dashboard"}
+          teamName={teamName}
+          year={year}
+          month={month}
+          day={day}
+          phase={phase}
+          onContinue={handleContinue}
+          onSaveAndExit={onSaveAndExit}
+        />
         <main className="flex-1 overflow-y-auto p-6">
           {activePage === "dashboard" && <Dashboard />}
           {activePage !== "dashboard" && (

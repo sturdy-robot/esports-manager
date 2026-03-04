@@ -69,7 +69,7 @@ function App() {
         </div>
       )
     case 'playing':
-      return <GameShell />
+      return <GameShell onSaveAndExit={goToMenu} />
     default:
       return <MainMenu onNavigate={handleMenuNavigate} />
   }

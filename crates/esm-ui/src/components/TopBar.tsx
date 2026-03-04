@@ -1,12 +1,34 @@
-import { Sun, Moon, Settings } from 'lucide-react'
+import { Sun, Moon, Play, Save } from 'lucide-react'
 import { useTheme } from '@/lib/use-theme'
+
+const MONTH_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+]
 
 interface TopBarProps {
   title: string
+  year?: number
+  month?: number
+  day?: number
+  phase?: string
+  teamName?: string
+  onContinue?: () => void
+  onSaveAndExit?: () => void
 }
 
-export function TopBar({ title }: TopBarProps) {
+export function TopBar({
+  title,
+  year = 2025,
+  month = 1,
+  day = 1,
+  phase = 'Morning',
+  teamName,
+  onContinue,
+  onSaveAndExit,
+}: TopBarProps) {
   const { theme, toggleTheme } = useTheme()
+  const monthLabel = MONTH_NAMES[(month - 1) % 12]
 
   return (
     <header
@@ -16,12 +38,28 @@ export function TopBar({ title }: TopBarProps) {
         backgroundColor: 'var(--bg-surface)',
       }}
     >
-      <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-        {title}
-      </h1>
-
+      {/* Left: title + team badge */}
       <div className="flex items-center gap-3">
-        {/* Game clock placeholder */}
+        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          {title}
+        </h1>
+        {teamName && (
+          <span
+            className="px-2 py-0.5 rounded text-xs font-semibold"
+            style={{
+              backgroundColor: 'var(--bg-elevated)',
+              color: 'var(--color-accent-cyan)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            {teamName}
+          </span>
+        )}
+      </div>
+
+      {/* Right: game clock + actions */}
+      <div className="flex items-center gap-3">
+        {/* Game clock */}
         <div
           className="flex items-center gap-2 px-3 py-1 rounded-md text-sm"
           style={{
@@ -29,9 +67,55 @@ export function TopBar({ title }: TopBarProps) {
             color: 'var(--text-secondary)',
           }}
         >
-          <span className="inline-block w-2 h-2 rounded-full animate-live" style={{ backgroundColor: 'var(--color-accent-cyan)' }} />
-          Season 2025 · Week 1 · Day 1
+          <span
+            className="inline-block w-2 h-2 rounded-full animate-live"
+            style={{ backgroundColor: 'var(--color-accent-cyan)' }}
+          />
+          <span className="font-mono">
+            {monthLabel} {day}, {year}
+          </span>
+          <span style={{ color: 'var(--text-muted)' }}>·</span>
+          <span>{phase}</span>
         </div>
+
+        {/* Continue button */}
+        {onContinue && (
+          <button
+            onClick={onContinue}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))',
+              color: '#fff',
+            }}
+          >
+            <Play size={12} />
+            Continue
+          </button>
+        )}
+
+        {/* Save & Exit */}
+        {onSaveAndExit && (
+          <button
+            onClick={onSaveAndExit}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-colors"
+            style={{
+              borderColor: 'var(--border-subtle)',
+              backgroundColor: 'transparent',
+              color: 'var(--text-secondary)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-accent-cyan)'
+              e.currentTarget.style.color = 'var(--text-primary)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border-subtle)'
+              e.currentTarget.style.color = 'var(--text-secondary)'
+            }}
+          >
+            <Save size={12} />
+            Save & Exit
+          </button>
+        )}
 
         {/* Theme toggle */}
         <button
@@ -53,26 +137,6 @@ export function TopBar({ title }: TopBarProps) {
           title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
         >
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
-
-        {/* Settings */}
-        <button
-          className="flex items-center justify-center w-8 h-8 rounded-md cursor-pointer border transition-colors"
-          style={{
-            borderColor: 'var(--border-subtle)',
-            backgroundColor: 'transparent',
-            color: 'var(--text-secondary)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-accent-cyan)'
-            e.currentTarget.style.color = 'var(--text-primary)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--border-subtle)'
-            e.currentTarget.style.color = 'var(--text-secondary)'
-          }}
-        >
-          <Settings size={16} />
         </button>
       </div>
     </header>

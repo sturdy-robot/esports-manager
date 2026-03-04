@@ -1,0 +1,72 @@
+import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi } from "vitest";
+import { renderWithProviders } from "@/test/render";
+import { TopBar } from "./TopBar";
+
+describe("TopBar", () => {
+  const defaults = {
+    title: "Dashboard",
+    year: 2025,
+    month: 1,
+    day: 1,
+    phase: "Morning",
+    teamName: "T1",
+    onContinue: vi.fn(),
+    onSaveAndExit: vi.fn(),
+  };
+
+  it("renders the page title", () => {
+    renderWithProviders(<TopBar {...defaults} />);
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+  });
+
+  it("shows the game date", () => {
+    renderWithProviders(<TopBar {...defaults} />);
+    expect(screen.getByText(/2025/)).toBeInTheDocument();
+    expect(screen.getByText(/jan/i)).toBeInTheDocument();
+  });
+
+  it("shows the day phase", () => {
+    renderWithProviders(<TopBar {...defaults} />);
+    expect(screen.getByText(/morning/i)).toBeInTheDocument();
+  });
+
+  it("shows the team name", () => {
+    renderWithProviders(<TopBar {...defaults} />);
+    expect(screen.getByText("T1")).toBeInTheDocument();
+  });
+
+  it("renders the Continue button", () => {
+    renderWithProviders(<TopBar {...defaults} />);
+    expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
+  });
+
+  it("calls onContinue when Continue is clicked", async () => {
+    const user = userEvent.setup();
+    const onContinue = vi.fn();
+    renderWithProviders(<TopBar {...defaults} onContinue={onContinue} />);
+
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+    expect(onContinue).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders Save & Exit button", () => {
+    renderWithProviders(<TopBar {...defaults} />);
+    expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument();
+  });
+
+  it("calls onSaveAndExit when Save & Exit is clicked", async () => {
+    const user = userEvent.setup();
+    const onSaveAndExit = vi.fn();
+    renderWithProviders(<TopBar {...defaults} onSaveAndExit={onSaveAndExit} />);
+
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(onSaveAndExit).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders theme toggle button", () => {
+    renderWithProviders(<TopBar {...defaults} />);
+    expect(screen.getByTitle(/switch to/i)).toBeInTheDocument();
+  });
+});
