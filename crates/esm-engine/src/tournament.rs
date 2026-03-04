@@ -260,7 +260,12 @@ impl Tournament {
     }
 
     pub fn record_result(&mut self, match_id: u32, blue_wins: u32, red_wins: u32) {
-        if let Some(m) = self.schedule.matches_mut().iter_mut().find(|m| m.id() == match_id) {
+        if let Some(m) = self
+            .schedule
+            .matches_mut()
+            .iter_mut()
+            .find(|m| m.id() == match_id)
+        {
             m.set_result(blue_wins, red_wins);
         }
     }
@@ -295,6 +300,15 @@ impl Tournament {
 
         standings.sort_by(|a, b| b.wins.cmp(&a.wins).then(a.losses.cmp(&b.losses)));
         standings
+    }
+
+    /// Return pending matches scheduled for the given day (by days_elapsed).
+    pub fn matches_today(&self, day: u32) -> Vec<&Match> {
+        self.schedule
+            .matches_for_day(day)
+            .into_iter()
+            .filter(|m| m.status() == MatchStatus::Pending)
+            .collect()
     }
 
     pub fn is_complete(&self) -> bool {

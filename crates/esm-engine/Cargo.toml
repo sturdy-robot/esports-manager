@@ -9,3 +9,6 @@ license.workspace = true
 esm-core = { path = "../esm-core" }
 esm-models = { path = "../esm-models" }
 serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1"
