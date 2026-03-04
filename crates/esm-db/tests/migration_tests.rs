@@ -1,169 +1,198 @@
-use esm_db::migration::{Migration, MigrationRunner};
-use rusqlite::Connection;
+use esm_db::database::Database;
+use rusqlite::params;
 
 // ---------------------------------------------------------------------------
-// Migration struct
+// Database open + auto-migration
 // ---------------------------------------------------------------------------
 
 #[test]
-fn migration_stores_version_and_sql() {
-    let m = Migration::new(1, "Create table", "CREATE TABLE test (id INTEGER PRIMARY KEY);");
-    assert_eq!(m.version(), 1);
-    assert_eq!(m.description(), "Create table");
-    assert_eq!(m.sql(), "CREATE TABLE test (id INTEGER PRIMARY KEY);");
+fn database_open_in_memory_succeeds() {
+    let db = Database::open_in_memory();
+    assert!(db.is_ok());
+}
+
+#[test]
+fn database_applies_migrations_on_open() {
+    let db = Database::open_in_memory().unwrap();
+    let version = db.schema_version().unwrap();
+    assert!(version >= 1);
 }
 
 // ---------------------------------------------------------------------------
-// MigrationRunner — initialization
+// Schema: tables created by V1 migration
 // ---------------------------------------------------------------------------
 
 #[test]
-fn runner_creates_migrations_table_on_init() {
-    let conn = Connection::open_in_memory().unwrap();
-    MigrationRunner::initialize(&conn).unwrap();
+fn schema_has_players_table() {
+    let db = Database::open_in_memory().unwrap();
+    assert!(db.table_exists("players").unwrap());
+}
 
-    let exists: bool = conn
-        .query_row(
-            "SELECT COUNT(*) > 0 FROM sqlite_master WHERE type='table' AND name='_migrations'",
-            [],
-            |row| row.get(0),
+#[test]
+fn schema_has_teams_table() {
+    let db = Database::open_in_memory().unwrap();
+    assert!(db.table_exists("teams").unwrap());
+}
+
+#[test]
+fn schema_has_champions_table() {
+    let db = Database::open_in_memory().unwrap();
+    assert!(db.table_exists("champions").unwrap());
+}
+
+#[test]
+fn schema_has_champion_tags_table() {
+    let db = Database::open_in_memory().unwrap();
+    assert!(db.table_exists("champion_tags").unwrap());
+}
+
+#[test]
+fn schema_has_staff_table() {
+    let db = Database::open_in_memory().unwrap();
+    assert!(db.table_exists("staff").unwrap());
+}
+
+#[test]
+fn schema_has_contracts_table() {
+    let db = Database::open_in_memory().unwrap();
+    assert!(db.table_exists("contracts").unwrap());
+}
+
+#[test]
+fn schema_has_managers_table() {
+    let db = Database::open_in_memory().unwrap();
+    assert!(db.table_exists("managers").unwrap());
+}
+
+// ---------------------------------------------------------------------------
+// Schema: insert and query players
+// ---------------------------------------------------------------------------
+
+#[test]
+fn schema_players_insert_and_query() {
+    let db = Database::open_in_memory().unwrap();
+    db.conn()
+        .execute(
+            "INSERT INTO players (id, nickname, first_name, last_name, role,
+             endurance, reaction_time, decision_making, clutch, discipline,
+             tilt_resistance, mechanics, vision_control, teamfighting)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+            params![
+                1,
+                "Faker",
+                "Lee",
+                "Sang-hyeok",
+                "Mid",
+                70,
+                90,
+                95,
+                99,
+                85,
+                80,
+                97,
+                88,
+                92
+            ],
         )
         .unwrap();
-    assert!(exists);
-}
 
-#[test]
-fn runner_init_is_idempotent() {
-    let conn = Connection::open_in_memory().unwrap();
-    MigrationRunner::initialize(&conn).unwrap();
-    MigrationRunner::initialize(&conn).unwrap(); // Should not error
-}
-
-// ---------------------------------------------------------------------------
-// MigrationRunner — applying migrations
-// ---------------------------------------------------------------------------
-
-#[test]
-fn runner_applies_single_migration() {
-    let conn = Connection::open_in_memory().unwrap();
-    MigrationRunner::initialize(&conn).unwrap();
-
-    let migrations = vec![Migration::new(
-        1,
-        "Create players",
-        "CREATE TABLE players (id INTEGER PRIMARY KEY, nickname TEXT NOT NULL);",
-    )];
-
-    let applied = MigrationRunner::run(&conn, &migrations).unwrap();
-    assert_eq!(applied, 1);
-
-    // Verify the table exists
-    let exists: bool = conn
-        .query_row(
-            "SELECT COUNT(*) > 0 FROM sqlite_master WHERE type='table' AND name='players'",
-            [],
-            |row| row.get(0),
-        )
+    let nickname: String = db
+        .conn()
+        .query_row("SELECT nickname FROM players WHERE id = 1", [], |row| {
+            row.get(0)
+        })
         .unwrap();
-    assert!(exists);
+    assert_eq!(nickname, "Faker");
 }
 
-#[test]
-fn runner_skips_already_applied_migrations() {
-    let conn = Connection::open_in_memory().unwrap();
-    MigrationRunner::initialize(&conn).unwrap();
-
-    let migrations = vec![Migration::new(
-        1,
-        "Create players",
-        "CREATE TABLE players (id INTEGER PRIMARY KEY, nickname TEXT NOT NULL);",
-    )];
-
-    let first_run = MigrationRunner::run(&conn, &migrations).unwrap();
-    assert_eq!(first_run, 1);
-
-    let second_run = MigrationRunner::run(&conn, &migrations).unwrap();
-    assert_eq!(second_run, 0);
-}
+// ---------------------------------------------------------------------------
+// Schema: CHECK constraints enforce valid data
+// ---------------------------------------------------------------------------
 
 #[test]
-fn runner_applies_multiple_migrations_in_order() {
-    let conn = Connection::open_in_memory().unwrap();
-    MigrationRunner::initialize(&conn).unwrap();
-
-    let migrations = vec![
-        Migration::new(
-            1,
-            "Create players",
-            "CREATE TABLE players (id INTEGER PRIMARY KEY, nickname TEXT NOT NULL);",
-        ),
-        Migration::new(
-            2,
-            "Create teams",
-            "CREATE TABLE teams (id INTEGER PRIMARY KEY, name TEXT NOT NULL);",
-        ),
-        Migration::new(
-            3,
-            "Create champions",
-            "CREATE TABLE champions (id INTEGER PRIMARY KEY, name TEXT NOT NULL);",
-        ),
-    ];
-
-    let applied = MigrationRunner::run(&conn, &migrations).unwrap();
-    assert_eq!(applied, 3);
-}
-
-#[test]
-fn runner_applies_only_new_migrations() {
-    let conn = Connection::open_in_memory().unwrap();
-    MigrationRunner::initialize(&conn).unwrap();
-
-    let first_batch = vec![Migration::new(
-        1,
-        "Create players",
-        "CREATE TABLE players (id INTEGER PRIMARY KEY);",
-    )];
-    MigrationRunner::run(&conn, &first_batch).unwrap();
-
-    let full_batch = vec![
-        Migration::new(1, "Create players", "CREATE TABLE players (id INTEGER PRIMARY KEY);"),
-        Migration::new(2, "Create teams", "CREATE TABLE teams (id INTEGER PRIMARY KEY);"),
-    ];
-
-    let applied = MigrationRunner::run(&conn, &full_batch).unwrap();
-    assert_eq!(applied, 1); // Only migration 2 is new
-}
-
-#[test]
-fn runner_current_version_starts_at_zero() {
-    let conn = Connection::open_in_memory().unwrap();
-    MigrationRunner::initialize(&conn).unwrap();
-
-    let version = MigrationRunner::current_version(&conn).unwrap();
-    assert_eq!(version, 0);
-}
-
-#[test]
-fn runner_current_version_tracks_latest() {
-    let conn = Connection::open_in_memory().unwrap();
-    MigrationRunner::initialize(&conn).unwrap();
-
-    let migrations = vec![
-        Migration::new(1, "V1", "CREATE TABLE t1 (id INTEGER PRIMARY KEY);"),
-        Migration::new(2, "V2", "CREATE TABLE t2 (id INTEGER PRIMARY KEY);"),
-    ];
-    MigrationRunner::run(&conn, &migrations).unwrap();
-
-    let version = MigrationRunner::current_version(&conn).unwrap();
-    assert_eq!(version, 2);
-}
-
-#[test]
-fn runner_rejects_invalid_sql() {
-    let conn = Connection::open_in_memory().unwrap();
-    MigrationRunner::initialize(&conn).unwrap();
-
-    let migrations = vec![Migration::new(1, "Bad SQL", "THIS IS NOT VALID SQL;")];
-    let result = MigrationRunner::run(&conn, &migrations);
+fn schema_players_rejects_invalid_role() {
+    let db = Database::open_in_memory().unwrap();
+    let result = db.conn().execute(
+        "INSERT INTO players (id, nickname, first_name, last_name, role,
+         endurance, reaction_time, decision_making, clutch, discipline,
+         tilt_resistance, mechanics, vision_control, teamfighting)
+         VALUES (1, 'Test', 'A', 'B', 'InvalidRole', 50, 50, 50, 50, 50, 50, 50, 50, 50)",
+        [],
+    );
     assert!(result.is_err());
+}
+
+#[test]
+fn schema_players_rejects_attribute_out_of_range() {
+    let db = Database::open_in_memory().unwrap();
+    let result = db.conn().execute(
+        "INSERT INTO players (id, nickname, first_name, last_name, role,
+         endurance, reaction_time, decision_making, clutch, discipline,
+         tilt_resistance, mechanics, vision_control, teamfighting)
+         VALUES (1, 'Test', 'A', 'B', 'Mid', 150, 50, 50, 50, 50, 50, 50, 50, 50)",
+        [],
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn schema_teams_insert_and_query() {
+    let db = Database::open_in_memory().unwrap();
+    db.conn()
+        .execute(
+            "INSERT INTO teams (id, name, tag) VALUES (?1, ?2, ?3)",
+            params![1, "T1", "T1"],
+        )
+        .unwrap();
+
+    let name: String = db
+        .conn()
+        .query_row("SELECT name FROM teams WHERE id = 1", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(name, "T1");
+}
+
+#[test]
+fn schema_champions_rejects_invalid_class() {
+    let db = Database::open_in_memory().unwrap();
+    let result = db.conn().execute(
+        "INSERT INTO champions (id, name, class, scaling) VALUES (1, 'Test', 'InvalidClass', 'Early')",
+        [],
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn schema_contracts_references_player_and_team() {
+    let db = Database::open_in_memory().unwrap();
+    db.conn()
+        .execute(
+            "INSERT INTO teams (id, name, tag) VALUES (1, 'T1', 'T1')",
+            [],
+        )
+        .unwrap();
+    db.conn()
+        .execute(
+            "INSERT INTO players (id, nickname, first_name, last_name, role,
+             endurance, reaction_time, decision_making, clutch, discipline,
+             tilt_resistance, mechanics, vision_control, teamfighting, team_id)
+             VALUES (1, 'Faker', 'Lee', 'SH', 'Mid', 70, 90, 95, 99, 85, 80, 97, 88, 92, 1)",
+            [],
+        )
+        .unwrap();
+    db.conn()
+        .execute(
+            "INSERT INTO contracts (id, player_id, team_id, salary, length_days, remaining_days)
+             VALUES (1, 1, 1, 50000, 365, 365)",
+            [],
+        )
+        .unwrap();
+
+    let salary: i64 = db
+        .conn()
+        .query_row("SELECT salary FROM contracts WHERE id = 1", [], |row| {
+            row.get(0)
+        })
+        .unwrap();
+    assert_eq!(salary, 50000);
 }
