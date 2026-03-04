@@ -13,6 +13,7 @@ import type { StandingsEntry } from "@/components/Standings";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
+  inbox: "Inbox",
   roster: "Roster",
   schedule: "Schedule",
   standings: "Standings",
@@ -88,7 +89,7 @@ export function GameShell({
         return <Schedule matches={PLACEHOLDER_SCHEDULE} />;
       case "standings":
         return <Standings entries={PLACEHOLDER_STANDINGS} />;
-      case "results":
+      case "inbox":
         return <Inbox messages={PLACEHOLDER_INBOX} />;
       default:
         return (

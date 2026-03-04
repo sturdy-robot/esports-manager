@@ -7,6 +7,7 @@ import {
   DollarSign,
   UserCog,
   Search,
+  Inbox,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -28,6 +29,7 @@ const navGroups: NavGroup[] = [
     title: 'Team',
     items: [
       { icon: <LayoutDashboard size={20} />, label: 'Dashboard', id: 'dashboard' },
+      { icon: <Inbox size={20} />, label: 'Inbox', id: 'inbox' },
       { icon: <Users size={20} />, label: 'Roster', id: 'roster' },
       { icon: <Calendar size={20} />, label: 'Schedule', id: 'schedule' },
     ],
