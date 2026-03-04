@@ -100,6 +100,7 @@ interface GameShellProps {
   month?: number;
   day?: number;
   phase?: string;
+  onContinue?: () => void;
   onSave?: () => void;
   onExitToMenu?: () => void;
 }
@@ -110,14 +111,11 @@ export function GameShell({
   month = 1,
   day = 1,
   phase = "Morning",
+  onContinue,
   onSave,
   onExitToMenu,
 }: GameShellProps) {
   const [activePage, setActivePage] = useState("dashboard");
-
-  const handleContinue = () => {
-    // Placeholder: will invoke Tauri advance_turn command
-  };
 
   const renderPage = () => {
     switch (activePage) {
@@ -168,7 +166,7 @@ export function GameShell({
           day={day}
           phase={phase}
           onSave={onSave}
-          onContinue={handleContinue}
+          onContinue={onContinue}
         />
         <main className="flex-1 overflow-y-auto p-6">
           {renderPage()}

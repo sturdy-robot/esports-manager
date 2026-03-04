@@ -30,10 +30,15 @@ const MOCK_GAME_INFO: GameInfo = {
   year: 2025,
   month: 1,
   day: 1,
+  phase: "Morning",
   manager_nickname: "kkOma",
   team_name: "T1",
   teams_count: 6,
 };
+
+const MOCK_PHASES = ["Morning", "Afternoon", "Evening"];
+let mockPhaseIndex = 0;
+let mockDay = 1;
 
 // ---------------------------------------------------------------------------
 // API adapter — real Tauri calls or mock implementations
@@ -45,6 +50,7 @@ interface ApiAdapter {
   deleteSave(name: string): Promise<void>;
   newGame(params: NewGameParams): Promise<GameInfo>;
   saveGame(name: string): Promise<void>;
+  advanceTurn(): Promise<GameInfo>;
   loadDatapack(path: string): Promise<TeamInfo[]>;
   getGameInfo(): Promise<GameInfo>;
 }
@@ -57,6 +63,7 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     deleteSave: api.deleteSave,
     newGame: api.newGame,
     saveGame: api.saveGame,
+    advanceTurn: api.advanceTurn,
     loadDatapack: api.loadDatapack,
     getGameInfo: api.getGameInfo,
   };
@@ -85,6 +92,15 @@ const mockAdapter: ApiAdapter = {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async saveGame(_name: string) {
     await delay(200);
+  },
+  async advanceTurn() {
+    await delay(100);
+    mockPhaseIndex++;
+    if (mockPhaseIndex >= MOCK_PHASES.length) {
+      mockPhaseIndex = 0;
+      mockDay++;
+    }
+    return { ...MOCK_GAME_INFO, day: mockDay, phase: MOCK_PHASES[mockPhaseIndex] };
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async loadDatapack(_path: string) {
@@ -221,6 +237,29 @@ export function useSaveGame() {
   }, []);
 
   return { saveGame, saving, error };
+}
+
+export function useAdvanceTurn() {
+  const [advancing, setAdvancing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const advanceTurn = useCallback(async (): Promise<GameInfo | null> => {
+    setAdvancing(true);
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      return await adapter.advanceTurn();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('useAdvanceTurn error:', msg);
+      setError(msg);
+      return null;
+    } finally {
+      setAdvancing(false);
+    }
+  }, []);
+
+  return { advanceTurn, advancing, error };
 }
 
 export function useLoadDatapack() {

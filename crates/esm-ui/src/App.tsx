@@ -5,7 +5,7 @@ import { LoadGame } from '@/components/LoadGame'
 import { TeamSelection } from '@/components/TeamSelection'
 import { Settings } from '@/components/Settings'
 import { GameShell } from '@/components/GameShell'
-import { useListSaves, useDeleteSave, useLoadSave, useNewGame, useSaveGame } from '@/lib/use-api'
+import { useListSaves, useDeleteSave, useLoadSave, useNewGame, useSaveGame, useAdvanceTurn } from '@/lib/use-api'
 import type { MenuTarget } from '@/components/MainMenu'
 import type { ManagerFormData } from '@/components/NewGame'
 import type { TeamOption } from '@/components/TeamSelection'
@@ -42,6 +42,7 @@ function App() {
   const { loadSave } = useLoadSave()
   const { createGame } = useNewGame()
   const { saveGame } = useSaveGame()
+  const { advanceTurn } = useAdvanceTurn()
 
   const handleMenuNavigate = (target: MenuTarget) => {
     if (target === 'exit') {
@@ -113,6 +114,13 @@ function App() {
     }
   }
 
+  const handleContinue = async () => {
+    const info = await advanceTurn()
+    if (info) {
+      setGameInfo(info)
+    }
+  }
+
   const handleDeleteSave = async (name: string) => {
     await deleteSave(name)
     refreshSaves()
@@ -167,6 +175,8 @@ function App() {
           year={gameInfo?.year}
           month={gameInfo?.month}
           day={gameInfo?.day}
+          phase={gameInfo?.phase}
+          onContinue={handleContinue}
           onSave={handleSave}
           onExitToMenu={goToMenu}
         />

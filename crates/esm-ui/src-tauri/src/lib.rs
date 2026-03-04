@@ -4,7 +4,9 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
+use esm_core::calendar::DayPhase;
 use esm_core::game_state::GameState;
+use esm_core::turn::TurnProcessor;
 use esm_db::save_manager::{SaveEntry, SaveManager};
 use esm_models::esport_type::EsportType;
 use esm_models::manager::{Manager, ManagerArchetype};
@@ -58,6 +60,7 @@ pub struct GameInfo {
     pub year: u32,
     pub month: u32,
     pub day: u32,
+    pub phase: String,
     pub manager_nickname: String,
     pub team_name: String,
     pub teams_count: usize,
@@ -200,6 +203,25 @@ fn save_game(name: String, state: State<'_, AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
+    let mut lock = state.game_state.lock().unwrap();
+    let gs = lock.as_mut().ok_or("No active game session")?;
+
+    // If currently Evening, advancing will trigger end-of-day via TurnProcessor
+    if gs.calendar().phase() == DayPhase::Evening {
+        TurnProcessor::end_day(gs).map_err(|e| match e {
+            esm_core::turn::TurnError::BlockingMessages => {
+                "Cannot advance: there are unresolved urgent messages in your inbox.".to_string()
+            }
+        })?;
+    } else {
+        gs.advance_phase();
+    }
+
+    Ok(game_info_from_state(gs))
+}
+
+#[tauri::command]
 fn get_game_info(state: State<'_, AppState>) -> Result<GameInfo, String> {
     let lock = state.game_state.lock().unwrap();
     let gs = lock.as_ref().ok_or("No active game session")?;
@@ -221,6 +243,7 @@ fn game_info_from_state(gs: &GameState) -> GameInfo {
         year: gs.calendar().year(),
         month: gs.calendar().month(),
         day: gs.calendar().day(),
+        phase: gs.calendar().phase().as_str().to_string(),
         manager_nickname: gs.manager().nickname().to_string(),
         team_name,
         teams_count: gs.teams().len(),
@@ -295,6 +318,7 @@ pub fn run() {
             load_save,
             delete_save,
             save_game,
+            advance_turn,
             get_game_info,
         ])
         .run(tauri::generate_context!())

@@ -19,6 +19,7 @@ export interface GameInfo {
   year: number;
   month: number;
   day: number;
+  phase: string;
   manager_nickname: string;
   team_name: string;
   teams_count: number;
@@ -61,6 +62,10 @@ export async function deleteSave(name: string): Promise<void> {
 
 export async function saveGame(name: string): Promise<void> {
   return invoke<void>("save_game", { name });
+}
+
+export async function advanceTurn(): Promise<GameInfo> {
+  return invoke<GameInfo>("advance_turn");
 }
 
 export async function getGameInfo(): Promise<GameInfo> {
