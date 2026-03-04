@@ -26,16 +26,20 @@
 - [x] Entity ID system (`esm-models`) — EntityId value object, deterministic IdGenerator
 - [x] Draft AI evaluation (`esm-ai`) — composite scoring (meta × mastery + synergy + counter), randomized selection
 
+- [x] SQLite schema & migrations (`esm-db`) — refinery-managed, V1 schema with CHECK constraints
+- [x] Repository layer (`esm-db`) — PlayerRow/TeamRow CRUD (insert, get, list, update, delete)
+- [x] JSON data pack loading (`esm-data`) — parse + validate teams/players/champions with referential integrity
+
 ### 🔧 In Progress
 
-- [ ] Wire EntityId into core entities (Player, Team, Champion, Staff) — deferred to DB layer
-- [ ] SQLite schema & migrations (`esm-db`)
+- [ ] Wire EntityId into core entities (deferred to when DB integration demands it)
 
 ### 📋 Backlog — 0.1.0-alpha
 
-- [ ] JSON data pack loading & validation (`esm-data`)
 - [ ] Transfer & contract orchestration (`esm-engine` + `esm-ai`)
 - [ ] Staff influence hooks into simulation (`esm-engine`)
+- [ ] DataPack → Database import pipeline (`esm-data` + `esm-db`)
+- [ ] Match scheduling & tournament structure
 
 ### 📋 Backlog — Future
 
@@ -46,8 +50,10 @@
 
 ## Test Coverage
 
-- **248 tests** across the workspace, 0 failures
+- **286 tests** across the workspace, 0 failures
 - `esm-core`: 92 tests (calendar, RNG, game state, inbox, turn processor, board, save/load)
 - `esm-models`: 84 tests (player, manager, champion, team, staff, contract, entity ID)
 - `esm-engine`: 64 tests (activity, match simulation, draft, economy)
 - `esm-ai`: 8 tests (draft AI evaluation and selection)
+- `esm-db`: 26 tests (migrations, schema validation, repository CRUD)
+- `esm-data`: 12 tests (JSON parsing, validation pipeline)
