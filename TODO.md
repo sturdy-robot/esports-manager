@@ -86,15 +86,26 @@
 - [x] Roster screen wired to live backend data (fetched on mount + after Continue)
 - [x] Inbox screen wired to live backend data (fetched on mount + after Continue)
 - [x] Dashboard KPI cards: live inbox count/urgent count + roster names from backend
+- [x] V5 migration: tournament_json + moba_teams_json columns on game_session
+- [x] GameSession/SaveManager save_full/load_full for tournament + moba teams persistence
+- [x] build_moba_teams_from_datapack() in esm-db for DataPack→MobaTeam conversion
+- [x] Tournament + MobaMatchEngine integrated into Tauri AppState
+- [x] new_game creates DoubleRoundRobin tournament + MobaTeams, persisted in save
+- [x] advance_turn simulates matches via MobaMatchEngine on end-of-day
+- [x] get_standings / get_schedule Tauri commands with DTOs
+- [x] Schedule, Standings, Results screens wired to live backend data
+- [x] save_game / load_save persist and restore tournament + moba teams state
+- [x] GameInfo extended with is_match_day + match_results
 
 ### 📋 Backlog — 0.1.0-alpha
 
 - [ ] Wire EntityId into core entities (deferred to when DB integration demands it)
 - [ ] Random generation: player names, team names, roster filling from config JSON files (esm-data)
 - [ ] Separate config file schemas: teams.json, tournaments.json, player_names.json, etc.
-- [ ] Full game loop: new game → data import → team selection → play season (CLI or Tauri)
+- [x] Full game loop: new game → data import → team selection → play season (Tauri)
 - [x] Advance turn command (Tauri → TurnProcessor → update UI state)
-- [ ] Wire remaining game screens to Tauri backend (schedule, standings, finances, staff, scouting, results)
+- [x] Wire remaining game screens to Tauri backend (schedule, standings, results)
+- [ ] Wire remaining game screens: finances, staff, scouting
 
 ### 📋 Backlog — Future
 
@@ -104,11 +115,11 @@
 ## Test Coverage
 
 - **725 tests** across the workspace (618 Rust + 107 frontend), 0 failures
-- Tauri commands: greet, load_datapack, list_saves, new_game, load_save, delete_save, save_game, advance_turn, get_roster, get_inbox, get_game_info
+- Tauri commands: greet, load_datapack, list_saves, new_game, load_save, delete_save, save_game, advance_turn, get_roster, get_inbox, get_game_info, get_standings, get_schedule
 - `esm-core`: 106 tests (calendar, RNG, game state, inbox, turn processor, board, save/load, string conversions)
 - `esm-models`: 132 tests (player, manager, champion, team, staff, contract, entity ID, esport type)
 - `esm-engine`: 272 tests (activity, match sim, draft, economy, tournament, transfer, staff influence, patch, game loop integration)
 - `esm-ai`: 8 tests (draft AI evaluation and selection)
-- `esm-db`: 85 tests (migrations V1–V4, schema, repository CRUD, session repository, GameSession, SaveManager, import + build_teams)
+- `esm-db`: 85 tests (migrations V1–V5, schema, repository CRUD, session repository, GameSession, SaveManager, import + build_teams/build_moba_teams)
 - `esm-data`: 15 tests (JSON parsing, validation pipeline)
 - `esm-ui`: 107 frontend tests (MainMenu, NewGame, LoadGame, TeamSelection, Settings, TopBar, Dashboard, Roster, Inbox, Schedule, Standings, Finances, Staff, Scouting, Results, App navigation)
