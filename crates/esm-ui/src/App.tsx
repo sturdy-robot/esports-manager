@@ -1,40 +1,47 @@
 import { useState } from 'react'
-import { Sidebar } from '@/components/Sidebar'
-import { TopBar } from '@/components/TopBar'
-import { Dashboard } from '@/components/Dashboard'
+import { MainMenu } from '@/components/MainMenu'
+import { NewGame } from '@/components/NewGame'
+import { LoadGame } from '@/components/LoadGame'
+import { GameShell } from '@/components/GameShell'
+import type { MenuTarget } from '@/components/MainMenu'
 
-const pageTitles: Record<string, string> = {
-  dashboard: 'Dashboard',
-  roster: 'Roster',
-  schedule: 'Schedule',
-  standings: 'Standings',
-  results: 'Results',
-  finances: 'Finances',
-  staff: 'Staff',
-  scouting: 'Scouting',
-}
+type AppScreen = 'main-menu' | 'new-game' | 'load-game' | 'settings' | 'playing'
 
 function App() {
-  const [activePage, setActivePage] = useState('dashboard')
+  const [screen, setScreen] = useState<AppScreen>('main-menu')
 
-  return (
-    <div className="flex w-full min-h-screen" style={{ backgroundColor: 'var(--bg-base)' }}>
-      <Sidebar activeItem={activePage} onNavigate={setActivePage} />
-      <div className="flex flex-col flex-1 min-w-0">
-        <TopBar title={pageTitles[activePage] || 'Dashboard'} />
-        <main className="flex-1 overflow-y-auto p-6">
-          {activePage === 'dashboard' && <Dashboard />}
-          {activePage !== 'dashboard' && (
-            <div className="flex items-center justify-center h-64">
-              <span className="text-lg" style={{ color: 'var(--text-muted)' }}>
-                {pageTitles[activePage]} — Coming soon
-              </span>
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
-  )
+  const handleMenuNavigate = (target: MenuTarget) => {
+    if (target === 'exit') {
+      // In Tauri this would close the window; for now, no-op
+      return
+    }
+    setScreen(target as AppScreen)
+  }
+
+  const goToMenu = () => setScreen('main-menu')
+  const goToPlaying = () => setScreen('playing')
+
+  switch (screen) {
+    case 'main-menu':
+      return <MainMenu onNavigate={handleMenuNavigate} />
+    case 'new-game':
+      return <NewGame onBack={goToMenu} onStart={goToPlaying} />
+    case 'load-game':
+      return <LoadGame onBack={goToMenu} onLoad={() => goToPlaying()} />
+    case 'settings':
+      return (
+        <div
+          className="flex items-center justify-center min-h-screen w-full"
+          style={{ backgroundColor: 'var(--bg-base)', color: 'var(--text-muted)' }}
+        >
+          Settings — Coming soon
+        </div>
+      )
+    case 'playing':
+      return <GameShell />
+    default:
+      return <MainMenu onNavigate={handleMenuNavigate} />
+  }
 }
 
 export default App
