@@ -209,7 +209,24 @@ function RosterPreview() {
   )
 }
 
-export function Dashboard() {
+interface DashboardProps {
+  teamName?: string
+  record?: string
+  standing?: string
+  winStreak?: number
+  budget?: string
+  inboxCount?: number
+  urgentCount?: number
+}
+
+export function Dashboard({
+  record = '8-2',
+  standing = '2nd place · LCK Spring',
+  winStreak = 3,
+  budget = '$1.2M',
+  inboxCount = 3,
+  urgentCount = 1,
+}: DashboardProps) {
   return (
     <div className="flex flex-col gap-6 animate-fade-in-up">
       {/* KPI row */}
@@ -217,29 +234,29 @@ export function Dashboard() {
         <StatCard
           icon={<Trophy size={18} />}
           label="Record"
-          value="8-2"
-          subtext="2nd place · LCK Spring"
+          value={record}
+          subtext={standing}
           accentColor="var(--color-win)"
         />
         <StatCard
           icon={<Swords size={18} />}
           label="Win Streak"
-          value="3"
+          value={String(winStreak)}
           subtext="Last: W vs DRX"
           accentColor="var(--color-accent-cyan)"
         />
         <StatCard
           icon={<TrendingUp size={18} />}
           label="Budget"
-          value="$1.2M"
+          value={budget}
           subtext="+$42.5K this week"
           accentColor="var(--color-warning)"
         />
         <StatCard
           icon={<Inbox size={18} />}
           label="Inbox"
-          value="3"
-          subtext="1 urgent"
+          value={String(inboxCount)}
+          subtext={`${urgentCount} urgent`}
           accentColor="var(--color-loss)"
         />
       </div>
