@@ -8,12 +8,14 @@ import { Schedule } from "@/components/Schedule";
 import { Standings } from "@/components/Standings";
 import { Finances } from "@/components/Finances";
 import { Staff } from "@/components/Staff";
+import { Scouting } from "@/components/Scouting";
 import type { RosterPlayer } from "@/components/Roster";
 import type { InboxMessage } from "@/components/Inbox";
 import type { ScheduleMatch } from "@/components/Schedule";
 import type { StandingsEntry } from "@/components/Standings";
 import type { Transaction } from "@/components/Finances";
 import type { StaffMember } from "@/components/Staff";
+import type { ScoutingTarget } from "@/components/Scouting";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -26,6 +28,13 @@ const pageTitles: Record<string, string> = {
   staff: "Staff",
   scouting: "Scouting",
 };
+
+// Placeholder scouting until wired to Tauri backend
+const PLACEHOLDER_SCOUTING: ScoutingTarget[] = [
+  { id: "p1", nickname: "Chovy", role: "Mid", team: "Gen.G", mechanics: 95, vision: 85, teamfighting: 88, estimatedValue: 800000, scoutingAccuracy: 72 },
+  { id: "p2", nickname: "Peyz", role: "Bot", team: "Gen.G", mechanics: 82, vision: 74, teamfighting: 80, estimatedValue: 350000, scoutingAccuracy: 55 },
+  { id: "p3", nickname: "Doran", role: "Top", team: "Hanwha Life", mechanics: 78, vision: 80, teamfighting: 82, estimatedValue: 300000, scoutingAccuracy: 90 },
+];
 
 // Placeholder staff until wired to Tauri backend
 const PLACEHOLDER_STAFF: StaffMember[] = [
@@ -115,6 +124,8 @@ export function GameShell({
         return <Finances balance={1200000} income={75000} expenses={53000} transactions={PLACEHOLDER_TRANSACTIONS} />;
       case "staff":
         return <Staff members={PLACEHOLDER_STAFF} />;
+      case "scouting":
+        return <Scouting targets={PLACEHOLDER_SCOUTING} />;
       default:
         return (
           <div className="flex items-center justify-center h-64">
