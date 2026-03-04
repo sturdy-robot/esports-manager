@@ -44,4 +44,36 @@ describe("App navigation", () => {
     await user.click(screen.getByRole("button", { name: /back/i }));
     expect(screen.getByRole("button", { name: /new game/i })).toBeInTheDocument();
   });
+
+  it("navigates from Manager Creation to Team Selection on Continue", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<App />);
+
+    await user.click(screen.getByRole("button", { name: /new game/i }));
+    // Fill out manager form
+    await user.type(screen.getByLabelText(/first name/i), "Kim");
+    await user.type(screen.getByLabelText(/last name/i), "Jeong-gyun");
+    await user.type(screen.getByLabelText(/nickname/i), "kkOma");
+    await user.type(screen.getByLabelText(/nationality/i), "KR");
+
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+    expect(screen.getByRole("heading", { name: /team selection/i })).toBeInTheDocument();
+  });
+
+  it("can navigate back from Team Selection to Manager Creation", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<App />);
+
+    await user.click(screen.getByRole("button", { name: /new game/i }));
+    await user.type(screen.getByLabelText(/first name/i), "Kim");
+    await user.type(screen.getByLabelText(/last name/i), "Jeong-gyun");
+    await user.type(screen.getByLabelText(/nickname/i), "kkOma");
+    await user.type(screen.getByLabelText(/nationality/i), "KR");
+
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+    expect(screen.getByRole("heading", { name: /team selection/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /back/i }));
+    expect(screen.getByRole("heading", { name: /manager creation/i })).toBeInTheDocument();
+  });
 });
