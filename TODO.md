@@ -36,24 +36,37 @@
 - [x] Patch/meta shifting system (`esm-engine`) — MetaTier (S–D), PatchModifier, PatchCycle with scheduled progression
 - [x] Game loop integration tests (`esm-engine`) — full season simulation: advance days, play matches, record results, verify standings, deterministic replay
 
-### 📋 Backlog — 0.1.0-alpha
+### ✅ Done — Game Session & Persistence
+
+- [x] EsportType enum (esm-models) — Moba/Rts/Fps variants with as_str/FromStr
+- [x] Wire EsportType into GameState (esm-core) — new field + accessor + update all call sites
+- [x] String conversion traits — GameRng state/from_state, DayPhase, ManagerArchetype, MessagePriority, MessageCategory
+- [x] V3 migration: `game_session` table + `inbox_messages` table with CHECK constraints
+- [x] V4 migration: `teams_json` + `player_team_index` columns on game_session
+- [x] Session repository (esm-db) — SessionRow/InboxMessageRow DTOs with CRUD
+- [x] GameSession struct (esm-db) — save/load GameState to/from SQLite (calendar, RNG, manager, teams JSON, inbox)
+- [x] SaveManager (esm-db) — saves folder, `saves.json` index, FNV-1a checksum validation
+
+### �📋 Backlog — 0.1.0-alpha
 
 - [ ] Wire EntityId into core entities (deferred to when DB integration demands it)
-- [ ] Full game loop: new game → data import → play season → end screen (CLI or Tauri)
+- [ ] Random generation: player names, team names, roster filling from config JSON files (esm-data)
+- [ ] Separate config file schemas: teams.json, tournaments.json, player_names.json, etc.
+- [ ] Full game loop: new game → data import → team selection → play season (CLI or Tauri)
 
 ### 📋 Backlog — Future
 
-- [ ] Tauri desktop integration
-- [ ] React frontend (Vite + TailwindCSS)
+- [ ] Tauri desktop integration (scaffold in crates/esm-ui)
+- [ ] React frontend (Vite + TailwindCSS + Broadcast Arena design)
 - [ ] Modding / custom data pack ecosystem
 - [ ] RTS / FPS game mode support
 
 ## Test Coverage
 
-- **355 tests** across the workspace, 0 failures
-- `esm-core`: 92 tests (calendar, RNG, game state, inbox, turn processor, board, save/load)
-- `esm-models`: 84 tests (player, manager, champion, team, staff, contract, entity ID)
-- `esm-engine`: 147 tests (activity, match sim, draft, economy, tournament, transfer, staff influence, patch, game loop integration)
+- **614 tests** across the workspace, 0 failures
+- `esm-core`: 106 tests (calendar, RNG, game state, inbox, turn processor, board, save/load, string conversions)
+- `esm-models`: 132 tests (player, manager, champion, team, staff, contract, entity ID, esport type)
+- `esm-engine`: 272 tests (activity, match sim, draft, economy, tournament, transfer, staff influence, patch, game loop integration)
 - `esm-ai`: 8 tests (draft AI evaluation and selection)
-- `esm-db`: 35 tests (migrations, schema, repository CRUD, data pack import)
-- `esm-data`: 12 tests (JSON parsing, validation pipeline)
+- `esm-db`: 81 tests (migrations V1–V4, schema, repository CRUD, session repository, GameSession save/load, SaveManager, data pack import)
+- `esm-data`: 15 tests (JSON parsing, validation pipeline)
