@@ -3,6 +3,7 @@ import { MainMenu } from '@/components/MainMenu'
 import { NewGame } from '@/components/NewGame'
 import { LoadGame } from '@/components/LoadGame'
 import { TeamSelection } from '@/components/TeamSelection'
+import { Settings } from '@/components/Settings'
 import { GameShell } from '@/components/GameShell'
 import type { MenuTarget } from '@/components/MainMenu'
 import type { TeamOption } from '@/components/TeamSelection'
@@ -60,14 +61,7 @@ function App() {
     case 'load-game':
       return <LoadGame onBack={goToMenu} onLoad={() => goToPlaying()} />
     case 'settings':
-      return (
-        <div
-          className="flex items-center justify-center min-h-screen w-full"
-          style={{ backgroundColor: 'var(--bg-base)', color: 'var(--text-muted)' }}
-        >
-          Settings — Coming soon
-        </div>
-      )
+      return <Settings onBack={goToMenu} />
     case 'playing':
       return <GameShell onSaveAndExit={goToMenu} />
     default:
