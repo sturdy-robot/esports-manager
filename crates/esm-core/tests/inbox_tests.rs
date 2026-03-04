@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use esm_core::inbox::{Inbox, Message, MessageCategory, MessagePriority};
 
 // ---------------------------------------------------------------------------
@@ -199,4 +201,80 @@ fn inbox_resolve_by_index() {
 fn inbox_resolve_by_index_out_of_bounds_returns_false() {
     let mut inbox = Inbox::new();
     assert!(!inbox.resolve_at(0));
+}
+
+// ---------------------------------------------------------------------------
+// MessagePriority: string conversions
+// ---------------------------------------------------------------------------
+
+#[test]
+fn priority_as_str() {
+    assert_eq!(MessagePriority::ReadOptional.as_str(), "ReadOptional");
+    assert_eq!(
+        MessagePriority::RequiresResponse.as_str(),
+        "RequiresResponse"
+    );
+    assert_eq!(MessagePriority::HardBlock.as_str(), "HardBlock");
+}
+
+#[test]
+fn priority_from_str_valid() {
+    assert_eq!(
+        MessagePriority::from_str("ReadOptional").unwrap(),
+        MessagePriority::ReadOptional
+    );
+    assert_eq!(
+        MessagePriority::from_str("RequiresResponse").unwrap(),
+        MessagePriority::RequiresResponse
+    );
+    assert_eq!(
+        MessagePriority::from_str("HardBlock").unwrap(),
+        MessagePriority::HardBlock
+    );
+}
+
+#[test]
+fn priority_from_str_invalid() {
+    assert!(MessagePriority::from_str("Critical").is_err());
+}
+
+// ---------------------------------------------------------------------------
+// MessageCategory: string conversions
+// ---------------------------------------------------------------------------
+
+#[test]
+fn category_as_str() {
+    assert_eq!(MessageCategory::News.as_str(), "News");
+    assert_eq!(MessageCategory::Transfer.as_str(), "Transfer");
+    assert_eq!(MessageCategory::Contract.as_str(), "Contract");
+    assert_eq!(MessageCategory::Scrim.as_str(), "Scrim");
+    assert_eq!(MessageCategory::Board.as_str(), "Board");
+    assert_eq!(MessageCategory::Staff.as_str(), "Staff");
+    assert_eq!(MessageCategory::Injury.as_str(), "Injury");
+    assert_eq!(MessageCategory::MetaShift.as_str(), "MetaShift");
+}
+
+#[test]
+fn category_from_str_valid() {
+    assert_eq!(
+        MessageCategory::from_str("News").unwrap(),
+        MessageCategory::News
+    );
+    assert_eq!(
+        MessageCategory::from_str("Transfer").unwrap(),
+        MessageCategory::Transfer
+    );
+    assert_eq!(
+        MessageCategory::from_str("Board").unwrap(),
+        MessageCategory::Board
+    );
+    assert_eq!(
+        MessageCategory::from_str("MetaShift").unwrap(),
+        MessageCategory::MetaShift
+    );
+}
+
+#[test]
+fn category_from_str_invalid() {
+    assert!(MessageCategory::from_str("Unknown").is_err());
 }

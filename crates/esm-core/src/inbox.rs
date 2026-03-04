@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
@@ -11,6 +13,29 @@ pub enum MessagePriority {
     HardBlock,
 }
 
+impl MessagePriority {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MessagePriority::ReadOptional => "ReadOptional",
+            MessagePriority::RequiresResponse => "RequiresResponse",
+            MessagePriority::HardBlock => "HardBlock",
+        }
+    }
+}
+
+impl FromStr for MessagePriority {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ReadOptional" => Ok(MessagePriority::ReadOptional),
+            "RequiresResponse" => Ok(MessagePriority::RequiresResponse),
+            "HardBlock" => Ok(MessagePriority::HardBlock),
+            _ => Err(format!("Unknown MessagePriority: '{s}'")),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MessageCategory {
     News,
@@ -21,6 +46,39 @@ pub enum MessageCategory {
     Staff,
     Injury,
     MetaShift,
+}
+
+impl MessageCategory {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MessageCategory::News => "News",
+            MessageCategory::Transfer => "Transfer",
+            MessageCategory::Contract => "Contract",
+            MessageCategory::Scrim => "Scrim",
+            MessageCategory::Board => "Board",
+            MessageCategory::Staff => "Staff",
+            MessageCategory::Injury => "Injury",
+            MessageCategory::MetaShift => "MetaShift",
+        }
+    }
+}
+
+impl FromStr for MessageCategory {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "News" => Ok(MessageCategory::News),
+            "Transfer" => Ok(MessageCategory::Transfer),
+            "Contract" => Ok(MessageCategory::Contract),
+            "Scrim" => Ok(MessageCategory::Scrim),
+            "Board" => Ok(MessageCategory::Board),
+            "Staff" => Ok(MessageCategory::Staff),
+            "Injury" => Ok(MessageCategory::Injury),
+            "MetaShift" => Ok(MessageCategory::MetaShift),
+            _ => Err(format!("Unknown MessageCategory: '{s}'")),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
