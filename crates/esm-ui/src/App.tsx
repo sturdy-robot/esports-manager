@@ -107,11 +107,9 @@ function App() {
       console.error('Cannot save: no save name set')
       return
     }
-    try {
-      await saveGame(saveName)
+    const ok = await saveGame(saveName)
+    if (ok) {
       console.log('Game saved successfully as:', saveName)
-    } catch (e) {
-      console.error('save_game failed:', e)
     }
   }
 

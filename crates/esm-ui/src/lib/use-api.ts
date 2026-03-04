@@ -187,7 +187,9 @@ export function useNewGame() {
       const adapter = await getAdapter();
       return await adapter.newGame(params);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('useNewGame error:', msg);
+      setError(msg);
       return null;
     } finally {
       setCreating(false);
@@ -201,14 +203,18 @@ export function useSaveGame() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const saveGame = useCallback(async (name: string) => {
+  const saveGame = useCallback(async (name: string): Promise<boolean> => {
     setSaving(true);
     setError(null);
     try {
       const adapter = await getAdapter();
       await adapter.saveGame(name);
+      return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('useSaveGame error:', msg);
+      setError(msg);
+      return false;
     } finally {
       setSaving(false);
     }
