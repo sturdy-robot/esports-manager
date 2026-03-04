@@ -200,3 +200,119 @@ fn schema_contracts_references_moba_player_and_team() {
         .unwrap();
     assert_eq!(salary, 50000);
 }
+
+// ---------------------------------------------------------------------------
+// V3 migration: game_session and inbox_messages tables
+// ---------------------------------------------------------------------------
+
+#[test]
+fn schema_has_game_session_table() {
+    let db = Database::open_in_memory().unwrap();
+    assert!(db.table_exists("game_session").unwrap());
+}
+
+#[test]
+fn schema_has_inbox_messages_table() {
+    let db = Database::open_in_memory().unwrap();
+    assert!(db.table_exists("inbox_messages").unwrap());
+}
+
+#[test]
+fn schema_game_session_insert_and_query() {
+    let db = Database::open_in_memory().unwrap();
+    db.conn()
+        .execute(
+            "INSERT INTO game_session (id, game_version, esport_type, rng_seed, rng_state,
+             calendar_year, calendar_month, calendar_day, calendar_phase, calendar_days_elapsed,
+             player_team_name, manager_nickname, manager_first_name, manager_last_name,
+             manager_nationality, manager_archetype, manager_reputation)
+             VALUES (1, '0.1.0', 'Moba', 42, 42, 2025, 1, 1, 'Morning', 0,
+                     'T1', 'kkOma', 'Kim', 'Jeong-gyun', 'KR', 'TacticalGenius', 50)",
+            [],
+        )
+        .unwrap();
+
+    let esport: String = db
+        .conn()
+        .query_row(
+            "SELECT esport_type FROM game_session WHERE id = 1",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(esport, "Moba");
+}
+
+#[test]
+fn schema_game_session_rejects_invalid_esport_type() {
+    let db = Database::open_in_memory().unwrap();
+    let result = db.conn().execute(
+        "INSERT INTO game_session (id, game_version, esport_type, rng_seed, rng_state,
+         calendar_year, calendar_month, calendar_day, calendar_phase, calendar_days_elapsed,
+         player_team_name, manager_nickname, manager_first_name, manager_last_name,
+         manager_nationality, manager_archetype, manager_reputation)
+         VALUES (1, '0.1.0', 'Racing', 42, 42, 2025, 1, 1, 'Morning', 0,
+                 'T1', 'kkOma', 'Kim', 'JG', 'KR', 'Balanced', 50)",
+        [],
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn schema_game_session_rejects_invalid_phase() {
+    let db = Database::open_in_memory().unwrap();
+    let result = db.conn().execute(
+        "INSERT INTO game_session (id, game_version, esport_type, rng_seed, rng_state,
+         calendar_year, calendar_month, calendar_day, calendar_phase, calendar_days_elapsed,
+         player_team_name, manager_nickname, manager_first_name, manager_last_name,
+         manager_nationality, manager_archetype, manager_reputation)
+         VALUES (1, '0.1.0', 'Moba', 42, 42, 2025, 1, 1, 'Midnight', 0,
+                 'T1', 'kkOma', 'Kim', 'JG', 'KR', 'Balanced', 50)",
+        [],
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn schema_inbox_messages_insert_and_query() {
+    let db = Database::open_in_memory().unwrap();
+    db.conn()
+        .execute(
+            "INSERT INTO inbox_messages (id, subject, body, priority, category, day_received, is_resolved)
+             VALUES (1, 'Welcome', 'Good luck this season.', 'ReadOptional', 'Board', 0, 0)",
+            [],
+        )
+        .unwrap();
+
+    let subject: String = db
+        .conn()
+        .query_row(
+            "SELECT subject FROM inbox_messages WHERE id = 1",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(subject, "Welcome");
+}
+
+#[test]
+fn schema_inbox_messages_rejects_invalid_priority() {
+    let db = Database::open_in_memory().unwrap();
+    let result = db.conn().execute(
+        "INSERT INTO inbox_messages (id, subject, body, priority, category, day_received, is_resolved)
+         VALUES (1, 'Test', 'Body', 'Critical', 'Board', 0, 0)",
+        [],
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn schema_inbox_messages_rejects_invalid_category() {
+    let db = Database::open_in_memory().unwrap();
+    let result = db.conn().execute(
+        "INSERT INTO inbox_messages (id, subject, body, priority, category, day_received, is_resolved)
+         VALUES (1, 'Test', 'Body', 'ReadOptional', 'Unknown', 0, 0)",
+        [],
+    );
+    assert!(result.is_err());
+}
