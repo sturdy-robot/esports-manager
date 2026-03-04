@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use esm_core::calendar::{Calendar, DayPhase};
 
 #[test]
@@ -142,4 +144,37 @@ fn multiple_days_accumulate_correctly() {
 fn day_phase_ordering() {
     assert!(DayPhase::Morning < DayPhase::Afternoon);
     assert!(DayPhase::Afternoon < DayPhase::Evening);
+}
+
+// ---------------------------------------------------------------------------
+// DayPhase: string conversions
+// ---------------------------------------------------------------------------
+
+#[test]
+fn day_phase_as_str() {
+    assert_eq!(DayPhase::Morning.as_str(), "Morning");
+    assert_eq!(DayPhase::Afternoon.as_str(), "Afternoon");
+    assert_eq!(DayPhase::Evening.as_str(), "Evening");
+}
+
+#[test]
+fn day_phase_display() {
+    assert_eq!(format!("{}", DayPhase::Morning), "Morning");
+    assert_eq!(format!("{}", DayPhase::Evening), "Evening");
+}
+
+#[test]
+fn day_phase_from_str_valid() {
+    assert_eq!(DayPhase::from_str("Morning").unwrap(), DayPhase::Morning);
+    assert_eq!(
+        DayPhase::from_str("Afternoon").unwrap(),
+        DayPhase::Afternoon
+    );
+    assert_eq!(DayPhase::from_str("Evening").unwrap(), DayPhase::Evening);
+}
+
+#[test]
+fn day_phase_from_str_invalid() {
+    assert!(DayPhase::from_str("Midnight").is_err());
+    assert!(DayPhase::from_str("").is_err());
 }

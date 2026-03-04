@@ -1,3 +1,6 @@
+use std::fmt;
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 
 use crate::player::BoundedAttribute;
@@ -13,6 +16,39 @@ pub enum ManagerArchetype {
     Motivator,
     Analyst,
     Balanced,
+}
+
+impl ManagerArchetype {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ManagerArchetype::TacticalGenius => "TacticalGenius",
+            ManagerArchetype::PlayerDeveloper => "PlayerDeveloper",
+            ManagerArchetype::Motivator => "Motivator",
+            ManagerArchetype::Analyst => "Analyst",
+            ManagerArchetype::Balanced => "Balanced",
+        }
+    }
+}
+
+impl fmt::Display for ManagerArchetype {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl FromStr for ManagerArchetype {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "TacticalGenius" => Ok(ManagerArchetype::TacticalGenius),
+            "PlayerDeveloper" => Ok(ManagerArchetype::PlayerDeveloper),
+            "Motivator" => Ok(ManagerArchetype::Motivator),
+            "Analyst" => Ok(ManagerArchetype::Analyst),
+            "Balanced" => Ok(ManagerArchetype::Balanced),
+            _ => Err(format!("Unknown ManagerArchetype: '{s}'")),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

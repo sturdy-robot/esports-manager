@@ -1,3 +1,6 @@
+use std::fmt;
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -8,11 +11,38 @@ pub enum DayPhase {
 }
 
 impl DayPhase {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            DayPhase::Morning => "Morning",
+            DayPhase::Afternoon => "Afternoon",
+            DayPhase::Evening => "Evening",
+        }
+    }
+
     fn next(self) -> Option<DayPhase> {
         match self {
             DayPhase::Morning => Some(DayPhase::Afternoon),
             DayPhase::Afternoon => Some(DayPhase::Evening),
             DayPhase::Evening => None,
+        }
+    }
+}
+
+impl fmt::Display for DayPhase {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl FromStr for DayPhase {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Morning" => Ok(DayPhase::Morning),
+            "Afternoon" => Ok(DayPhase::Afternoon),
+            "Evening" => Ok(DayPhase::Evening),
+            _ => Err(format!("Unknown DayPhase: '{s}'")),
         }
     }
 }

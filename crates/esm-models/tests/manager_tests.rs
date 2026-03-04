@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use esm_models::manager::{Manager, ManagerArchetype};
 
 // ---------------------------------------------------------------------------
@@ -72,4 +74,59 @@ fn manager_with_balanced_archetype() {
         ManagerArchetype::Balanced,
     );
     assert_eq!(mgr.archetype(), ManagerArchetype::Balanced);
+}
+
+// ---------------------------------------------------------------------------
+// ManagerArchetype: string conversions
+// ---------------------------------------------------------------------------
+
+#[test]
+fn archetype_as_str_returns_canonical_string() {
+    assert_eq!(ManagerArchetype::TacticalGenius.as_str(), "TacticalGenius");
+    assert_eq!(
+        ManagerArchetype::PlayerDeveloper.as_str(),
+        "PlayerDeveloper"
+    );
+    assert_eq!(ManagerArchetype::Motivator.as_str(), "Motivator");
+    assert_eq!(ManagerArchetype::Analyst.as_str(), "Analyst");
+    assert_eq!(ManagerArchetype::Balanced.as_str(), "Balanced");
+}
+
+#[test]
+fn archetype_display_matches_as_str() {
+    assert_eq!(
+        format!("{}", ManagerArchetype::TacticalGenius),
+        "TacticalGenius"
+    );
+    assert_eq!(format!("{}", ManagerArchetype::Balanced), "Balanced");
+}
+
+#[test]
+fn archetype_from_str_parses_valid() {
+    assert_eq!(
+        ManagerArchetype::from_str("TacticalGenius").unwrap(),
+        ManagerArchetype::TacticalGenius
+    );
+    assert_eq!(
+        ManagerArchetype::from_str("PlayerDeveloper").unwrap(),
+        ManagerArchetype::PlayerDeveloper
+    );
+    assert_eq!(
+        ManagerArchetype::from_str("Motivator").unwrap(),
+        ManagerArchetype::Motivator
+    );
+    assert_eq!(
+        ManagerArchetype::from_str("Analyst").unwrap(),
+        ManagerArchetype::Analyst
+    );
+    assert_eq!(
+        ManagerArchetype::from_str("Balanced").unwrap(),
+        ManagerArchetype::Balanced
+    );
+}
+
+#[test]
+fn archetype_from_str_rejects_invalid() {
+    assert!(ManagerArchetype::from_str("Unknown").is_err());
+    assert!(ManagerArchetype::from_str("").is_err());
 }

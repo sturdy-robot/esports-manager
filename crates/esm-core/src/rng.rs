@@ -21,6 +21,19 @@ impl GameRng {
         self.seed
     }
 
+    /// Return the current internal state (for persistence).
+    pub fn state(&self) -> u64 {
+        self.state
+    }
+
+    /// Restore a GameRng from a previously saved seed and state.
+    /// This allows resuming a deterministic sequence from exactly
+    /// where it left off.
+    pub fn from_state(seed: u64, state: u64) -> Self {
+        let state = if state == 0 { 1 } else { state };
+        Self { seed, state }
+    }
+
     /// Advance the internal state and return the next raw u64.
     fn next_u64(&mut self) -> u64 {
         let mut s = self.state;

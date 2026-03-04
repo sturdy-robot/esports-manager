@@ -122,3 +122,42 @@ fn fork_does_not_share_state_with_parent() {
     // Parent and child sequences must diverge
     assert_ne!(parent_seq, child_seq);
 }
+
+// ---------------------------------------------------------------------------
+// State access (for save/load persistence)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn state_is_retrievable() {
+    let rng = GameRng::from_seed(42);
+    assert_eq!(rng.state(), 42);
+}
+
+#[test]
+fn state_changes_after_generation() {
+    let mut rng = GameRng::from_seed(42);
+    let initial_state = rng.state();
+    rng.next_u32();
+    assert_ne!(rng.state(), initial_state);
+}
+
+#[test]
+fn from_state_resumes_sequence() {
+    let mut rng = GameRng::from_seed(42);
+    // Advance a few steps
+    for _ in 0..10 {
+        rng.next_u32();
+    }
+    let saved_seed = rng.seed();
+    let saved_state = rng.state();
+
+    // Create a new RNG from saved state
+    let mut restored = GameRng::from_state(saved_seed, saved_state);
+    assert_eq!(restored.seed(), saved_seed);
+    assert_eq!(restored.state(), saved_state);
+
+    // Both should produce identical sequences from here
+    let seq1: Vec<u32> = (0..50).map(|_| rng.next_u32()).collect();
+    let seq2: Vec<u32> = (0..50).map(|_| restored.next_u32()).collect();
+    assert_eq!(seq1, seq2);
+}
