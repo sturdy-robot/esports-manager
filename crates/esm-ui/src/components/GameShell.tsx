@@ -3,7 +3,9 @@ import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import { Dashboard } from "@/components/Dashboard";
 import { Roster } from "@/components/Roster";
+import { Inbox } from "@/components/Inbox";
 import type { RosterPlayer } from "@/components/Roster";
+import type { InboxMessage } from "@/components/Inbox";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -15,6 +17,13 @@ const pageTitles: Record<string, string> = {
   staff: "Staff",
   scouting: "Scouting",
 };
+
+// Placeholder inbox until wired to Tauri backend
+const PLACEHOLDER_INBOX: InboxMessage[] = [
+  { id: "1", subject: "Welcome to your new team!", category: "System", priority: "Info", day: 1, read: false },
+  { id: "2", subject: "Pre-season roster review required", category: "Staff", priority: "Action", day: 1, read: false },
+  { id: "3", subject: "Sponsor offer: TechCorp $50K/season", category: "Finance", priority: "Action", day: 1, read: false },
+];
 
 // Placeholder roster until wired to Tauri backend
 const PLACEHOLDER_ROSTER: RosterPlayer[] = [
@@ -54,6 +63,8 @@ export function GameShell({
         return <Dashboard />;
       case "roster":
         return <Roster players={PLACEHOLDER_ROSTER} />;
+      case "schedule":
+        return <Inbox messages={PLACEHOLDER_INBOX} />;
       default:
         return (
           <div className="flex items-center justify-center h-64">
