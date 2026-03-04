@@ -1,0 +1,226 @@
+use esm_core::rng::GameRng;
+use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine};
+use esm_engine::moba_match::state::TeamSide;
+
+// ---------------------------------------------------------------------------
+// MobaMatchConfig
+// ---------------------------------------------------------------------------
+
+#[test]
+fn config_default_has_5_players_per_side() {
+    let cfg = MobaMatchConfig::default();
+    assert_eq!(cfg.players_per_side, 5);
+}
+
+// ---------------------------------------------------------------------------
+// MobaMatchEngine: basic simulation
+// ---------------------------------------------------------------------------
+
+fn make_team_attrs() -> Vec<[u8; 9]> {
+    // 5 players, each with 9 attributes
+    vec![
+        [70, 85, 80, 78, 70, 65, 90, 72, 85], // Top
+        [80, 82, 85, 75, 78, 70, 88, 80, 82], // Jungle
+        [70, 90, 95, 99, 85, 80, 97, 88, 92], // Mid (star player)
+        [72, 88, 78, 82, 68, 60, 93, 70, 85], // Bot
+        [78, 86, 90, 80, 82, 75, 85, 92, 88], // Support
+    ]
+}
+
+fn make_weaker_team_attrs() -> Vec<[u8; 9]> {
+    vec![
+        [55, 60, 58, 55, 58, 52, 62, 56, 60],
+        [58, 62, 60, 58, 60, 55, 65, 60, 62],
+        [56, 64, 62, 60, 60, 56, 68, 58, 64],
+        [57, 63, 58, 56, 56, 54, 66, 55, 62],
+        [60, 60, 64, 56, 62, 58, 60, 66, 62],
+    ]
+}
+
+#[test]
+fn engine_produces_a_result() {
+    let mut rng = GameRng::from_seed(42);
+    let result = MobaMatchEngine::simulate(
+        &mut rng,
+        &make_team_attrs(),
+        &make_team_attrs(),
+        &MobaMatchConfig::default(),
+    );
+    assert!(result.winner == TeamSide::Blue || result.winner == TeamSide::Red);
+    assert!(!result.events.is_empty());
+    assert!(result.duration_minutes > 0);
+}
+
+#[test]
+fn engine_result_has_player_stats() {
+    let mut rng = GameRng::from_seed(42);
+    let result = MobaMatchEngine::simulate(
+        &mut rng,
+        &make_team_attrs(),
+        &make_team_attrs(),
+        &MobaMatchConfig::default(),
+    );
+    assert_eq!(result.blue_players.len(), 5);
+    assert_eq!(result.red_players.len(), 5);
+}
+
+#[test]
+fn engine_result_events_have_commentary() {
+    let mut rng = GameRng::from_seed(42);
+    let result = MobaMatchEngine::simulate(
+        &mut rng,
+        &make_team_attrs(),
+        &make_team_attrs(),
+        &MobaMatchConfig::default(),
+    );
+    let with_commentary = result
+        .events
+        .iter()
+        .filter(|e| e.commentary().is_some())
+        .count();
+    assert!(
+        with_commentary > 0,
+        "Some events should have commentary, got 0 out of {}",
+        result.events.len()
+    );
+}
+
+#[test]
+fn engine_result_ends_with_nexus_destroyed() {
+    let mut rng = GameRng::from_seed(42);
+    let result = MobaMatchEngine::simulate(
+        &mut rng,
+        &make_team_attrs(),
+        &make_team_attrs(),
+        &MobaMatchConfig::default(),
+    );
+    let last = result.events.last().unwrap();
+    assert!(
+        matches!(
+            last.kind(),
+            esm_engine::moba_match::event::MatchEventKind::NexusDestroyed { .. }
+        ),
+        "Last event should be NexusDestroyed"
+    );
+}
+
+#[test]
+fn engine_is_deterministic() {
+    let blue = make_team_attrs();
+    let red = make_weaker_team_attrs();
+    let cfg = MobaMatchConfig::default();
+
+    let mut rng1 = GameRng::from_seed(42);
+    let mut rng2 = GameRng::from_seed(42);
+
+    let r1 = MobaMatchEngine::simulate(&mut rng1, &blue, &red, &cfg);
+    let r2 = MobaMatchEngine::simulate(&mut rng2, &blue, &red, &cfg);
+
+    assert_eq!(r1.winner, r2.winner);
+    assert_eq!(r1.duration_minutes, r2.duration_minutes);
+    assert_eq!(r1.events.len(), r2.events.len());
+}
+
+#[test]
+fn engine_stronger_team_wins_more_often() {
+    let strong = make_team_attrs();
+    let weak = make_weaker_team_attrs();
+    let cfg = MobaMatchConfig::default();
+
+    let mut blue_wins = 0;
+    for seed in 0..100 {
+        let mut rng = GameRng::from_seed(seed);
+        let result = MobaMatchEngine::simulate(&mut rng, &strong, &weak, &cfg);
+        if result.winner == TeamSide::Blue {
+            blue_wins += 1;
+        }
+    }
+    assert!(
+        blue_wins > 55,
+        "Stronger team should win >55%, got {blue_wins}/100"
+    );
+}
+
+#[test]
+fn engine_result_has_tower_data() {
+    let mut rng = GameRng::from_seed(42);
+    let result = MobaMatchEngine::simulate(
+        &mut rng,
+        &make_team_attrs(),
+        &make_team_attrs(),
+        &MobaMatchConfig::default(),
+    );
+    // At least one tower should be destroyed in most games
+    let tower_events = result
+        .events
+        .iter()
+        .filter(|e| {
+            matches!(
+                e.kind(),
+                esm_engine::moba_match::event::MatchEventKind::TowerDestroyed { .. }
+            )
+        })
+        .count();
+    assert!(tower_events > 0, "Should have tower events in a full game");
+}
+
+#[test]
+fn engine_result_has_objective_data() {
+    let mut rng = GameRng::from_seed(42);
+    let result = MobaMatchEngine::simulate(
+        &mut rng,
+        &make_team_attrs(),
+        &make_team_attrs(),
+        &MobaMatchConfig::default(),
+    );
+    let obj_events = result
+        .events
+        .iter()
+        .filter(|e| {
+            matches!(
+                e.kind(),
+                esm_engine::moba_match::event::MatchEventKind::DragonKill { .. }
+                    | esm_engine::moba_match::event::MatchEventKind::BaronKill { .. }
+                    | esm_engine::moba_match::event::MatchEventKind::HeraldKill { .. }
+            )
+        })
+        .count();
+    assert!(
+        obj_events > 0,
+        "Should have objective events in a full game"
+    );
+}
+
+#[test]
+fn engine_players_accumulate_gold_and_cs() {
+    let mut rng = GameRng::from_seed(42);
+    let result = MobaMatchEngine::simulate(
+        &mut rng,
+        &make_team_attrs(),
+        &make_team_attrs(),
+        &MobaMatchConfig::default(),
+    );
+    for ps in &result.blue_players {
+        assert!(
+            ps.gold() > 500,
+            "Player should earn gold above starting 500, got {}",
+            ps.gold()
+        );
+    }
+}
+
+#[test]
+fn engine_match_ends_within_reasonable_time() {
+    let mut rng = GameRng::from_seed(42);
+    let result = MobaMatchEngine::simulate(
+        &mut rng,
+        &make_team_attrs(),
+        &make_team_attrs(),
+        &MobaMatchConfig::default(),
+    );
+    assert!(
+        result.duration_minutes <= 60,
+        "Match should end within 60 minutes, got {}",
+        result.duration_minutes
+    );
+}
