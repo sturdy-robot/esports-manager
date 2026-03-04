@@ -7,4 +7,5 @@ license.workspace = true
 
 [dependencies]
 esm-models = { path = "../esm-models" }
+rusqlite = { version = "0.31", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
