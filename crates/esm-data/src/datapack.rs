@@ -29,7 +29,14 @@ const VALID_ROLES: &[&str] = &["Top", "Jungle", "Mid", "Bot", "Support"];
 const VALID_CLASSES: &[&str] = &["Tank", "Fighter", "Assassin", "Mage", "Marksman", "Support"];
 const VALID_SCALINGS: &[&str] = &["Early", "Mid", "Late"];
 const VALID_TAGS: &[&str] = &[
-    "Knockup", "Engage", "Poke", "Splitpush", "Waveclear", "Peel", "Burst", "Sustain",
+    "Knockup",
+    "Engage",
+    "Poke",
+    "Splitpush",
+    "Waveclear",
+    "Peel",
+    "Burst",
+    "Sustain",
 ];
 
 // ---------------------------------------------------------------------------
@@ -49,6 +56,8 @@ pub struct PlayerData {
     pub first_name: String,
     pub last_name: String,
     pub role: String,
+    #[serde(default)]
+    pub secondary_roles: Vec<String>,
     pub team: String,
     pub endurance: u8,
     pub reaction_time: u8,
@@ -127,6 +136,17 @@ impl DataPack {
                 });
             }
 
+            for sr in &player.secondary_roles {
+                if !VALID_ROLES.contains(&sr.as_str()) {
+                    return Err(DataPackError {
+                        message: format!(
+                            "Player '{}' has invalid secondary role: '{}'",
+                            player.nickname, sr
+                        ),
+                    });
+                }
+            }
+
             if !team_names.contains(player.team.as_str()) {
                 return Err(DataPackError {
                     message: format!(
@@ -136,17 +156,20 @@ impl DataPack {
                 });
             }
 
-            self.validate_attribute_bounds(&player.nickname, &[
-                ("endurance", player.endurance),
-                ("reaction_time", player.reaction_time),
-                ("decision_making", player.decision_making),
-                ("clutch", player.clutch),
-                ("discipline", player.discipline),
-                ("tilt_resistance", player.tilt_resistance),
-                ("mechanics", player.mechanics),
-                ("vision_control", player.vision_control),
-                ("teamfighting", player.teamfighting),
-            ])?;
+            self.validate_attribute_bounds(
+                &player.nickname,
+                &[
+                    ("endurance", player.endurance),
+                    ("reaction_time", player.reaction_time),
+                    ("decision_making", player.decision_making),
+                    ("clutch", player.clutch),
+                    ("discipline", player.discipline),
+                    ("tilt_resistance", player.tilt_resistance),
+                    ("mechanics", player.mechanics),
+                    ("vision_control", player.vision_control),
+                    ("teamfighting", player.teamfighting),
+                ],
+            )?;
         }
         Ok(())
     }
@@ -172,10 +195,7 @@ impl DataPack {
             for tag in &champ.tags {
                 if !VALID_TAGS.contains(&tag.as_str()) {
                     return Err(DataPackError {
-                        message: format!(
-                            "Champion '{}' has invalid tag: '{}'",
-                            champ.name, tag
-                        ),
+                        message: format!("Champion '{}' has invalid tag: '{}'", champ.name, tag),
                     });
                 }
             }
@@ -191,9 +211,7 @@ impl DataPack {
         for (name, value) in attrs {
             if *value > 100 {
                 return Err(DataPackError {
-                    message: format!(
-                        "'{entity_name}' has {name} = {value}, must be 0-100"
-                    ),
+                    message: format!("'{entity_name}' has {name} = {value}, must be 0-100"),
                 });
             }
         }

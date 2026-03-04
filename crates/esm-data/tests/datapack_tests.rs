@@ -181,6 +181,53 @@ fn datapack_validate_rejects_player_referencing_unknown_team() {
 }
 
 #[test]
+fn datapack_validate_accepts_valid_secondary_roles() {
+    let json = r#"{
+        "teams": [{"name": "T1", "tag": "T1", "budget": 100}],
+        "players": [{
+            "nickname": "Flex", "first_name": "A", "last_name": "B",
+            "role": "Mid", "secondary_roles": ["Top", "Support"], "team": "T1",
+            "endurance": 50, "reaction_time": 50, "decision_making": 50,
+            "clutch": 50, "discipline": 50, "tilt_resistance": 50,
+            "mechanics": 50, "vision_control": 50, "teamfighting": 50
+        }],
+        "champions": []
+    }"#;
+    let pack = DataPack::from_json(json).unwrap();
+    assert!(pack.validate().is_ok());
+}
+
+#[test]
+fn datapack_validate_rejects_invalid_secondary_role() {
+    let json = r#"{
+        "teams": [{"name": "T1", "tag": "T1", "budget": 100}],
+        "players": [{
+            "nickname": "Bad", "first_name": "A", "last_name": "B",
+            "role": "Mid", "secondary_roles": ["InvalidRole"], "team": "T1",
+            "endurance": 50, "reaction_time": 50, "decision_making": 50,
+            "clutch": 50, "discipline": 50, "tilt_resistance": 50,
+            "mechanics": 50, "vision_control": 50, "teamfighting": 50
+        }],
+        "champions": []
+    }"#;
+    let pack = DataPack::from_json(json).unwrap();
+    assert!(pack.validate().is_err());
+}
+
+#[test]
+fn datapack_player_without_secondary_roles_defaults_to_empty() {
+    let json = r#"{
+        "nickname": "Faker", "first_name": "Lee", "last_name": "SH",
+        "role": "Mid", "team": "T1",
+        "endurance": 50, "reaction_time": 50, "decision_making": 50,
+        "clutch": 50, "discipline": 50, "tilt_resistance": 50,
+        "mechanics": 50, "vision_control": 50, "teamfighting": 50
+    }"#;
+    let player: PlayerData = serde_json::from_str(json).unwrap();
+    assert!(player.secondary_roles.is_empty());
+}
+
+#[test]
 fn datapack_validate_rejects_invalid_champion_class() {
     let json = r#"{
         "teams": [],
