@@ -74,6 +74,13 @@
 - [x] Tauri commands: new_game, list_saves, load_save, delete_save, get_game_info
 - [x] TypeScript API layer (src/lib/api.ts) matching Rust DTOs
 - [x] build_teams_from_datapack() helper in esm-db for DataPack→Team conversion
+- [x] Theme toggle in Main Menu (top-right circular button) + Sidebar collapse in header row
+- [x] Save button wired: save_game Tauri command + useSaveGame hook (saves without exiting)
+- [x] Exit to Menu button in Sidebar
+- [x] Datapack path resolution via CARGO_MANIFEST_DIR for Tauri dev mode
+- [x] Error visibility: console.error in all API hooks, error banner on team selection
+- [x] advance_turn Tauri command: phase-based progression (Morning→Afternoon→Evening→next day)
+- [x] Continue button wired: App → GameShell → TopBar → Tauri backend, live date/phase updates
 
 ### 📋 Backlog — 0.1.0-alpha
 
@@ -81,7 +88,7 @@
 - [ ] Random generation: player names, team names, roster filling from config JSON files (esm-data)
 - [ ] Separate config file schemas: teams.json, tournaments.json, player_names.json, etc.
 - [ ] Full game loop: new game → data import → team selection → play season (CLI or Tauri)
-- [ ] Advance turn command (Tauri → TurnProcessor → update UI state)
+- [x] Advance turn command (Tauri → TurnProcessor → update UI state)
 - [ ] Wire all game screens to Tauri backend (replace placeholder data with live state)
 
 ### 📋 Backlog — Future
@@ -92,6 +99,7 @@
 ## Test Coverage
 
 - **725 tests** across the workspace (618 Rust + 107 frontend), 0 failures
+- Tauri commands: greet, load_datapack, list_saves, new_game, load_save, delete_save, save_game, advance_turn, get_game_info
 - `esm-core`: 106 tests (calendar, RNG, game state, inbox, turn processor, board, save/load, string conversions)
 - `esm-models`: 132 tests (player, manager, champion, team, staff, contract, entity ID, esport type)
 - `esm-engine`: 272 tests (activity, match sim, draft, economy, tournament, transfer, staff influence, patch, game loop integration)
