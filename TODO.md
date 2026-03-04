@@ -33,13 +33,13 @@
 - [x] Tournament system (`esm-engine`) — RoundRobin/DoubleRoundRobin, Bo1/Bo3/Bo5, scheduling, standings
 - [x] Transfer negotiation engine (`esm-engine`) — buyout evaluation, agent contract offer logic, negotiation state machine
 - [x] Staff influence hooks (`esm-engine`) — delegation quality, training multiplier, morale buffer, stamina reduction, scouting accuracy
+- [x] Patch/meta shifting system (`esm-engine`) — MetaTier (S–D), PatchModifier, PatchCycle with scheduled progression
+- [x] Game loop integration tests (`esm-engine`) — full season simulation: advance days, play matches, record results, verify standings, deterministic replay
 
 ### 📋 Backlog — 0.1.0-alpha
 
 - [ ] Wire EntityId into core entities (deferred to when DB integration demands it)
-- [ ] Integrate tournament schedule into GameState / TurnProcessor
-- [ ] Full game loop: new game → data import → play season → end screen
-- [ ] Patch/meta shifting system
+- [ ] Full game loop: new game → data import → play season → end screen (CLI or Tauri)
 
 ### 📋 Backlog — Future
 
@@ -50,10 +50,10 @@
 
 ## Test Coverage
 
-- **335 tests** across the workspace, 0 failures
+- **355 tests** across the workspace, 0 failures
 - `esm-core`: 92 tests (calendar, RNG, game state, inbox, turn processor, board, save/load)
 - `esm-models`: 84 tests (player, manager, champion, team, staff, contract, entity ID)
-- `esm-engine`: 121 tests (activity, match sim, draft, economy, tournament, transfer, staff influence)
+- `esm-engine`: 147 tests (activity, match sim, draft, economy, tournament, transfer, staff influence, patch, game loop integration)
 - `esm-ai`: 8 tests (draft AI evaluation and selection)
 - `esm-db`: 35 tests (migrations, schema, repository CRUD, data pack import)
 - `esm-data`: 12 tests (JSON parsing, validation pipeline)
