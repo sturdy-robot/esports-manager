@@ -39,7 +39,7 @@ impl DataPackImporter {
 
         for team in &pack.teams {
             conn.execute(
-                "INSERT INTO teams (id, name, tag, budget) VALUES (?1, ?2, ?3, ?4)",
+                "INSERT INTO moba_teams (id, name, tag, budget) VALUES (?1, ?2, ?3, ?4)",
                 params![next_id, team.name, team.tag, team.budget],
             )?;
             map.insert(team.name.clone(), next_id);
@@ -60,7 +60,7 @@ impl DataPackImporter {
             let team_id = team_ids.get(&player.team).copied();
 
             conn.execute(
-                "INSERT INTO players (id, nickname, first_name, last_name, role,
+                "INSERT INTO moba_players (id, nickname, first_name, last_name, primary_role,
                  endurance, reaction_time, decision_making, clutch, discipline,
                  tilt_resistance, mechanics, vision_control, teamfighting, team_id)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
@@ -93,13 +93,13 @@ impl DataPackImporter {
 
         for champ in &pack.champions {
             conn.execute(
-                "INSERT INTO champions (id, name, class, scaling) VALUES (?1, ?2, ?3, ?4)",
+                "INSERT INTO moba_champions (id, name, class, scaling) VALUES (?1, ?2, ?3, ?4)",
                 params![next_id, champ.name, champ.class, champ.scaling],
             )?;
 
             for tag in &champ.tags {
                 conn.execute(
-                    "INSERT INTO champion_tags (champion_id, tag) VALUES (?1, ?2)",
+                    "INSERT INTO moba_champion_tags (champion_id, tag) VALUES (?1, ?2)",
                     params![next_id, tag],
                 )?;
             }

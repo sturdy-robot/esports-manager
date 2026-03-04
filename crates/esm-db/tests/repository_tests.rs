@@ -26,7 +26,7 @@ fn sample_player(team_id: Option<i64>) -> PlayerRow {
         nickname: "Faker".to_string(),
         first_name: "Lee".to_string(),
         last_name: "Sang-hyeok".to_string(),
-        role: "Mid".to_string(),
+        primary_role: "Mid".to_string(),
         endurance: 70,
         reaction_time: 90,
         decision_making: 95,
@@ -124,7 +124,7 @@ fn insert_and_get_player() {
 
     let loaded = PlayerRow::get_by_id(db.conn(), 1).unwrap().unwrap();
     assert_eq!(loaded.nickname, "Faker");
-    assert_eq!(loaded.role, "Mid");
+    assert_eq!(loaded.primary_role, "Mid");
     assert_eq!(loaded.mechanics, 97);
     assert_eq!(loaded.team_id, Some(1));
 }

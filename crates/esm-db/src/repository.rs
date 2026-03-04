@@ -28,35 +28,53 @@ impl TeamRow {
 
     pub fn insert(conn: &Connection, team: &TeamRow) -> SqlResult<()> {
         conn.execute(
-            "INSERT INTO teams (id, name, tag, synergy, reputation, budget)
+            "INSERT INTO moba_teams (id, name, tag, synergy, reputation, budget)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![team.id, team.name, team.tag, team.synergy, team.reputation, team.budget],
+            params![
+                team.id,
+                team.name,
+                team.tag,
+                team.synergy,
+                team.reputation,
+                team.budget
+            ],
         )?;
         Ok(())
     }
 
     pub fn get_by_id(conn: &Connection, id: i64) -> SqlResult<Option<TeamRow>> {
-        conn.query_row("SELECT * FROM teams WHERE id = ?1", [id], Self::from_row)
-            .optional()
+        conn.query_row(
+            "SELECT * FROM moba_teams WHERE id = ?1",
+            [id],
+            Self::from_row,
+        )
+        .optional()
     }
 
     pub fn list_all(conn: &Connection) -> SqlResult<Vec<TeamRow>> {
-        let mut stmt = conn.prepare("SELECT * FROM teams ORDER BY id")?;
+        let mut stmt = conn.prepare("SELECT * FROM moba_teams ORDER BY id")?;
         let rows = stmt.query_map([], Self::from_row)?;
         rows.collect()
     }
 
     pub fn update(conn: &Connection, team: &TeamRow) -> SqlResult<()> {
         conn.execute(
-            "UPDATE teams SET name = ?1, tag = ?2, synergy = ?3, reputation = ?4, budget = ?5
+            "UPDATE moba_teams SET name = ?1, tag = ?2, synergy = ?3, reputation = ?4, budget = ?5
              WHERE id = ?6",
-            params![team.name, team.tag, team.synergy, team.reputation, team.budget, team.id],
+            params![
+                team.name,
+                team.tag,
+                team.synergy,
+                team.reputation,
+                team.budget,
+                team.id
+            ],
         )?;
         Ok(())
     }
 
     pub fn delete(conn: &Connection, id: i64) -> SqlResult<()> {
-        conn.execute("DELETE FROM teams WHERE id = ?1", [id])?;
+        conn.execute("DELETE FROM moba_teams WHERE id = ?1", [id])?;
         Ok(())
     }
 }
@@ -71,7 +89,7 @@ pub struct PlayerRow {
     pub nickname: String,
     pub first_name: String,
     pub last_name: String,
-    pub role: String,
+    pub primary_role: String,
     pub endurance: i32,
     pub reaction_time: i32,
     pub decision_making: i32,
@@ -94,7 +112,7 @@ impl PlayerRow {
             nickname: row.get("nickname")?,
             first_name: row.get("first_name")?,
             last_name: row.get("last_name")?,
-            role: row.get("role")?,
+            primary_role: row.get("primary_role")?,
             endurance: row.get("endurance")?,
             reaction_time: row.get("reaction_time")?,
             decision_making: row.get("decision_making")?,
@@ -113,13 +131,13 @@ impl PlayerRow {
 
     pub fn insert(conn: &Connection, p: &PlayerRow) -> SqlResult<()> {
         conn.execute(
-            "INSERT INTO players (id, nickname, first_name, last_name, role,
+            "INSERT INTO moba_players (id, nickname, first_name, last_name, primary_role,
              endurance, reaction_time, decision_making, clutch, discipline,
              tilt_resistance, mechanics, vision_control, teamfighting,
              stamina, morale, confidence, team_id)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
             params![
-                p.id, p.nickname, p.first_name, p.last_name, p.role,
+                p.id, p.nickname, p.first_name, p.last_name, p.primary_role,
                 p.endurance, p.reaction_time, p.decision_making, p.clutch, p.discipline,
                 p.tilt_resistance, p.mechanics, p.vision_control, p.teamfighting,
                 p.stamina, p.morale, p.confidence, p.team_id,
@@ -129,25 +147,29 @@ impl PlayerRow {
     }
 
     pub fn get_by_id(conn: &Connection, id: i64) -> SqlResult<Option<PlayerRow>> {
-        conn.query_row("SELECT * FROM players WHERE id = ?1", [id], Self::from_row)
-            .optional()
+        conn.query_row(
+            "SELECT * FROM moba_players WHERE id = ?1",
+            [id],
+            Self::from_row,
+        )
+        .optional()
     }
 
     pub fn list_by_team(conn: &Connection, team_id: i64) -> SqlResult<Vec<PlayerRow>> {
-        let mut stmt = conn.prepare("SELECT * FROM players WHERE team_id = ?1 ORDER BY id")?;
+        let mut stmt = conn.prepare("SELECT * FROM moba_players WHERE team_id = ?1 ORDER BY id")?;
         let rows = stmt.query_map([team_id], Self::from_row)?;
         rows.collect()
     }
 
     pub fn update(conn: &Connection, p: &PlayerRow) -> SqlResult<()> {
         conn.execute(
-            "UPDATE players SET nickname = ?1, first_name = ?2, last_name = ?3, role = ?4,
+            "UPDATE moba_players SET nickname = ?1, first_name = ?2, last_name = ?3, primary_role = ?4,
              endurance = ?5, reaction_time = ?6, decision_making = ?7, clutch = ?8,
              discipline = ?9, tilt_resistance = ?10, mechanics = ?11, vision_control = ?12,
              teamfighting = ?13, stamina = ?14, morale = ?15, confidence = ?16, team_id = ?17
              WHERE id = ?18",
             params![
-                p.nickname, p.first_name, p.last_name, p.role,
+                p.nickname, p.first_name, p.last_name, p.primary_role,
                 p.endurance, p.reaction_time, p.decision_making, p.clutch,
                 p.discipline, p.tilt_resistance, p.mechanics, p.vision_control,
                 p.teamfighting, p.stamina, p.morale, p.confidence, p.team_id,
@@ -158,7 +180,7 @@ impl PlayerRow {
     }
 
     pub fn delete(conn: &Connection, id: i64) -> SqlResult<()> {
-        conn.execute("DELETE FROM players WHERE id = ?1", [id])?;
+        conn.execute("DELETE FROM moba_players WHERE id = ?1", [id])?;
         Ok(())
     }
 }

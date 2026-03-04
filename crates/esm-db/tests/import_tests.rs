@@ -1,7 +1,7 @@
+use esm_data::datapack::DataPack;
 use esm_db::database::Database;
 use esm_db::import::DataPackImporter;
 use esm_db::repository::{PlayerRow, TeamRow};
-use esm_data::datapack::DataPack;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -91,7 +91,7 @@ fn import_player_fields_are_correct() {
     let db = import_sample();
     let faker = PlayerRow::get_by_id(db.conn(), 1).unwrap().unwrap();
     assert_eq!(faker.nickname, "Faker");
-    assert_eq!(faker.role, "Mid");
+    assert_eq!(faker.primary_role, "Mid");
     assert_eq!(faker.mechanics, 97);
     assert_eq!(faker.team_id, Some(1));
 }
@@ -114,7 +114,7 @@ fn import_creates_champions() {
     let db = import_sample();
     let count: i64 = db
         .conn()
-        .query_row("SELECT COUNT(*) FROM champions", [], |r| r.get(0))
+        .query_row("SELECT COUNT(*) FROM moba_champions", [], |r| r.get(0))
         .unwrap();
     assert_eq!(count, 2);
 }
@@ -125,7 +125,7 @@ fn import_champion_tags() {
     let tag_count: i64 = db
         .conn()
         .query_row(
-            "SELECT COUNT(*) FROM champion_tags WHERE champion_id = 1",
+            "SELECT COUNT(*) FROM moba_champion_tags WHERE champion_id = 1",
             [],
             |r| r.get(0),
         )
