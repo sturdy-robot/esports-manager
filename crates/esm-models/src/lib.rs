@@ -1,4 +1,5 @@
 pub mod champion;
+pub mod contract;
 pub mod manager;
 pub mod player;
 pub mod staff;
