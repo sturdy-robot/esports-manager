@@ -81,6 +81,11 @@
 - [x] Error visibility: console.error in all API hooks, error banner on team selection
 - [x] advance_turn Tauri command: phase-based progression (Morning→Afternoon→Evening→next day)
 - [x] Continue button wired: App → GameShell → TopBar → Tauri backend, live date/phase updates
+- [x] Tauri get_roster command: returns PlayerInfo[] for player’s team from live GameState
+- [x] Tauri get_inbox command: returns InboxMessageInfo[] from live GameState
+- [x] Roster screen wired to live backend data (fetched on mount + after Continue)
+- [x] Inbox screen wired to live backend data (fetched on mount + after Continue)
+- [x] Dashboard KPI cards: live inbox count/urgent count + roster names from backend
 
 ### 📋 Backlog — 0.1.0-alpha
 
@@ -89,7 +94,7 @@
 - [ ] Separate config file schemas: teams.json, tournaments.json, player_names.json, etc.
 - [ ] Full game loop: new game → data import → team selection → play season (CLI or Tauri)
 - [x] Advance turn command (Tauri → TurnProcessor → update UI state)
-- [ ] Wire all game screens to Tauri backend (replace placeholder data with live state)
+- [ ] Wire remaining game screens to Tauri backend (schedule, standings, finances, staff, scouting, results)
 
 ### 📋 Backlog — Future
 
@@ -99,7 +104,7 @@
 ## Test Coverage
 
 - **725 tests** across the workspace (618 Rust + 107 frontend), 0 failures
-- Tauri commands: greet, load_datapack, list_saves, new_game, load_save, delete_save, save_game, advance_turn, get_game_info
+- Tauri commands: greet, load_datapack, list_saves, new_game, load_save, delete_save, save_game, advance_turn, get_roster, get_inbox, get_game_info
 - `esm-core`: 106 tests (calendar, RNG, game state, inbox, turn processor, board, save/load, string conversions)
 - `esm-models`: 132 tests (player, manager, champion, team, staff, contract, entity ID, esport type)
 - `esm-engine`: 272 tests (activity, match sim, draft, economy, tournament, transfer, staff influence, patch, game loop integration)
