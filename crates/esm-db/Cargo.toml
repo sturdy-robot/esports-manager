@@ -6,6 +6,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+esm-data = { path = "../esm-data" }
 esm-models = { path = "../esm-models" }
 refinery = { version = "0.8", features = ["rusqlite"] }
 rusqlite = { version = "0.31", features = ["bundled"] }
