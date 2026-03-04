@@ -66,6 +66,29 @@ pub struct GameInfo {
     pub teams_count: usize,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct PlayerInfo {
+    pub nickname: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub role: String,
+    pub stamina: u8,
+    pub morale: u8,
+    pub mechanics: u8,
+    pub vision: u8,
+    pub teamfighting: u8,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct InboxMessageInfo {
+    pub id: String,
+    pub subject: String,
+    pub category: String,
+    pub priority: String,
+    pub day: u32,
+    pub read: bool,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct NewGameParams {
     pub first_name: String,
@@ -203,6 +226,60 @@ fn save_game(name: String, state: State<'_, AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn get_roster(state: State<'_, AppState>) -> Result<Vec<PlayerInfo>, String> {
+    let lock = state.game_state.lock().unwrap();
+    let gs = lock.as_ref().ok_or("No active game session")?;
+    let team = gs
+        .teams()
+        .get(gs.player_team_index())
+        .ok_or("Player team not found")?;
+    let players = team
+        .roster()
+        .iter()
+        .map(|p| PlayerInfo {
+            nickname: p.nickname().to_string(),
+            first_name: p.first_name().to_string(),
+            last_name: p.last_name().to_string(),
+            role: format!("{:?}", p.role()),
+            stamina: p.state().stamina.value(),
+            morale: p.state().morale.value(),
+            mechanics: p.attributes().technical.mechanics.value(),
+            vision: p.attributes().technical.vision_control.value(),
+            teamfighting: p.attributes().technical.teamfighting.value(),
+        })
+        .collect();
+    Ok(players)
+}
+
+#[tauri::command]
+fn get_inbox(state: State<'_, AppState>) -> Result<Vec<InboxMessageInfo>, String> {
+    let lock = state.game_state.lock().unwrap();
+    let gs = lock.as_ref().ok_or("No active game session")?;
+    let messages = gs
+        .inbox()
+        .messages()
+        .iter()
+        .enumerate()
+        .map(|(i, m)| {
+            let priority = match m.priority() {
+                esm_core::inbox::MessagePriority::HardBlock => "Urgent",
+                esm_core::inbox::MessagePriority::RequiresResponse => "Action",
+                esm_core::inbox::MessagePriority::ReadOptional => "Info",
+            };
+            InboxMessageInfo {
+                id: format!("msg_{i}"),
+                subject: m.subject().to_string(),
+                category: format!("{:?}", m.category()),
+                priority: priority.to_string(),
+                day: m.day_received(),
+                read: m.is_resolved(),
+            }
+        })
+        .collect();
+    Ok(messages)
+}
+
+#[tauri::command]
 fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
     let mut lock = state.game_state.lock().unwrap();
     let gs = lock.as_mut().ok_or("No active game session")?;
@@ -319,6 +396,8 @@ pub fn run() {
             delete_save,
             save_game,
             advance_turn,
+            get_roster,
+            get_inbox,
             get_game_info,
         ])
         .run(tauri::generate_context!())

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import { Dashboard } from "@/components/Dashboard";
@@ -10,8 +10,7 @@ import { Finances } from "@/components/Finances";
 import { Staff } from "@/components/Staff";
 import { Scouting } from "@/components/Scouting";
 import { Results } from "@/components/Results";
-import type { RosterPlayer } from "@/components/Roster";
-import type { InboxMessage } from "@/components/Inbox";
+import { useRoster, useInbox } from "@/lib/use-api";
 import type { ScheduleMatch } from "@/components/Schedule";
 import type { StandingsEntry } from "@/components/Standings";
 import type { Transaction } from "@/components/Finances";
@@ -78,21 +77,6 @@ const PLACEHOLDER_SCHEDULE: ScheduleMatch[] = [
   { id: "s3", homeTeam: "KT Rolster", awayTeam: "T1", day: 8, month: 1, year: 2025, bestOf: 3, result: null },
 ];
 
-// Placeholder inbox until wired to Tauri backend
-const PLACEHOLDER_INBOX: InboxMessage[] = [
-  { id: "1", subject: "Welcome to your new team!", category: "System", priority: "Info", day: 1, read: false },
-  { id: "2", subject: "Pre-season roster review required", category: "Staff", priority: "Action", day: 1, read: false },
-  { id: "3", subject: "Sponsor offer: TechCorp $50K/season", category: "Finance", priority: "Action", day: 1, read: false },
-];
-
-// Placeholder roster until wired to Tauri backend
-const PLACEHOLDER_ROSTER: RosterPlayer[] = [
-  { nickname: "Zeus", firstName: "Woo-je", lastName: "Choi", role: "Top", stamina: 75, morale: 85, mechanics: 88, vision: 80, teamfighting: 85 },
-  { nickname: "Oner", firstName: "Hyeon-jun", lastName: "Moon", role: "Jungle", stamina: 90, morale: 78, mechanics: 85, vision: 91, teamfighting: 88 },
-  { nickname: "Faker", firstName: "Sang-hyeok", lastName: "Lee", role: "Mid", stamina: 82, morale: 90, mechanics: 97, vision: 88, teamfighting: 92 },
-  { nickname: "Gumayusi", firstName: "Min-hyeok", lastName: "Lee", role: "Bot", stamina: 88, morale: 82, mechanics: 90, vision: 78, teamfighting: 86 },
-  { nickname: "Keria", firstName: "Min-seok", lastName: "Ryu", role: "Support", stamina: 85, morale: 88, mechanics: 86, vision: 94, teamfighting: 91 },
-];
 
 interface GameShellProps {
   teamName?: string;
@@ -111,24 +95,64 @@ export function GameShell({
   month = 1,
   day = 1,
   phase = "Morning",
-  onContinue,
+  onContinue: onContinueProp,
   onSave,
   onExitToMenu,
 }: GameShellProps) {
   const [activePage, setActivePage] = useState("dashboard");
+  const { roster, fetchRoster } = useRoster();
+  const { messages: inboxMessages, fetchInbox } = useInbox();
+
+  // Fetch live data on mount
+  useEffect(() => {
+    fetchRoster();
+    fetchInbox();
+  }, [fetchRoster, fetchInbox]);
+
+  // Wrap onContinue to also refresh data after advancing
+  const handleContinue = useCallback(async () => {
+    if (onContinueProp) {
+      await onContinueProp();
+      fetchRoster();
+      fetchInbox();
+    }
+  }, [onContinueProp, fetchRoster, fetchInbox]);
+
+  // Map API PlayerInfo → component RosterPlayer
+  const rosterPlayers = roster.map((p) => ({
+    nickname: p.nickname,
+    firstName: p.first_name,
+    lastName: p.last_name,
+    role: p.role,
+    stamina: p.stamina,
+    morale: p.morale,
+    mechanics: p.mechanics,
+    vision: p.vision,
+    teamfighting: p.teamfighting,
+  }));
+
+  // Map API InboxMessageInfo → component InboxMessage
+  const inboxMapped = inboxMessages.map((m) => ({
+    id: m.id,
+    subject: m.subject,
+    category: m.category,
+    priority: m.priority as "Urgent" | "Action" | "Info",
+    day: m.day,
+    read: m.read,
+  }));
 
   const renderPage = () => {
     switch (activePage) {
       case "dashboard":
         return <Dashboard />;
       case "roster":
-        return <Roster players={PLACEHOLDER_ROSTER} />;
+        return <Roster players={rosterPlayers} />;
       case "schedule":
         return <Schedule matches={PLACEHOLDER_SCHEDULE} />;
       case "standings":
         return <Standings entries={PLACEHOLDER_STANDINGS} />;
       case "inbox":
-        return <Inbox messages={PLACEHOLDER_INBOX} />;
+        return <Inbox messages={inboxMapped} />;
       case "finances":
         return <Finances balance={1200000} income={75000} expenses={53000} transactions={PLACEHOLDER_TRANSACTIONS} />;
       case "staff":
@@ -166,7 +190,7 @@ export function GameShell({
           day={day}
           phase={phase}
           onSave={onSave}
-          onContinue={onContinue}
+          onContinue={handleContinue}
         />
         <main className="flex-1 overflow-y-auto p-6">
           {renderPage()}

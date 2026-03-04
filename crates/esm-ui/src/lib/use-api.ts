@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { SaveInfo, GameInfo, NewGameParams, TeamInfo } from "./api";
+import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo } from "./api";
 
 // ---------------------------------------------------------------------------
 // Detect whether we're running inside Tauri or in a browser (dev/test)
@@ -51,6 +51,8 @@ interface ApiAdapter {
   newGame(params: NewGameParams): Promise<GameInfo>;
   saveGame(name: string): Promise<void>;
   advanceTurn(): Promise<GameInfo>;
+  getRoster(): Promise<PlayerInfo[]>;
+  getInbox(): Promise<InboxMessageInfo[]>;
   loadDatapack(path: string): Promise<TeamInfo[]>;
   getGameInfo(): Promise<GameInfo>;
 }
@@ -64,6 +66,8 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     newGame: api.newGame,
     saveGame: api.saveGame,
     advanceTurn: api.advanceTurn,
+    getRoster: api.getRoster,
+    getInbox: api.getInbox,
     loadDatapack: api.loadDatapack,
     getGameInfo: api.getGameInfo,
   };
@@ -101,6 +105,23 @@ const mockAdapter: ApiAdapter = {
       mockDay++;
     }
     return { ...MOCK_GAME_INFO, day: mockDay, phase: MOCK_PHASES[mockPhaseIndex] };
+  },
+  async getRoster() {
+    await delay(150);
+    return [
+      { nickname: "Zeus", first_name: "Woo-je", last_name: "Choi", role: "Top", stamina: 92, morale: 85, mechanics: 88, vision: 82, teamfighting: 90 },
+      { nickname: "Oner", first_name: "Hyeon-jun", last_name: "Mun", role: "Jungle", stamina: 90, morale: 80, mechanics: 85, vision: 88, teamfighting: 87 },
+      { nickname: "Faker", first_name: "Sang-hyeok", last_name: "Lee", role: "Mid", stamina: 85, morale: 95, mechanics: 97, vision: 90, teamfighting: 93 },
+      { nickname: "Gumayusi", first_name: "Min-hyeok", last_name: "Lee", role: "Bot", stamina: 88, morale: 82, mechanics: 90, vision: 78, teamfighting: 86 },
+      { nickname: "Keria", first_name: "Min-seok", last_name: "Ryu", role: "Support", stamina: 85, morale: 88, mechanics: 86, vision: 94, teamfighting: 91 },
+    ];
+  },
+  async getInbox() {
+    await delay(100);
+    return [
+      { id: "msg_0", subject: "Welcome to eSports Manager!", category: "General", priority: "Info" as const, day: 0, read: false },
+      { id: "msg_1", subject: "Pre-season roster review", category: "Team", priority: "Action" as const, day: 0, read: false },
+    ];
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async loadDatapack(_path: string) {
@@ -284,4 +305,56 @@ export function useLoadDatapack() {
   }, []);
 
   return { teams, loadDatapack, loading, error };
+}
+
+export function useRoster() {
+  const [roster, setRoster] = useState<PlayerInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRoster = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      const result = await adapter.getRoster();
+      setRoster(result);
+      return result;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('useRoster error:', msg);
+      setError(msg);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { roster, fetchRoster, loading, error };
+}
+
+export function useInbox() {
+  const [messages, setMessages] = useState<InboxMessageInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchInbox = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      const result = await adapter.getInbox();
+      setMessages(result);
+      return result;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('useInbox error:', msg);
+      setError(msg);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { messages, fetchInbox, loading, error };
 }

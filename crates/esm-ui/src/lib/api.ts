@@ -25,6 +25,27 @@ export interface GameInfo {
   teams_count: number;
 }
 
+export interface PlayerInfo {
+  nickname: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  stamina: number;
+  morale: number;
+  mechanics: number;
+  vision: number;
+  teamfighting: number;
+}
+
+export interface InboxMessageInfo {
+  id: string;
+  subject: string;
+  category: string;
+  priority: "Urgent" | "Action" | "Info";
+  day: number;
+  read: boolean;
+}
+
 export interface NewGameParams {
   first_name: string;
   last_name: string;
@@ -66,6 +87,14 @@ export async function saveGame(name: string): Promise<void> {
 
 export async function advanceTurn(): Promise<GameInfo> {
   return invoke<GameInfo>("advance_turn");
+}
+
+export async function getRoster(): Promise<PlayerInfo[]> {
+  return invoke<PlayerInfo[]>("get_roster");
+}
+
+export async function getInbox(): Promise<InboxMessageInfo[]> {
+  return invoke<InboxMessageInfo[]>("get_inbox");
 }
 
 export async function getGameInfo(): Promise<GameInfo> {
