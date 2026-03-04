@@ -57,13 +57,17 @@
 - [x] Load Game screen — save list, checksum badges, empty state, loading indicator, delete
 - [x] Settings screen — saves folder path, theme toggle
 - [x] TopBar with game clock (date + phase), team badge, Continue button, Save & Exit
-- [x] GameShell layout — Sidebar + TopBar + content routing for all pages
+- [x] GameShell layout — Sidebar + TopBar + content routing for all 9 pages
 - [x] Dashboard with props-driven KPI cards (record, streak, budget, inbox count)
 - [x] Roster screen — player table with attributes, role badges, stamina/morale bars
 - [x] Inbox screen — message list with Urgent/Action/Info priority badges, blocking indicator
 - [x] Schedule screen — match cards with date, teams, result/VS, format badge
 - [x] Standings screen — league table with W-L, map diff, streak, rank highlighting
-- [x] Sidebar with Inbox nav item, collapsible, grouped navigation
+- [x] Finances screen — balance/income/expenses summary cards, transaction table with category badges
+- [x] Staff screen — member cards with role labels and color-coded skill badges
+- [x] Scouting screen — target table with attributes, estimated value, accuracy indicator
+- [x] Results screen — match result cards with WIN/LOSS badges, score display
+- [x] Sidebar with Inbox nav item, collapsible, grouped navigation (Team/League/Management)
 - [x] React API hooks (useListSaves, useDeleteSave, useLoadSave, useNewGame, useLoadDatapack) with mock fallbacks
 - [x] Full New Game pipeline wired: Manager Creation → Team Selection → createGame → playing
 - [x] LoadGame wired to live saves list via hooks, delete + refresh, load with GameInfo
@@ -78,8 +82,7 @@
 - [ ] Separate config file schemas: teams.json, tournaments.json, player_names.json, etc.
 - [ ] Full game loop: new game → data import → team selection → play season (CLI or Tauri)
 - [ ] Advance turn command (Tauri → TurnProcessor → update UI state)
-- [ ] Finances screen — budget overview, transactions list
-- [ ] Results screen — past match results with scores
+- [ ] Wire all game screens to Tauri backend (replace placeholder data with live state)
 
 ### 📋 Backlog — Future
 
@@ -88,11 +91,11 @@
 
 ## Test Coverage
 
-- **702 tests** across the workspace (618 Rust + 84 frontend), 0 failures
+- **725 tests** across the workspace (618 Rust + 107 frontend), 0 failures
 - `esm-core`: 106 tests (calendar, RNG, game state, inbox, turn processor, board, save/load, string conversions)
 - `esm-models`: 132 tests (player, manager, champion, team, staff, contract, entity ID, esport type)
 - `esm-engine`: 272 tests (activity, match sim, draft, economy, tournament, transfer, staff influence, patch, game loop integration)
 - `esm-ai`: 8 tests (draft AI evaluation and selection)
 - `esm-db`: 85 tests (migrations V1–V4, schema, repository CRUD, session repository, GameSession, SaveManager, import + build_teams)
 - `esm-data`: 15 tests (JSON parsing, validation pipeline)
-- `esm-ui`: 84 frontend tests (MainMenu, NewGame, LoadGame, TeamSelection, Settings, TopBar, Dashboard, Roster, Inbox, Schedule, Standings, App navigation)
+- `esm-ui`: 107 frontend tests (MainMenu, NewGame, LoadGame, TeamSelection, Settings, TopBar, Dashboard, Roster, Inbox, Schedule, Standings, Finances, Staff, Scouting, Results, App navigation)
