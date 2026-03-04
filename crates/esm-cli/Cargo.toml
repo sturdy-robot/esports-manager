@@ -1,0 +1,17 @@
+[package]
+name = "esm-cli"
+description = "CLI binary for eSports Manager — run a full season simulation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "esm"
+path = "src/main.rs"
+
+[dependencies]
+esm-core = { path = "../esm-core" }
+esm-data = { path = "../esm-data" }
+esm-engine = { path = "../esm-engine" }
+esm-models = { path = "../esm-models" }
+serde_json = "1"

@@ -6,6 +6,7 @@ members = [
     "crates/esm-db",
     "crates/esm-ai",
     "crates/esm-data",
+    "crates/esm-cli",
 ]
 resolver = "2"
 

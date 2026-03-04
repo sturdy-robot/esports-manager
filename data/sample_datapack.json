@@ -1,0 +1,69 @@
+{
+  "teams": [
+    {"name": "T1", "tag": "T1", "budget": 1200000},
+    {"name": "Gen.G", "tag": "GEN", "budget": 1100000},
+    {"name": "Hanwha Life", "tag": "HLE", "budget": 900000},
+    {"name": "DRX", "tag": "DRX", "budget": 800000},
+    {"name": "KT Rolster", "tag": "KT", "budget": 850000},
+    {"name": "Dplus KIA", "tag": "DK", "budget": 950000}
+  ],
+  "players": [
+    {"nickname": "Zeus", "first_name": "Choi", "last_name": "WJ", "role": "Top", "team": "T1", "endurance": 75, "reaction_time": 85, "decision_making": 80, "clutch": 78, "discipline": 70, "tilt_resistance": 65, "mechanics": 90, "vision_control": 72, "teamfighting": 85},
+    {"nickname": "Oner", "first_name": "Moon", "last_name": "HS", "role": "Jungle", "team": "T1", "endurance": 80, "reaction_time": 82, "decision_making": 85, "clutch": 75, "discipline": 78, "tilt_resistance": 70, "mechanics": 88, "vision_control": 80, "teamfighting": 82},
+    {"nickname": "Faker", "first_name": "Lee", "last_name": "SH", "role": "Mid", "team": "T1", "endurance": 70, "reaction_time": 90, "decision_making": 95, "clutch": 99, "discipline": 85, "tilt_resistance": 80, "mechanics": 97, "vision_control": 88, "teamfighting": 92},
+    {"nickname": "Gumayusi", "first_name": "Lee", "last_name": "MH", "role": "Bot", "team": "T1", "endurance": 72, "reaction_time": 88, "decision_making": 78, "clutch": 82, "discipline": 68, "tilt_resistance": 60, "mechanics": 93, "vision_control": 70, "teamfighting": 85},
+    {"nickname": "Keria", "first_name": "Ryu", "last_name": "MK", "role": "Support", "team": "T1", "endurance": 78, "reaction_time": 86, "decision_making": 90, "clutch": 80, "discipline": 82, "tilt_resistance": 75, "mechanics": 85, "vision_control": 92, "teamfighting": 88},
+
+    {"nickname": "Doran", "first_name": "Choi", "last_name": "HJ", "role": "Top", "team": "Gen.G", "endurance": 70, "reaction_time": 78, "decision_making": 75, "clutch": 72, "discipline": 74, "tilt_resistance": 68, "mechanics": 82, "vision_control": 70, "teamfighting": 80},
+    {"nickname": "Peanut", "first_name": "Han", "last_name": "WH", "role": "Jungle", "team": "Gen.G", "endurance": 82, "reaction_time": 80, "decision_making": 88, "clutch": 78, "discipline": 80, "tilt_resistance": 75, "mechanics": 84, "vision_control": 85, "teamfighting": 80},
+    {"nickname": "Chovy", "first_name": "Jeong", "last_name": "JH", "role": "Mid", "team": "Gen.G", "endurance": 68, "reaction_time": 92, "decision_making": 90, "clutch": 88, "discipline": 82, "tilt_resistance": 78, "mechanics": 96, "vision_control": 82, "teamfighting": 88},
+    {"nickname": "Peyz", "first_name": "Kim", "last_name": "SU", "role": "Bot", "team": "Gen.G", "endurance": 74, "reaction_time": 84, "decision_making": 72, "clutch": 70, "discipline": 70, "tilt_resistance": 65, "mechanics": 86, "vision_control": 68, "teamfighting": 78},
+    {"nickname": "Lehends", "first_name": "Son", "last_name": "SH", "role": "Support", "team": "Gen.G", "endurance": 76, "reaction_time": 82, "decision_making": 86, "clutch": 74, "discipline": 80, "tilt_resistance": 72, "mechanics": 80, "vision_control": 90, "teamfighting": 82},
+
+    {"nickname": "Dusk", "first_name": "Kim", "last_name": "YJ", "role": "Top", "team": "Hanwha Life", "endurance": 68, "reaction_time": 76, "decision_making": 72, "clutch": 70, "discipline": 72, "tilt_resistance": 66, "mechanics": 80, "vision_control": 68, "teamfighting": 76},
+    {"nickname": "Zeka", "first_name": "Kim", "last_name": "GW", "role": "Jungle", "team": "Hanwha Life", "endurance": 72, "reaction_time": 80, "decision_making": 78, "clutch": 76, "discipline": 74, "tilt_resistance": 70, "mechanics": 82, "vision_control": 76, "teamfighting": 78},
+    {"nickname": "Viper", "first_name": "Park", "last_name": "DV", "role": "Mid", "team": "Hanwha Life", "endurance": 70, "reaction_time": 86, "decision_making": 82, "clutch": 80, "discipline": 76, "tilt_resistance": 72, "mechanics": 90, "vision_control": 78, "teamfighting": 84},
+    {"nickname": "Delight", "first_name": "Yoo", "last_name": "HG", "role": "Bot", "team": "Hanwha Life", "endurance": 70, "reaction_time": 82, "decision_making": 74, "clutch": 72, "discipline": 70, "tilt_resistance": 68, "mechanics": 84, "vision_control": 72, "teamfighting": 78},
+    {"nickname": "Life", "first_name": "Kim", "last_name": "JH", "role": "Support", "team": "Hanwha Life", "endurance": 74, "reaction_time": 78, "decision_making": 80, "clutch": 70, "discipline": 76, "tilt_resistance": 70, "mechanics": 76, "vision_control": 84, "teamfighting": 76},
+
+    {"nickname": "Kingen", "first_name": "Hwang", "last_name": "SH", "role": "Top", "team": "DRX", "endurance": 66, "reaction_time": 74, "decision_making": 70, "clutch": 68, "discipline": 70, "tilt_resistance": 64, "mechanics": 78, "vision_control": 66, "teamfighting": 74},
+    {"nickname": "Sponge", "first_name": "Lee", "last_name": "JH", "role": "Jungle", "team": "DRX", "endurance": 70, "reaction_time": 76, "decision_making": 74, "clutch": 72, "discipline": 72, "tilt_resistance": 68, "mechanics": 80, "vision_control": 74, "teamfighting": 76},
+    {"nickname": "BuLLDoG", "first_name": "Choi", "last_name": "SY", "role": "Mid", "team": "DRX", "endurance": 68, "reaction_time": 80, "decision_making": 76, "clutch": 74, "discipline": 74, "tilt_resistance": 70, "mechanics": 84, "vision_control": 72, "teamfighting": 78},
+    {"nickname": "Teddy", "first_name": "Park", "last_name": "JH", "role": "Bot", "team": "DRX", "endurance": 72, "reaction_time": 82, "decision_making": 76, "clutch": 74, "discipline": 72, "tilt_resistance": 66, "mechanics": 86, "vision_control": 70, "teamfighting": 80},
+    {"nickname": "Pleata", "first_name": "Son", "last_name": "JH", "role": "Support", "team": "DRX", "endurance": 70, "reaction_time": 76, "decision_making": 78, "clutch": 68, "discipline": 74, "tilt_resistance": 68, "mechanics": 74, "vision_control": 80, "teamfighting": 74},
+
+    {"nickname": "PerfecT", "first_name": "Kim", "last_name": "HJ", "role": "Top", "team": "KT Rolster", "endurance": 68, "reaction_time": 76, "decision_making": 72, "clutch": 70, "discipline": 72, "tilt_resistance": 66, "mechanics": 80, "vision_control": 68, "teamfighting": 76},
+    {"nickname": "Cuzz", "first_name": "Moon", "last_name": "UG", "role": "Jungle", "team": "KT Rolster", "endurance": 74, "reaction_time": 78, "decision_making": 80, "clutch": 74, "discipline": 76, "tilt_resistance": 72, "mechanics": 82, "vision_control": 78, "teamfighting": 78},
+    {"nickname": "Bdd", "first_name": "Kwak", "last_name": "BJ", "role": "Mid", "team": "KT Rolster", "endurance": 70, "reaction_time": 84, "decision_making": 82, "clutch": 78, "discipline": 78, "tilt_resistance": 74, "mechanics": 88, "vision_control": 76, "teamfighting": 82},
+    {"nickname": "Aiming", "first_name": "Kim", "last_name": "HJ", "role": "Bot", "team": "KT Rolster", "endurance": 72, "reaction_time": 84, "decision_making": 76, "clutch": 76, "discipline": 74, "tilt_resistance": 68, "mechanics": 88, "vision_control": 72, "teamfighting": 82},
+    {"nickname": "BeryL", "first_name": "Cho", "last_name": "GJ", "role": "Support", "team": "KT Rolster", "endurance": 76, "reaction_time": 80, "decision_making": 84, "clutch": 72, "discipline": 78, "tilt_resistance": 72, "mechanics": 78, "vision_control": 88, "teamfighting": 80},
+
+    {"nickname": "Canna", "first_name": "Kim", "last_name": "CK", "role": "Top", "team": "Dplus KIA", "endurance": 70, "reaction_time": 80, "decision_making": 76, "clutch": 74, "discipline": 74, "tilt_resistance": 68, "mechanics": 84, "vision_control": 72, "teamfighting": 80},
+    {"nickname": "Canyon", "first_name": "Kim", "last_name": "GU", "role": "Jungle", "team": "Dplus KIA", "endurance": 78, "reaction_time": 88, "decision_making": 90, "clutch": 82, "discipline": 80, "tilt_resistance": 76, "mechanics": 92, "vision_control": 86, "teamfighting": 86},
+    {"nickname": "ShowMaker", "first_name": "Heo", "last_name": "SU", "role": "Mid", "team": "Dplus KIA", "endurance": 72, "reaction_time": 90, "decision_making": 88, "clutch": 86, "discipline": 80, "tilt_resistance": 76, "mechanics": 94, "vision_control": 82, "teamfighting": 88},
+    {"nickname": "Deft", "first_name": "Kim", "last_name": "HR", "role": "Bot", "team": "Dplus KIA", "endurance": 74, "reaction_time": 86, "decision_making": 84, "clutch": 80, "discipline": 80, "tilt_resistance": 74, "mechanics": 90, "vision_control": 78, "teamfighting": 86},
+    {"nickname": "Kellin", "first_name": "Kim", "last_name": "HG", "role": "Support", "team": "Dplus KIA", "endurance": 72, "reaction_time": 78, "decision_making": 80, "clutch": 70, "discipline": 76, "tilt_resistance": 70, "mechanics": 78, "vision_control": 86, "teamfighting": 78}
+  ],
+  "champions": [
+    {"name": "Orianna", "class": "Mage", "scaling": "Mid", "tags": ["Poke", "Waveclear", "Peel"]},
+    {"name": "Azir", "class": "Mage", "scaling": "Late", "tags": ["Poke", "Waveclear", "Engage"]},
+    {"name": "Ahri", "class": "Mage", "scaling": "Mid", "tags": ["Burst", "Poke"]},
+    {"name": "Syndra", "class": "Mage", "scaling": "Mid", "tags": ["Burst", "Poke"]},
+    {"name": "Zed", "class": "Assassin", "scaling": "Mid", "tags": ["Burst", "Splitpush"]},
+    {"name": "Malphite", "class": "Tank", "scaling": "Late", "tags": ["Knockup", "Engage"]},
+    {"name": "Ornn", "class": "Tank", "scaling": "Late", "tags": ["Knockup", "Engage", "Peel"]},
+    {"name": "Gnar", "class": "Fighter", "scaling": "Mid", "tags": ["Knockup", "Engage", "Splitpush"]},
+    {"name": "Fiora", "class": "Fighter", "scaling": "Late", "tags": ["Splitpush", "Sustain"]},
+    {"name": "Jayce", "class": "Fighter", "scaling": "Early", "tags": ["Poke", "Splitpush"]},
+    {"name": "Lee Sin", "class": "Fighter", "scaling": "Early", "tags": ["Engage", "Burst"]},
+    {"name": "Viego", "class": "Assassin", "scaling": "Mid", "tags": ["Burst", "Sustain"]},
+    {"name": "Jarvan IV", "class": "Fighter", "scaling": "Early", "tags": ["Knockup", "Engage"]},
+    {"name": "Jinx", "class": "Marksman", "scaling": "Late", "tags": ["Waveclear"]},
+    {"name": "Kai'Sa", "class": "Marksman", "scaling": "Mid", "tags": ["Burst"]},
+    {"name": "Ezreal", "class": "Marksman", "scaling": "Mid", "tags": ["Poke"]},
+    {"name": "Aphelios", "class": "Marksman", "scaling": "Late", "tags": ["Waveclear"]},
+    {"name": "Thresh", "class": "Support", "scaling": "Mid", "tags": ["Engage", "Peel"]},
+    {"name": "Nautilus", "class": "Support", "scaling": "Mid", "tags": ["Knockup", "Engage"]},
+    {"name": "Lulu", "class": "Support", "scaling": "Mid", "tags": ["Peel"]}
+  ]
+}
