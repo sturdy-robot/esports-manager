@@ -5,9 +5,11 @@ import { Dashboard } from "@/components/Dashboard";
 import { Roster } from "@/components/Roster";
 import { Inbox } from "@/components/Inbox";
 import { Schedule } from "@/components/Schedule";
+import { Standings } from "@/components/Standings";
 import type { RosterPlayer } from "@/components/Roster";
 import type { InboxMessage } from "@/components/Inbox";
 import type { ScheduleMatch } from "@/components/Schedule";
+import type { StandingsEntry } from "@/components/Standings";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -19,6 +21,16 @@ const pageTitles: Record<string, string> = {
   staff: "Staff",
   scouting: "Scouting",
 };
+
+// Placeholder standings until wired to Tauri backend
+const PLACEHOLDER_STANDINGS: StandingsEntry[] = [
+  { rank: 1, teamName: "T1", wins: 8, losses: 2, mapWins: 18, mapLosses: 7, streak: "W3" },
+  { rank: 2, teamName: "Gen.G", wins: 7, losses: 3, mapWins: 16, mapLosses: 9, streak: "L1" },
+  { rank: 3, teamName: "Dplus KIA", wins: 6, losses: 4, mapWins: 14, mapLosses: 11, streak: "W1" },
+  { rank: 4, teamName: "Hanwha Life", wins: 5, losses: 5, mapWins: 13, mapLosses: 12, streak: "L2" },
+  { rank: 5, teamName: "KT Rolster", wins: 3, losses: 7, mapWins: 9, mapLosses: 16, streak: "L3" },
+  { rank: 6, teamName: "DRX", wins: 1, losses: 9, mapWins: 5, mapLosses: 20, streak: "L5" },
+];
 
 // Placeholder schedule until wired to Tauri backend
 const PLACEHOLDER_SCHEDULE: ScheduleMatch[] = [
@@ -74,6 +86,8 @@ export function GameShell({
         return <Roster players={PLACEHOLDER_ROSTER} />;
       case "schedule":
         return <Schedule matches={PLACEHOLDER_SCHEDULE} />;
+      case "standings":
+        return <Standings entries={PLACEHOLDER_STANDINGS} />;
       case "results":
         return <Inbox messages={PLACEHOLDER_INBOX} />;
       default:
