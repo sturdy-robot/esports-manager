@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo } from "./api";
+import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo } from "./api";
 
 // ---------------------------------------------------------------------------
 // Detect whether we're running inside Tauri or in a browser (dev/test)
@@ -34,6 +34,8 @@ const MOCK_GAME_INFO: GameInfo = {
   manager_nickname: "kkOma",
   team_name: "T1",
   teams_count: 6,
+  is_match_day: false,
+  match_results: [],
 };
 
 const MOCK_PHASES = ["Morning", "Afternoon", "Evening"];
@@ -55,6 +57,8 @@ interface ApiAdapter {
   getInbox(): Promise<InboxMessageInfo[]>;
   loadDatapack(path: string): Promise<TeamInfo[]>;
   getGameInfo(): Promise<GameInfo>;
+  getStandings(): Promise<StandingInfo[]>;
+  getSchedule(): Promise<ScheduleMatchInfo[]>;
 }
 
 async function tauriAdapter(): Promise<ApiAdapter> {
@@ -70,6 +74,8 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     getInbox: api.getInbox,
     loadDatapack: api.loadDatapack,
     getGameInfo: api.getGameInfo,
+    getStandings: api.getStandings,
+    getSchedule: api.getSchedule,
   };
 }
 
@@ -130,6 +136,23 @@ const mockAdapter: ApiAdapter = {
   },
   async getGameInfo() {
     return { ...MOCK_GAME_INFO };
+  },
+  async getStandings() {
+    await delay(100);
+    return MOCK_TEAMS.map((t, i) => ({
+      rank: i + 1,
+      team_name: t.name,
+      wins: 6 - i,
+      losses: i,
+      win_pct: ((6 - i) / 6) * 100,
+    }));
+  },
+  async getSchedule() {
+    await delay(100);
+    return [
+      { id: 1, blue_team: "T1", red_team: "Gen.G", scheduled_day: 3, status: "Pending", winner: null },
+      { id: 2, blue_team: "DRX", red_team: "KT Rolster", scheduled_day: 3, status: "Pending", winner: null },
+    ];
   },
 };
 
@@ -305,6 +328,58 @@ export function useLoadDatapack() {
   }, []);
 
   return { teams, loadDatapack, loading, error };
+}
+
+export function useStandings() {
+  const [standings, setStandings] = useState<StandingInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStandings = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      const result = await adapter.getStandings();
+      setStandings(result);
+      return result;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('useStandings error:', msg);
+      setError(msg);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { standings, fetchStandings, loading, error };
+}
+
+export function useSchedule() {
+  const [schedule, setSchedule] = useState<ScheduleMatchInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSchedule = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      const result = await adapter.getSchedule();
+      setSchedule(result);
+      return result;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('useSchedule error:', msg);
+      setError(msg);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { schedule, fetchSchedule, loading, error };
 }
 
 export function useRoster() {

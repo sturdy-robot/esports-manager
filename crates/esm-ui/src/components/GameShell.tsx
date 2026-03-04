@@ -10,13 +10,10 @@ import { Finances } from "@/components/Finances";
 import { Staff } from "@/components/Staff";
 import { Scouting } from "@/components/Scouting";
 import { Results } from "@/components/Results";
-import { useRoster, useInbox } from "@/lib/use-api";
-import type { ScheduleMatch } from "@/components/Schedule";
-import type { StandingsEntry } from "@/components/Standings";
+import { useRoster, useInbox, useStandings, useSchedule } from "@/lib/use-api";
 import type { Transaction } from "@/components/Finances";
 import type { StaffMember } from "@/components/Staff";
 import type { ScoutingTarget } from "@/components/Scouting";
-import type { MatchResult } from "@/components/Results";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -29,13 +26,6 @@ const pageTitles: Record<string, string> = {
   staff: "Staff",
   scouting: "Scouting",
 };
-
-// Placeholder results until wired to Tauri backend
-const PLACEHOLDER_RESULTS: MatchResult[] = [
-  { id: "r1", homeTeam: "T1", awayTeam: "DRX", homeWins: 2, awayWins: 0, day: 3, month: 1, year: 2025, bestOf: 3, playerTeamWon: true },
-  { id: "r2", homeTeam: "Gen.G", awayTeam: "T1", homeWins: 2, awayWins: 1, day: 5, month: 1, year: 2025, bestOf: 3, playerTeamWon: false },
-  { id: "r3", homeTeam: "T1", awayTeam: "KT Rolster", homeWins: 2, awayWins: 1, day: 8, month: 1, year: 2025, bestOf: 3, playerTeamWon: true },
-];
 
 // Placeholder scouting until wired to Tauri backend
 const PLACEHOLDER_SCOUTING: ScoutingTarget[] = [
@@ -60,22 +50,6 @@ const PLACEHOLDER_TRANSACTIONS: Transaction[] = [
   { id: "t4", description: "Prize money — LCK Week 1", amount: 25000, date: "Jan 3", category: "Prize" },
 ];
 
-// Placeholder standings until wired to Tauri backend
-const PLACEHOLDER_STANDINGS: StandingsEntry[] = [
-  { rank: 1, teamName: "T1", wins: 8, losses: 2, mapWins: 18, mapLosses: 7, streak: "W3" },
-  { rank: 2, teamName: "Gen.G", wins: 7, losses: 3, mapWins: 16, mapLosses: 9, streak: "L1" },
-  { rank: 3, teamName: "Dplus KIA", wins: 6, losses: 4, mapWins: 14, mapLosses: 11, streak: "W1" },
-  { rank: 4, teamName: "Hanwha Life", wins: 5, losses: 5, mapWins: 13, mapLosses: 12, streak: "L2" },
-  { rank: 5, teamName: "KT Rolster", wins: 3, losses: 7, mapWins: 9, mapLosses: 16, streak: "L3" },
-  { rank: 6, teamName: "DRX", wins: 1, losses: 9, mapWins: 5, mapLosses: 20, streak: "L5" },
-];
-
-// Placeholder schedule until wired to Tauri backend
-const PLACEHOLDER_SCHEDULE: ScheduleMatch[] = [
-  { id: "s1", homeTeam: "T1", awayTeam: "DRX", day: 3, month: 1, year: 2025, bestOf: 3, result: { homeWins: 2, awayWins: 1 } },
-  { id: "s2", homeTeam: "T1", awayTeam: "Gen.G", day: 5, month: 1, year: 2025, bestOf: 3, result: null },
-  { id: "s3", homeTeam: "KT Rolster", awayTeam: "T1", day: 8, month: 1, year: 2025, bestOf: 3, result: null },
-];
 
 
 interface GameShellProps {
@@ -102,12 +76,16 @@ export function GameShell({
   const [activePage, setActivePage] = useState("dashboard");
   const { roster, fetchRoster } = useRoster();
   const { messages: inboxMessages, fetchInbox } = useInbox();
+  const { standings, fetchStandings } = useStandings();
+  const { schedule, fetchSchedule } = useSchedule();
 
   // Fetch live data on mount
   useEffect(() => {
     fetchRoster();
     fetchInbox();
-  }, [fetchRoster, fetchInbox]);
+    fetchStandings();
+    fetchSchedule();
+  }, [fetchRoster, fetchInbox, fetchStandings, fetchSchedule]);
 
   // Wrap onContinue to also refresh data after advancing
   const handleContinue = useCallback(async () => {
@@ -115,8 +93,10 @@ export function GameShell({
       await onContinueProp();
       fetchRoster();
       fetchInbox();
+      fetchStandings();
+      fetchSchedule();
     }
-  }, [onContinueProp, fetchRoster, fetchInbox]);
+  }, [onContinueProp, fetchRoster, fetchInbox, fetchStandings, fetchSchedule]);
 
   // Map API PlayerInfo → component RosterPlayer
   const rosterPlayers = roster.map((p) => ({
@@ -157,9 +137,39 @@ export function GameShell({
       case "roster":
         return <Roster players={rosterPlayers} />;
       case "schedule":
-        return <Schedule matches={PLACEHOLDER_SCHEDULE} />;
+        return (
+          <Schedule
+            matches={schedule.map((m) => ({
+              id: String(m.id),
+              homeTeam: m.blue_team,
+              awayTeam: m.red_team,
+              day: m.scheduled_day,
+              month: month ?? 1,
+              year: year ?? 2025,
+              bestOf: 1,
+              result: m.winner
+                ? {
+                    homeWins: m.winner === m.blue_team ? 1 : 0,
+                    awayWins: m.winner === m.red_team ? 1 : 0,
+                  }
+                : null,
+            }))}
+          />
+        );
       case "standings":
-        return <Standings entries={PLACEHOLDER_STANDINGS} />;
+        return (
+          <Standings
+            entries={standings.map((s) => ({
+              rank: s.rank,
+              teamName: s.team_name,
+              wins: s.wins,
+              losses: s.losses,
+              mapWins: s.wins,
+              mapLosses: s.losses,
+              streak: "",
+            }))}
+          />
+        );
       case "inbox":
         return <Inbox messages={inboxMapped} />;
       case "finances":
@@ -169,7 +179,24 @@ export function GameShell({
       case "scouting":
         return <Scouting targets={PLACEHOLDER_SCOUTING} />;
       case "results":
-        return <Results results={PLACEHOLDER_RESULTS} />;
+        return (
+          <Results
+            results={schedule
+              .filter((m) => m.winner !== null)
+              .map((m) => ({
+                id: String(m.id),
+                homeTeam: m.blue_team,
+                awayTeam: m.red_team,
+                homeWins: m.winner === m.blue_team ? 1 : 0,
+                awayWins: m.winner === m.red_team ? 1 : 0,
+                day: m.scheduled_day,
+                month: month ?? 1,
+                year: year ?? 2025,
+                bestOf: 1,
+                playerTeamWon: m.winner === teamName,
+              }))}
+          />
+        );
       default:
         return (
           <div className="flex items-center justify-center h-64">

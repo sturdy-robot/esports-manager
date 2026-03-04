@@ -27,6 +27,8 @@ pub struct SessionRow {
     pub manager_archetype: String,
     pub manager_reputation: i32,
     pub teams_json: String,
+    pub tournament_json: String,
+    pub moba_teams_json: String,
 }
 
 impl SessionRow {
@@ -52,6 +54,8 @@ impl SessionRow {
             manager_archetype: row.get("manager_archetype")?,
             manager_reputation: row.get("manager_reputation")?,
             teams_json: row.get("teams_json")?,
+            tournament_json: row.get("tournament_json")?,
+            moba_teams_json: row.get("moba_teams_json")?,
         })
     }
 
@@ -62,8 +66,9 @@ impl SessionRow {
              (id, game_version, esport_type, rng_seed, rng_state,
               calendar_year, calendar_month, calendar_day, calendar_phase, calendar_days_elapsed,
               player_team_name, player_team_index, manager_nickname, manager_first_name, manager_last_name,
-              manager_nationality, manager_archetype, manager_reputation, teams_json, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, datetime('now'))",
+              manager_nationality, manager_archetype, manager_reputation, teams_json,
+              tournament_json, moba_teams_json, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, datetime('now'))",
             params![
                 s.id,
                 s.game_version,
@@ -84,6 +89,8 @@ impl SessionRow {
                 s.manager_archetype,
                 s.manager_reputation,
                 s.teams_json,
+                s.tournament_json,
+                s.moba_teams_json,
             ],
         )?;
         Ok(())

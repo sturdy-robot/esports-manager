@@ -49,6 +49,17 @@ pub struct SaveManager;
 impl SaveManager {
     /// Create (or overwrite) a save file and update the index.
     pub fn create_save(dir: &Path, name: &str, state: &GameState) -> io::Result<()> {
+        Self::create_save_full(dir, name, state, "", "[]")
+    }
+
+    /// Create (or overwrite) a save file with tournament and moba teams data.
+    pub fn create_save_full(
+        dir: &Path,
+        name: &str,
+        state: &GameState,
+        tournament_json: &str,
+        moba_teams_json: &str,
+    ) -> io::Result<()> {
         fs::create_dir_all(dir)?;
 
         let db_path = dir.join(format!("{name}.db"));
@@ -64,9 +75,9 @@ impl SaveManager {
             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Non-UTF-8 path"))?;
         let db = Database::open(db_path_str)
             .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to open DB: {e}")))?;
-        GameSession::save(db.conn(), state).map_err(|e| {
-            io::Error::new(io::ErrorKind::Other, format!("Failed to save session: {e}"))
-        })?;
+        GameSession::save_full(db.conn(), state, tournament_json, moba_teams_json).map_err(
+            |e| io::Error::new(io::ErrorKind::Other, format!("Failed to save session: {e}")),
+        )?;
 
         // Force WAL checkpoint so all data is in the main file
         let _ = db.conn().execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
@@ -94,6 +105,11 @@ impl SaveManager {
 
     /// Load a GameState from a save file, validating the checksum.
     pub fn load_save(dir: &Path, name: &str) -> io::Result<GameState> {
+        Self::load_save_full(dir, name).map(|(gs, _, _)| gs)
+    }
+
+    /// Load GameState + tournament JSON + moba teams JSON from a save file.
+    pub fn load_save_full(dir: &Path, name: &str) -> io::Result<(GameState, String, String)> {
         let entries = Self::read_index(dir)?;
         let entry = entries.iter().find(|e| e.name == name).ok_or_else(|| {
             io::Error::new(
@@ -122,7 +138,7 @@ impl SaveManager {
         let db = Database::open(db_path_str)
             .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to open DB: {e}")))?;
 
-        let state = GameSession::load(db.conn())
+        let (state, tournament_json, moba_teams_json) = GameSession::load_full(db.conn())
             .map_err(|e| {
                 io::Error::new(io::ErrorKind::Other, format!("Failed to load session: {e}"))
             })?
@@ -133,7 +149,7 @@ impl SaveManager {
                 )
             })?;
 
-        Ok(state)
+        Ok((state, tournament_json, moba_teams_json))
     }
 
     /// Delete a save file and remove it from the index.

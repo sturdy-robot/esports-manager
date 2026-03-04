@@ -23,6 +23,32 @@ export interface GameInfo {
   manager_nickname: string;
   team_name: string;
   teams_count: number;
+  is_match_day: boolean;
+  match_results: MatchResultInfo[];
+}
+
+export interface MatchResultInfo {
+  blue_team: string;
+  red_team: string;
+  winner: string;
+  duration_minutes: number;
+}
+
+export interface StandingInfo {
+  rank: number;
+  team_name: string;
+  wins: number;
+  losses: number;
+  win_pct: number;
+}
+
+export interface ScheduleMatchInfo {
+  id: number;
+  blue_team: string;
+  red_team: string;
+  scheduled_day: number;
+  status: string;
+  winner: string | null;
 }
 
 export interface PlayerInfo {
@@ -99,4 +125,12 @@ export async function getInbox(): Promise<InboxMessageInfo[]> {
 
 export async function getGameInfo(): Promise<GameInfo> {
   return invoke<GameInfo>("get_game_info");
+}
+
+export async function getStandings(): Promise<StandingInfo[]> {
+  return invoke<StandingInfo[]>("get_standings");
+}
+
+export async function getSchedule(): Promise<ScheduleMatchInfo[]> {
+  return invoke<ScheduleMatchInfo[]>("get_schedule");
 }

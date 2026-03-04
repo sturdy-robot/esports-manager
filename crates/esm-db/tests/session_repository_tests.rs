@@ -26,6 +26,8 @@ fn make_session_row() -> SessionRow {
         manager_archetype: "TacticalGenius".to_string(),
         manager_reputation: 50,
         teams_json: "[]".to_string(),
+        tournament_json: "".to_string(),
+        moba_teams_json: "[]".to_string(),
     }
 }
 

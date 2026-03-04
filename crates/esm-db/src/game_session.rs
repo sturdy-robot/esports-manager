@@ -23,6 +23,16 @@ pub struct GameSession;
 impl GameSession {
     /// Persist the current `GameState` into the database.
     pub fn save(conn: &Connection, state: &GameState) -> SqlResult<()> {
+        Self::save_full(conn, state, "", "[]")
+    }
+
+    /// Persist `GameState` plus tournament and moba teams JSON blobs.
+    pub fn save_full(
+        conn: &Connection,
+        state: &GameState,
+        tournament_json: &str,
+        moba_teams_json: &str,
+    ) -> SqlResult<()> {
         let teams_json =
             serde_json::to_string(state.teams()).expect("teams serialization cannot fail");
 
@@ -46,6 +56,8 @@ impl GameSession {
             manager_archetype: state.manager().archetype().as_str().to_string(),
             manager_reputation: state.manager().reputation().value() as i32,
             teams_json,
+            tournament_json: tournament_json.to_string(),
+            moba_teams_json: moba_teams_json.to_string(),
         };
 
         SessionRow::upsert(conn, &row)?;
@@ -75,10 +87,19 @@ impl GameSession {
     /// Load a `GameState` from the database. Returns `None` if no session has
     /// been saved yet.
     pub fn load(conn: &Connection) -> SqlResult<Option<GameState>> {
+        Ok(Self::load_full(conn)?.map(|(gs, _, _)| gs))
+    }
+
+    /// Load `GameState` plus tournament and moba teams JSON blobs.
+    /// Returns `(GameState, tournament_json, moba_teams_json)`.
+    pub fn load_full(conn: &Connection) -> SqlResult<Option<(GameState, String, String)>> {
         let session = match SessionRow::get(conn)? {
             Some(s) => s,
             None => return Ok(None),
         };
+
+        let tournament_json = session.tournament_json.clone();
+        let moba_teams_json = session.moba_teams_json.clone();
 
         // Reconstruct teams from JSON
         let teams: Vec<Team> =
@@ -146,6 +167,6 @@ impl GameSession {
             state.inbox_mut().push(msg);
         }
 
-        Ok(Some(state))
+        Ok(Some((state, tournament_json, moba_teams_json)))
     }
 }

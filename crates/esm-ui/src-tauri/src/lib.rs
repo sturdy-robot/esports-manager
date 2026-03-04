@@ -8,8 +8,12 @@ use esm_core::calendar::DayPhase;
 use esm_core::game_state::GameState;
 use esm_core::turn::TurnProcessor;
 use esm_db::save_manager::{SaveEntry, SaveManager};
+use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine};
+use esm_engine::moba_match::state::TeamSide;
+use esm_engine::tournament::{BracketKind, Tournament, TournamentFormat};
 use esm_models::esport_type::EsportType;
 use esm_models::manager::{Manager, ManagerArchetype};
+use esm_models::moba::team::MobaTeam;
 
 // ---------------------------------------------------------------------------
 // Application state
@@ -18,6 +22,8 @@ use esm_models::manager::{Manager, ManagerArchetype};
 pub struct AppState {
     saves_dir: PathBuf,
     game_state: Mutex<Option<GameState>>,
+    tournament: Mutex<Option<Tournament>>,
+    moba_teams: Mutex<Option<Vec<MobaTeam>>>,
 }
 
 impl AppState {
@@ -25,6 +31,8 @@ impl AppState {
         Self {
             saves_dir,
             game_state: Mutex::new(None),
+            tournament: Mutex::new(None),
+            moba_teams: Mutex::new(None),
         }
     }
 }
@@ -64,6 +72,35 @@ pub struct GameInfo {
     pub manager_nickname: String,
     pub team_name: String,
     pub teams_count: usize,
+    pub is_match_day: bool,
+    pub match_results: Vec<MatchResultInfo>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MatchResultInfo {
+    pub blue_team: String,
+    pub red_team: String,
+    pub winner: String,
+    pub duration_minutes: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct StandingInfo {
+    pub rank: usize,
+    pub team_name: String,
+    pub wins: u32,
+    pub losses: u32,
+    pub win_pct: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ScheduleMatchInfo {
+    pub id: u32,
+    pub blue_team: String,
+    pub red_team: String,
+    pub scheduled_day: u32,
+    pub status: String,
+    pub winner: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -161,6 +198,7 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
         .map_err(|e| format!("Validation error: {e}"))?;
 
     let teams = esm_db::import::build_teams_from_datapack(&pack);
+    let moba_teams = esm_db::import::build_moba_teams_from_datapack(&pack);
 
     if params.team_index >= teams.len() {
         return Err(format!(
@@ -186,25 +224,65 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
 
     let gs = GameState::new(2025, seed, esport_type, manager, params.team_index, teams);
 
-    // Save to disk
-    SaveManager::create_save(&state.saves_dir, &params.save_name, &gs)
-        .map_err(|e| format!("Failed to save game: {e}"))?;
+    // Create tournament (Double Round Robin, Bo1, starting day 3)
+    let team_names: Vec<String> = moba_teams.iter().map(|t| t.name().to_string()).collect();
+    let tournament = Tournament::new(
+        "Season 2025".to_string(),
+        team_names,
+        TournamentFormat::DoubleRoundRobin,
+        BracketKind::Bo1,
+        3,
+    );
 
-    let info = game_info_from_state(&gs);
+    // Serialize tournament + moba teams for persistence
+    let tournament_json =
+        serde_json::to_string(&tournament).map_err(|e| format!("Serialize tournament: {e}"))?;
+    let moba_teams_json =
+        serde_json::to_string(&moba_teams).map_err(|e| format!("Serialize moba teams: {e}"))?;
+
+    // Save to disk
+    SaveManager::create_save_full(
+        &state.saves_dir,
+        &params.save_name,
+        &gs,
+        &tournament_json,
+        &moba_teams_json,
+    )
+    .map_err(|e| format!("Failed to save game: {e}"))?;
+
+    let info = game_info_from_state(&gs, &tournament);
 
     // Store in memory
     *state.game_state.lock().unwrap() = Some(gs);
+    *state.tournament.lock().unwrap() = Some(tournament);
+    *state.moba_teams.lock().unwrap() = Some(moba_teams);
 
     Ok(info)
 }
 
 #[tauri::command]
 fn load_save(name: String, state: State<'_, AppState>) -> Result<GameInfo, String> {
-    let gs = SaveManager::load_save(&state.saves_dir, &name)
-        .map_err(|e| format!("Failed to load save: {e}"))?;
+    let (gs, tournament_json, moba_teams_json) =
+        SaveManager::load_save_full(&state.saves_dir, &name)
+            .map_err(|e| format!("Failed to load save: {e}"))?;
 
-    let info = game_info_from_state(&gs);
+    let tournament: Option<Tournament> = if tournament_json.is_empty() {
+        None
+    } else {
+        serde_json::from_str(&tournament_json).ok()
+    };
+
+    let moba_teams: Option<Vec<MobaTeam>> = if moba_teams_json == "[]" || moba_teams_json.is_empty()
+    {
+        None
+    } else {
+        serde_json::from_str(&moba_teams_json).ok()
+    };
+
+    let info = game_info_from_state(&gs, tournament.as_ref().unwrap_or(&empty_tournament()));
     *state.game_state.lock().unwrap() = Some(gs);
+    *state.tournament.lock().unwrap() = tournament;
+    *state.moba_teams.lock().unwrap() = moba_teams;
 
     Ok(info)
 }
@@ -220,8 +298,27 @@ fn delete_save(name: String, state: State<'_, AppState>) -> Result<(), String> {
 fn save_game(name: String, state: State<'_, AppState>) -> Result<(), String> {
     let lock = state.game_state.lock().unwrap();
     let gs = lock.as_ref().ok_or("No active game session")?;
-    SaveManager::create_save(&state.saves_dir, &name, gs)
-        .map_err(|e| format!("Failed to save game: {e}"))?;
+
+    let t_lock = state.tournament.lock().unwrap();
+    let tournament_json = t_lock
+        .as_ref()
+        .map(|t| serde_json::to_string(t).unwrap_or_default())
+        .unwrap_or_default();
+
+    let m_lock = state.moba_teams.lock().unwrap();
+    let moba_teams_json = m_lock
+        .as_ref()
+        .map(|m| serde_json::to_string(m).unwrap_or_else(|_| "[]".to_string()))
+        .unwrap_or_else(|| "[]".to_string());
+
+    SaveManager::create_save_full(
+        &state.saves_dir,
+        &name,
+        gs,
+        &tournament_json,
+        &moba_teams_json,
+    )
+    .map_err(|e| format!("Failed to save game: {e}"))?;
     Ok(())
 }
 
@@ -283,6 +380,10 @@ fn get_inbox(state: State<'_, AppState>) -> Result<Vec<InboxMessageInfo>, String
 fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
     let mut lock = state.game_state.lock().unwrap();
     let gs = lock.as_mut().ok_or("No active game session")?;
+    let mut t_lock = state.tournament.lock().unwrap();
+    let m_lock = state.moba_teams.lock().unwrap();
+
+    let mut match_results: Vec<MatchResultInfo> = Vec::new();
 
     // If currently Evening, advancing will trigger end-of-day via TurnProcessor
     if gs.calendar().phase() == DayPhase::Evening {
@@ -291,30 +392,140 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                 "Cannot advance: there are unresolved urgent messages in your inbox.".to_string()
             }
         })?;
+
+        // Simulate today's matches after advancing the day
+        if let (Some(tournament), Some(moba_teams)) = (t_lock.as_mut(), m_lock.as_ref()) {
+            let day = gs.calendar().days_elapsed();
+            let todays: Vec<_> = tournament
+                .matches_today(day)
+                .iter()
+                .map(|m| (m.id(), m.blue_team_idx(), m.red_team_idx()))
+                .collect();
+
+            let config = MobaMatchConfig::default();
+            for (match_id, blue_idx, red_idx) in todays {
+                if blue_idx < moba_teams.len() && red_idx < moba_teams.len() {
+                    let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
+                    let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
+                    let result =
+                        MobaMatchEngine::simulate(gs.rng_mut(), &blue_attrs, &red_attrs, &config);
+
+                    let (bw, rw) = match result.winner {
+                        TeamSide::Blue => (1u32, 0u32),
+                        TeamSide::Red => (0u32, 1u32),
+                    };
+                    tournament.record_result(match_id, bw, rw);
+
+                    let winner_name = match result.winner {
+                        TeamSide::Blue => moba_teams[blue_idx].name().to_string(),
+                        TeamSide::Red => moba_teams[red_idx].name().to_string(),
+                    };
+                    match_results.push(MatchResultInfo {
+                        blue_team: moba_teams[blue_idx].name().to_string(),
+                        red_team: moba_teams[red_idx].name().to_string(),
+                        winner: winner_name,
+                        duration_minutes: result.duration_minutes,
+                    });
+                }
+            }
+        }
     } else {
         gs.advance_phase();
     }
 
-    Ok(game_info_from_state(gs))
+    let tournament_ref = t_lock.as_ref();
+    let mut info = game_info_from_state(gs, tournament_ref.unwrap_or(&empty_tournament()));
+    info.match_results = match_results;
+    Ok(info)
 }
 
 #[tauri::command]
 fn get_game_info(state: State<'_, AppState>) -> Result<GameInfo, String> {
     let lock = state.game_state.lock().unwrap();
     let gs = lock.as_ref().ok_or("No active game session")?;
-    Ok(game_info_from_state(gs))
+    let t_lock = state.tournament.lock().unwrap();
+    Ok(game_info_from_state(
+        gs,
+        t_lock.as_ref().unwrap_or(&empty_tournament()),
+    ))
+}
+
+#[tauri::command]
+fn get_standings(state: State<'_, AppState>) -> Result<Vec<StandingInfo>, String> {
+    let t_lock = state.tournament.lock().unwrap();
+    let tournament = t_lock.as_ref().ok_or("No tournament active")?;
+
+    let standings: Vec<StandingInfo> = tournament
+        .standings()
+        .iter()
+        .enumerate()
+        .map(|(i, s)| {
+            let total = s.wins + s.losses;
+            let win_pct = if total > 0 {
+                s.wins as f64 / total as f64 * 100.0
+            } else {
+                0.0
+            };
+            StandingInfo {
+                rank: i + 1,
+                team_name: s.team_name.clone(),
+                wins: s.wins,
+                losses: s.losses,
+                win_pct,
+            }
+        })
+        .collect();
+    Ok(standings)
+}
+
+#[tauri::command]
+fn get_schedule(state: State<'_, AppState>) -> Result<Vec<ScheduleMatchInfo>, String> {
+    let t_lock = state.tournament.lock().unwrap();
+    let tournament = t_lock.as_ref().ok_or("No tournament active")?;
+
+    let matches: Vec<ScheduleMatchInfo> = tournament
+        .schedule()
+        .matches()
+        .iter()
+        .map(|m| {
+            let blue_name = tournament
+                .team_name(m.blue_team_idx())
+                .unwrap_or("")
+                .to_string();
+            let red_name = tournament
+                .team_name(m.red_team_idx())
+                .unwrap_or("")
+                .to_string();
+            let winner = m
+                .winner_team_idx()
+                .and_then(|idx| tournament.team_name(idx))
+                .map(|s| s.to_string());
+            ScheduleMatchInfo {
+                id: m.id(),
+                blue_team: blue_name,
+                red_team: red_name,
+                scheduled_day: m.scheduled_day(),
+                status: format!("{:?}", m.status()),
+                winner,
+            }
+        })
+        .collect();
+    Ok(matches)
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-fn game_info_from_state(gs: &GameState) -> GameInfo {
+fn game_info_from_state(gs: &GameState, tournament: &Tournament) -> GameInfo {
     let team_name = gs
         .teams()
         .get(gs.player_team_index())
         .map(|t| t.name().to_string())
         .unwrap_or_default();
+
+    let next_day = gs.calendar().days_elapsed() + 1;
+    let is_match_day = !tournament.matches_today(next_day).is_empty();
 
     GameInfo {
         year: gs.calendar().year(),
@@ -324,7 +535,40 @@ fn game_info_from_state(gs: &GameState) -> GameInfo {
         manager_nickname: gs.manager().nickname().to_string(),
         team_name,
         teams_count: gs.teams().len(),
+        is_match_day,
+        match_results: Vec::new(),
     }
+}
+
+fn extract_team_attrs(moba_team: &MobaTeam) -> Vec<[u8; 9]> {
+    moba_team
+        .roster()
+        .iter()
+        .map(|p| {
+            let a = p.attributes();
+            [
+                a.endurance.value(),
+                a.reaction_time.value(),
+                a.decision_making.value(),
+                a.clutch.value(),
+                a.discipline.value(),
+                a.tilt_resistance.value(),
+                a.mechanics.value(),
+                a.vision_control.value(),
+                a.teamfighting.value(),
+            ]
+        })
+        .collect()
+}
+
+fn empty_tournament() -> Tournament {
+    Tournament::new(
+        String::new(),
+        Vec::new(),
+        TournamentFormat::RoundRobin,
+        BracketKind::Bo1,
+        1,
+    )
 }
 
 /// Resolve a relative data path against the workspace root.
@@ -399,6 +643,8 @@ pub fn run() {
             get_roster,
             get_inbox,
             get_game_info,
+            get_standings,
+            get_schedule,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

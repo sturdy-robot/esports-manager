@@ -255,6 +255,10 @@ impl Tournament {
         self.team_names.len()
     }
 
+    pub fn team_name(&self, idx: usize) -> Option<&str> {
+        self.team_names.get(idx).map(|s| s.as_str())
+    }
+
     pub fn schedule(&self) -> &Schedule {
         &self.schedule
     }
