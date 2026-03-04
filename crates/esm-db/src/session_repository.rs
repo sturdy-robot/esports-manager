@@ -19,12 +19,14 @@ pub struct SessionRow {
     pub calendar_phase: String,
     pub calendar_days_elapsed: i32,
     pub player_team_name: String,
+    pub player_team_index: i32,
     pub manager_nickname: String,
     pub manager_first_name: String,
     pub manager_last_name: String,
     pub manager_nationality: String,
     pub manager_archetype: String,
     pub manager_reputation: i32,
+    pub teams_json: String,
 }
 
 impl SessionRow {
@@ -41,12 +43,15 @@ impl SessionRow {
             calendar_phase: row.get("calendar_phase")?,
             calendar_days_elapsed: row.get("calendar_days_elapsed")?,
             player_team_name: row.get("player_team_name")?,
+            player_team_index: row.get("player_team_index")?,
             manager_nickname: row.get("manager_nickname")?,
+
             manager_first_name: row.get("manager_first_name")?,
             manager_last_name: row.get("manager_last_name")?,
             manager_nationality: row.get("manager_nationality")?,
             manager_archetype: row.get("manager_archetype")?,
             manager_reputation: row.get("manager_reputation")?,
+            teams_json: row.get("teams_json")?,
         })
     }
 
@@ -56,9 +61,9 @@ impl SessionRow {
             "INSERT OR REPLACE INTO game_session
              (id, game_version, esport_type, rng_seed, rng_state,
               calendar_year, calendar_month, calendar_day, calendar_phase, calendar_days_elapsed,
-              player_team_name, manager_nickname, manager_first_name, manager_last_name,
-              manager_nationality, manager_archetype, manager_reputation, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, datetime('now'))",
+              player_team_name, player_team_index, manager_nickname, manager_first_name, manager_last_name,
+              manager_nationality, manager_archetype, manager_reputation, teams_json, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, datetime('now'))",
             params![
                 s.id,
                 s.game_version,
@@ -71,12 +76,14 @@ impl SessionRow {
                 s.calendar_phase,
                 s.calendar_days_elapsed,
                 s.player_team_name,
+                s.player_team_index,
                 s.manager_nickname,
                 s.manager_first_name,
                 s.manager_last_name,
                 s.manager_nationality,
                 s.manager_archetype,
                 s.manager_reputation,
+                s.teams_json,
             ],
         )?;
         Ok(())

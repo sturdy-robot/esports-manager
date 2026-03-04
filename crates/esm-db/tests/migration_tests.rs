@@ -306,6 +306,37 @@ fn schema_inbox_messages_rejects_invalid_priority() {
     assert!(result.is_err());
 }
 
+// ---------------------------------------------------------------------------
+// V4 migration: teams_json and player_team_index on game_session
+// ---------------------------------------------------------------------------
+
+#[test]
+fn schema_game_session_has_teams_json_column() {
+    let db = Database::open_in_memory().unwrap();
+    db.conn()
+        .execute(
+            "INSERT INTO game_session (id, game_version, esport_type, rng_seed, rng_state,
+             calendar_year, calendar_month, calendar_day, calendar_phase, calendar_days_elapsed,
+             player_team_name, player_team_index, manager_nickname, manager_first_name,
+             manager_last_name, manager_nationality, manager_archetype, manager_reputation,
+             teams_json)
+             VALUES (1, '0.1.0', 'Moba', 42, 42, 2025, 1, 1, 'Morning', 0,
+                     'T1', 0, 'kkOma', 'Kim', 'JG', 'KR', 'Balanced', 50, '[]')",
+            [],
+        )
+        .unwrap();
+
+    let teams: String = db
+        .conn()
+        .query_row(
+            "SELECT teams_json FROM game_session WHERE id = 1",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(teams, "[]");
+}
+
 #[test]
 fn schema_inbox_messages_rejects_invalid_category() {
     let db = Database::open_in_memory().unwrap();

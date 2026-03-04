@@ -179,5 +179,5 @@ fn v2_insert_tournament_and_match() {
 fn v2_schema_version_is_2() {
     let db = Database::open_in_memory().unwrap();
     let version = db.schema_version().unwrap();
-    assert_eq!(version, 2);
+    assert!(version >= 2, "expected schema version >= 2, got {version}");
 }

@@ -18,12 +18,14 @@ fn make_session_row() -> SessionRow {
         calendar_phase: "Morning".to_string(),
         calendar_days_elapsed: 0,
         player_team_name: "T1".to_string(),
+        player_team_index: 0,
         manager_nickname: "kkOma".to_string(),
         manager_first_name: "Kim".to_string(),
         manager_last_name: "Jeong-gyun".to_string(),
         manager_nationality: "KR".to_string(),
         manager_archetype: "TacticalGenius".to_string(),
         manager_reputation: 50,
+        teams_json: "[]".to_string(),
     }
 }
 
