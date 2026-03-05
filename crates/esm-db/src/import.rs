@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
 use esm_data::datapack::DataPack;
+use esm_models::moba::player::{MobaPlayer, MobaPlayerAttributes, MobaRole, RoleAssignment};
+use esm_models::moba::team::MobaTeam;
 use esm_models::player::{
     BoundedAttribute, MentalAttributes, PhysicalAttributes, Player, PlayerAttributes, Role,
     TechnicalAttributes,
@@ -51,6 +53,61 @@ pub fn build_teams_from_datapack(pack: &DataPack) -> Vec<Team> {
     }
 
     teams
+}
+
+/// Build MOBA-specific `MobaTeam` objects from a validated `DataPack`.
+/// These contain the full attribute sets needed for match simulation.
+pub fn build_moba_teams_from_datapack(pack: &DataPack) -> Vec<MobaTeam> {
+    let mut teams = Vec::new();
+
+    for td in &pack.teams {
+        let players: Vec<MobaPlayer> = pack
+            .players
+            .iter()
+            .filter(|p| p.team == td.name)
+            .map(|p| {
+                let primary = parse_moba_role(&p.role);
+                let secondary: Vec<MobaRole> = p
+                    .secondary_roles
+                    .iter()
+                    .map(|r| parse_moba_role(r))
+                    .collect();
+
+                MobaPlayer::new(
+                    p.nickname.clone(),
+                    p.first_name.clone(),
+                    p.last_name.clone(),
+                    RoleAssignment::new(primary, secondary),
+                    MobaPlayerAttributes {
+                        endurance: BoundedAttribute::new(p.endurance),
+                        reaction_time: BoundedAttribute::new(p.reaction_time),
+                        decision_making: BoundedAttribute::new(p.decision_making),
+                        clutch: BoundedAttribute::new(p.clutch),
+                        discipline: BoundedAttribute::new(p.discipline),
+                        tilt_resistance: BoundedAttribute::new(p.tilt_resistance),
+                        mechanics: BoundedAttribute::new(p.mechanics),
+                        vision_control: BoundedAttribute::new(p.vision_control),
+                        teamfighting: BoundedAttribute::new(p.teamfighting),
+                    },
+                )
+            })
+            .collect();
+
+        teams.push(MobaTeam::new(td.name.clone(), td.tag.clone(), players));
+    }
+
+    teams
+}
+
+fn parse_moba_role(s: &str) -> MobaRole {
+    match s {
+        "Top" => MobaRole::Top,
+        "Jungle" => MobaRole::Jungle,
+        "Mid" => MobaRole::Mid,
+        "Bot" => MobaRole::Bot,
+        "Support" => MobaRole::Support,
+        _ => MobaRole::Mid,
+    }
 }
 
 fn parse_role(s: &str) -> Role {
