@@ -177,6 +177,34 @@ fn lane_str(lane: Lane) -> &'static str {
 }
 
 // ---------------------------------------------------------------------------
+// Snapshots — lightweight state captures attached to each event
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlayerSnapshot {
+    pub kills: u32,
+    pub deaths: u32,
+    pub assists: u32,
+    pub cs: u32,
+    pub gold: u32,
+    pub is_dead: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GameSnapshot {
+    pub blue_players: Vec<PlayerSnapshot>,
+    pub red_players: Vec<PlayerSnapshot>,
+    pub blue_team_gold: u32,
+    pub red_team_gold: u32,
+    pub dragons_blue: u32,
+    pub dragons_red: u32,
+    pub baron_alive: bool,
+    pub baron_timer: u32,
+    pub dragon_timer: u32,
+    pub herald_available: bool,
+}
+
+// ---------------------------------------------------------------------------
 // MatchEvent
 // ---------------------------------------------------------------------------
 
@@ -186,6 +214,7 @@ pub struct MatchEvent {
     phase: MobaMatchPhase,
     kind: MatchEventKind,
     commentary: Option<Commentary>,
+    snapshot: Option<GameSnapshot>,
 }
 
 impl MatchEvent {
@@ -195,6 +224,7 @@ impl MatchEvent {
             phase,
             kind,
             commentary: None,
+            snapshot: None,
         }
     }
 
@@ -216,5 +246,13 @@ impl MatchEvent {
 
     pub fn set_commentary(&mut self, commentary: Commentary) {
         self.commentary = Some(commentary);
+    }
+
+    pub fn snapshot(&self) -> Option<&GameSnapshot> {
+        self.snapshot.as_ref()
+    }
+
+    pub fn set_snapshot(&mut self, snapshot: GameSnapshot) {
+        self.snapshot = Some(snapshot);
     }
 }

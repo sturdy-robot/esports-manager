@@ -1,7 +1,7 @@
 use esm_core::rng::GameRng;
 use serde::{Deserialize, Serialize};
 
-use super::event::{MatchEvent, MobaMatchPhase};
+use super::event::{GameSnapshot, MatchEvent, MobaMatchPhase, PlayerSnapshot};
 use super::map::{Lane, MapState, TowerTier};
 use super::player_state::MatchPlayerState;
 use super::state::TeamSide;
@@ -23,10 +23,10 @@ impl MatchPlayerSimulationData {
     /// Compute effective power including stamina penalty, morale boost, and mastery.
     pub fn effective_power(&self) -> f64 {
         let base_power: f64 = self.attributes.iter().map(|&v| v as f64).sum();
-        
+
         let stamina_factor = (self.stamina as f64) / 100.0;
         let morale_factor = 0.8 + ((self.morale as f64) / 100.0) * 0.4; // 0.8 at 0 morale, 1.2 at 100
-        
+
         base_power * stamina_factor * morale_factor * self.mastery_multiplier
     }
 }
@@ -49,7 +49,11 @@ pub struct MatchGameState {
 }
 
 impl MatchGameState {
-    pub fn new(blue_sim_data: Vec<MatchPlayerSimulationData>, red_sim_data: Vec<MatchPlayerSimulationData>, players_per_side: usize) -> Self {
+    pub fn new(
+        blue_sim_data: Vec<MatchPlayerSimulationData>,
+        red_sim_data: Vec<MatchPlayerSimulationData>,
+        players_per_side: usize,
+    ) -> Self {
         Self {
             minute: 0,
             map: MapState::new(),
@@ -157,11 +161,19 @@ impl MatchGameState {
 
         // Clutch factor for the behind team (index 3 = clutch attribute)
         if self.gold_delta() < -2000 {
-            let clutch_avg: f64 = self.blue_sim_data.iter().map(|d| d.attributes[3] as f64).sum::<f64>()
+            let clutch_avg: f64 = self
+                .blue_sim_data
+                .iter()
+                .map(|d| d.attributes[3] as f64)
+                .sum::<f64>()
                 / self.blue_sim_data.len().max(1) as f64;
             blue_prob += (clutch_avg / 100.0) * 0.05;
         } else if self.gold_delta() > 2000 {
-            let clutch_avg: f64 = self.red_sim_data.iter().map(|d| d.attributes[3] as f64).sum::<f64>()
+            let clutch_avg: f64 = self
+                .red_sim_data
+                .iter()
+                .map(|d| d.attributes[3] as f64)
+                .sum::<f64>()
                 / self.red_sim_data.len().max(1) as f64;
             blue_prob -= (clutch_avg / 100.0) * 0.05;
         }
@@ -255,8 +267,38 @@ impl MatchGameState {
             .any(|t| t.tier() == TowerTier::Nexus && t.is_standing())
     }
 
-    /// Record an event and push it to history.
-    pub fn record_event(&mut self, event: MatchEvent) {
+    /// Capture a lightweight snapshot of current player stats and objective state.
+    pub fn capture_snapshot(&self) -> GameSnapshot {
+        let snap_players = |players: &[MatchPlayerState]| -> Vec<PlayerSnapshot> {
+            players
+                .iter()
+                .map(|p| PlayerSnapshot {
+                    kills: p.kills(),
+                    deaths: p.deaths(),
+                    assists: p.assists(),
+                    cs: p.cs(),
+                    gold: p.gold(),
+                    is_dead: p.is_dead(),
+                })
+                .collect()
+        };
+        GameSnapshot {
+            blue_players: snap_players(&self.blue_players),
+            red_players: snap_players(&self.red_players),
+            blue_team_gold: self.blue_total_gold(),
+            red_team_gold: self.red_total_gold(),
+            dragons_blue: self.map.objectives().dragon_count(TeamSide::Blue),
+            dragons_red: self.map.objectives().dragon_count(TeamSide::Red),
+            baron_alive: self.map.objectives().baron_alive(),
+            baron_timer: self.baron_spawn_timer,
+            dragon_timer: self.dragon_timer,
+            herald_available: self.herald_available(),
+        }
+    }
+
+    /// Record an event, attaching a game snapshot, and push it to history.
+    pub fn record_event(&mut self, mut event: MatchEvent) {
+        event.set_snapshot(self.capture_snapshot());
         self.events.push(event);
     }
 }

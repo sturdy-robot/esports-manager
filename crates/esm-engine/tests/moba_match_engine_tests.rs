@@ -1,5 +1,6 @@
 use esm_core::rng::GameRng;
 use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine};
+use esm_engine::moba_match::event::MatchEventKind;
 use esm_engine::moba_match::game_state::MatchPlayerSimulationData;
 use esm_engine::moba_match::state::TeamSide;
 
@@ -250,13 +251,13 @@ fn engine_match_ends_within_reasonable_time() {
 fn engine_monte_carlo_stamina_impact() {
     let base_blue = make_team_attrs();
     let mut exhausted_red = make_team_attrs();
-    
+
     // Red team is completely exhausted
     for p in &mut exhausted_red {
         p.stamina = 10;
         p.morale = 50;
     }
-    
+
     let cfg = MobaMatchConfig::default();
     let mut blue_wins = 0;
     for seed in 0..100 {
@@ -266,7 +267,7 @@ fn engine_monte_carlo_stamina_impact() {
             blue_wins += 1;
         }
     }
-    
+
     // Blue should win overwhelmingly against an exhausted team with identical base stats
     assert!(
         blue_wins > 80,
@@ -275,15 +276,84 @@ fn engine_monte_carlo_stamina_impact() {
 }
 
 #[test]
+fn engine_events_carry_game_snapshot() {
+    let mut rng = GameRng::from_seed(42);
+    let result = MobaMatchEngine::simulate(
+        &mut rng,
+        &make_team_attrs(),
+        &make_team_attrs(),
+        &MobaMatchConfig::default(),
+    );
+    // Every non-FarmTick event should have a snapshot
+    let non_farm: Vec<_> = result
+        .events
+        .iter()
+        .filter(|e| !matches!(e.kind(), MatchEventKind::FarmTick))
+        .collect();
+    assert!(!non_farm.is_empty());
+    for ev in &non_farm {
+        let snap = ev
+            .snapshot()
+            .expect("Non-farm event should have a snapshot");
+        assert_eq!(snap.blue_players.len(), 5);
+        assert_eq!(snap.red_players.len(), 5);
+    }
+}
+
+#[test]
+fn engine_snapshot_gold_increases_over_time() {
+    let mut rng = GameRng::from_seed(42);
+    let result = MobaMatchEngine::simulate(
+        &mut rng,
+        &make_team_attrs(),
+        &make_team_attrs(),
+        &MobaMatchConfig::default(),
+    );
+    let snapshots: Vec<_> = result.events.iter().filter_map(|e| e.snapshot()).collect();
+    assert!(snapshots.len() >= 2);
+    let first = &snapshots[0];
+    let last = &snapshots[snapshots.len() - 1];
+    assert!(
+        last.blue_team_gold > first.blue_team_gold,
+        "Blue gold should increase: first={}, last={}",
+        first.blue_team_gold,
+        last.blue_team_gold
+    );
+}
+
+#[test]
+fn engine_snapshot_has_objective_state() {
+    let mut rng = GameRng::from_seed(42);
+    let result = MobaMatchEngine::simulate(
+        &mut rng,
+        &make_team_attrs(),
+        &make_team_attrs(),
+        &MobaMatchConfig::default(),
+    );
+    // Find a dragon event and check its snapshot tracks dragon count
+    let dragon_event = result
+        .events
+        .iter()
+        .find(|e| matches!(e.kind(), MatchEventKind::DragonKill { .. }));
+    if let Some(ev) = dragon_event {
+        let snap = ev.snapshot().expect("Dragon event should have snapshot");
+        assert!(
+            snap.dragons_blue + snap.dragons_red >= 1,
+            "After a dragon kill, total dragons should be >= 1"
+        );
+    }
+}
+
+#[test]
 fn engine_monte_carlo_mastery_impact() {
     let base_blue = make_team_attrs();
     let mut high_mastery_red = make_team_attrs();
-    
+
     // Red team has massive champion mastery advantage
     for p in &mut high_mastery_red {
         p.mastery_multiplier = 1.5; // 50% boost
     }
-    
+
     let cfg = MobaMatchConfig::default();
     let mut red_wins = 0;
     for seed in 0..100 {
@@ -293,7 +363,7 @@ fn engine_monte_carlo_mastery_impact() {
             red_wins += 1;
         }
     }
-    
+
     // Red should win overwhelmingly due to mastery advantage
     assert!(
         red_wins >= 80,
