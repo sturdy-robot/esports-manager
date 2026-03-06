@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MatchFlow } from './MatchFlow';
+import { PlayerTalksPanel } from './PlayerTalksPanel';
 import { useSeriesInfo, useDraft } from '@/lib/use-api';
 import type { MatchMode } from './PlayMatchButton';
 import type { SeriesInfo } from '@/lib/api';
@@ -191,6 +192,16 @@ function BetweenGamesPanel({
   fearlessBans: string[];
   onNextGame: () => void;
 }) {
+  const [step, setStep] = useState<'summary' | 'talks'>('summary');
+
+  if (step === 'talks') {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
+        <PlayerTalksPanel onDone={onNextGame} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div
@@ -255,13 +266,13 @@ function BetweenGamesPanel({
         )}
 
         <button
-          onClick={onNextGame}
+          onClick={() => setStep('talks')}
           className="px-8 py-3 rounded-lg font-bold text-white"
           style={{
             background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
           }}
         >
-          Start Game {series.game_number}
+          Talk to Players
         </button>
       </div>
     </div>

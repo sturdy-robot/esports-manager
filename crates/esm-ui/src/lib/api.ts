@@ -257,6 +257,29 @@ export async function getTactics(): Promise<TacticsInfo> {
 }
 
 // ---------------------------------------------------------------------------
+// Player Talk API (between-match motivational system)
+// ---------------------------------------------------------------------------
+
+export type TalkType = "motivate" | "calm" | "strategize" | "rest";
+
+export interface PlayerStateInfo {
+  nickname: string;
+  role: string;
+  stamina: number;
+  morale: number;
+  confidence: string;
+  satisfaction: number;
+}
+
+export async function getRosterState(): Promise<PlayerStateInfo[]> {
+  return invoke<PlayerStateInfo[]>("get_roster_state");
+}
+
+export async function applyPlayerTalk(playerIndex: number, talk: TalkType): Promise<PlayerStateInfo[]> {
+  return invoke<PlayerStateInfo[]>("apply_player_talk", { params: { player_index: playerIndex, talk } });
+}
+
+// ---------------------------------------------------------------------------
 // Series API
 // ---------------------------------------------------------------------------
 

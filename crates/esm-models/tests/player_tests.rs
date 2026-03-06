@@ -1,6 +1,6 @@
 use esm_models::player::{
     BoundedAttribute, Confidence, MentalAttributes, PhysicalAttributes, Player, PlayerAttributes,
-    PlayerState, Role, TechnicalAttributes,
+    PlayerState, PlayerTalk, Role, TechnicalAttributes,
 };
 
 // ---------------------------------------------------------------------------
@@ -247,4 +247,98 @@ fn player_state_is_mutable() {
 
     player.state_mut().confidence = Confidence::Hyped;
     assert_eq!(player.state().confidence, Confidence::Hyped);
+}
+
+// ---------------------------------------------------------------------------
+// PlayerTalk — between-match motivational system
+// ---------------------------------------------------------------------------
+
+#[test]
+fn talk_motivate_boosts_morale_and_costs_stamina() {
+    let mut state = PlayerState::default();
+    state.apply_talk(PlayerTalk::Motivate);
+    assert_eq!(state.morale.value(), 58); // 50 + 8
+    assert_eq!(state.stamina.value(), 97); // 100 - 3
+}
+
+#[test]
+fn talk_motivate_lifts_slumping_to_neutral() {
+    let mut state = PlayerState::default();
+    state.confidence = Confidence::Slumping;
+    state.apply_talk(PlayerTalk::Motivate);
+    assert_eq!(state.confidence, Confidence::Neutral);
+}
+
+#[test]
+fn talk_motivate_does_not_change_neutral_confidence() {
+    let mut state = PlayerState::default();
+    assert_eq!(state.confidence, Confidence::Neutral);
+    state.apply_talk(PlayerTalk::Motivate);
+    assert_eq!(state.confidence, Confidence::Neutral);
+}
+
+#[test]
+fn talk_calm_boosts_morale_and_stamina() {
+    let mut state = PlayerState::default();
+    state.apply_talk(PlayerTalk::Calm);
+    assert_eq!(state.morale.value(), 53); // 50 + 3
+    assert_eq!(state.stamina.value(), 100); // 100 + 2 clamped at 100
+}
+
+#[test]
+fn talk_calm_restores_slumping_confidence() {
+    let mut state = PlayerState::default();
+    state.confidence = Confidence::Slumping;
+    state.apply_talk(PlayerTalk::Calm);
+    assert_eq!(state.confidence, Confidence::Neutral);
+}
+
+#[test]
+fn talk_strategize_boosts_satisfaction_and_morale() {
+    let mut state = PlayerState::default();
+    state.apply_talk(PlayerTalk::Strategize);
+    assert_eq!(state.satisfaction.value(), 55); // 50 + 5
+    assert_eq!(state.morale.value(), 52); // 50 + 2
+}
+
+#[test]
+fn talk_rest_boosts_stamina_and_costs_morale() {
+    let mut state = PlayerState::default();
+    state.stamina.decrease(20); // 80
+    state.apply_talk(PlayerTalk::Rest);
+    assert_eq!(state.stamina.value(), 88); // 80 + 8
+    assert_eq!(state.morale.value(), 48); // 50 - 2
+}
+
+#[test]
+fn talk_rest_clamps_stamina_at_100() {
+    let mut state = PlayerState::default();
+    assert_eq!(state.stamina.value(), 100);
+    state.apply_talk(PlayerTalk::Rest);
+    assert_eq!(state.stamina.value(), 100);
+}
+
+#[test]
+fn multiple_talks_stack() {
+    let mut state = PlayerState::default();
+    state.apply_talk(PlayerTalk::Motivate); // morale 58, stamina 97
+    state.apply_talk(PlayerTalk::Rest); // morale 56, stamina 100 (clamped)
+    assert_eq!(state.morale.value(), 56);
+    assert_eq!(state.stamina.value(), 100);
+}
+
+#[test]
+fn apply_match_result_win_boosts_morale_and_confidence() {
+    let mut state = PlayerState::default();
+    state.apply_match_result(true);
+    assert_eq!(state.morale.value(), 60);
+    assert_eq!(state.confidence, Confidence::Confident);
+}
+
+#[test]
+fn apply_match_result_loss_drops_morale_and_confidence() {
+    let mut state = PlayerState::default();
+    state.apply_match_result(false);
+    assert_eq!(state.morale.value(), 40);
+    assert_eq!(state.confidence, Confidence::Slumping);
 }

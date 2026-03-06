@@ -20,6 +20,7 @@ use esm_engine::tournament::{BracketKind, Tournament, TournamentFormat};
 use esm_models::esport_type::EsportType;
 use esm_models::manager::{Manager, ManagerArchetype};
 use esm_models::moba::team::MobaTeam;
+use esm_models::player::PlayerTalk;
 
 // ---------------------------------------------------------------------------
 // Application state
@@ -732,6 +733,104 @@ fn get_draft_state(state: State<'_, AppState>) -> Result<DraftSessionState, Stri
 }
 
 // ---------------------------------------------------------------------------
+// Player Talk commands (between-match motivational system)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ApplyTalkParams {
+    pub player_index: usize,
+    pub talk: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PlayerStateInfo {
+    pub nickname: String,
+    pub role: String,
+    pub stamina: u8,
+    pub morale: u8,
+    pub confidence: String,
+    pub satisfaction: u8,
+}
+
+fn confidence_str(c: esm_models::player::Confidence) -> &'static str {
+    match c {
+        esm_models::player::Confidence::Slumping => "slumping",
+        esm_models::player::Confidence::Neutral => "neutral",
+        esm_models::player::Confidence::Confident => "confident",
+        esm_models::player::Confidence::Hyped => "hyped",
+    }
+}
+
+fn role_str(r: esm_models::moba::player::MobaRole) -> &'static str {
+    match r {
+        esm_models::moba::player::MobaRole::Top => "Top",
+        esm_models::moba::player::MobaRole::Jungle => "Jungle",
+        esm_models::moba::player::MobaRole::Mid => "Mid",
+        esm_models::moba::player::MobaRole::Bot => "Bot",
+        esm_models::moba::player::MobaRole::Support => "Support",
+    }
+}
+
+fn parse_talk(s: &str) -> Result<PlayerTalk, String> {
+    match s {
+        "motivate" => Ok(PlayerTalk::Motivate),
+        "calm" => Ok(PlayerTalk::Calm),
+        "strategize" => Ok(PlayerTalk::Strategize),
+        "rest" => Ok(PlayerTalk::Rest),
+        _ => Err(format!("Unknown talk type: {s}")),
+    }
+}
+
+fn player_state_info(player: &esm_models::moba::player::MobaPlayer) -> PlayerStateInfo {
+    let st = player.state();
+    PlayerStateInfo {
+        nickname: player.nickname().to_string(),
+        role: role_str(player.roles().primary()).to_string(),
+        stamina: st.stamina.value(),
+        morale: st.morale.value(),
+        confidence: confidence_str(st.confidence).to_string(),
+        satisfaction: st.satisfaction.value(),
+    }
+}
+
+#[tauri::command]
+fn get_roster_state(state: State<'_, AppState>) -> Result<Vec<PlayerStateInfo>, String> {
+    let gs = state.game_state.lock().unwrap();
+    let gs = gs.as_ref().ok_or("No active game session")?;
+    let m_lock = state.moba_teams.lock().unwrap();
+    let moba_teams = m_lock.as_ref().ok_or("No teams loaded")?;
+    let idx = gs.player_team_index();
+    let team = &moba_teams[idx];
+    Ok(team.roster().iter().map(player_state_info).collect())
+}
+
+#[tauri::command]
+fn apply_player_talk(
+    state: State<'_, AppState>,
+    params: ApplyTalkParams,
+) -> Result<Vec<PlayerStateInfo>, String> {
+    let gs = state.game_state.lock().unwrap();
+    let gs = gs.as_ref().ok_or("No active game session")?;
+    let mut m_lock = state.moba_teams.lock().unwrap();
+    let moba_teams = m_lock.as_mut().ok_or("No teams loaded")?;
+    let idx = gs.player_team_index();
+    let team = &mut moba_teams[idx];
+
+    let talk = parse_talk(&params.talk)?;
+    let roster = team.roster_mut();
+    if params.player_index >= roster.len() {
+        return Err(format!(
+            "Player index {} out of range (roster has {})",
+            params.player_index,
+            roster.len()
+        ));
+    }
+    roster[params.player_index].state_mut().apply_talk(talk);
+
+    Ok(team.roster().iter().map(player_state_info).collect())
+}
+
+// ---------------------------------------------------------------------------
 // Tactics commands
 // ---------------------------------------------------------------------------
 
@@ -1265,6 +1364,8 @@ pub fn run() {
             get_series_info,
             set_tactics,
             get_tactics,
+            get_roster_state,
+            apply_player_talk,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

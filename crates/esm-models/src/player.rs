@@ -112,7 +112,49 @@ impl Default for PlayerState {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PlayerTalk {
+    /// "We've got this!" — boosts morale, slight stamina cost
+    Motivate,
+    /// "Stay calm, play your game" — reduces tilt, restores confidence
+    Calm,
+    /// "Let's focus on objectives" — boosts satisfaction, slight morale
+    Strategize,
+    /// "Take a breather" — restores stamina at the cost of morale momentum
+    Rest,
+}
+
 impl PlayerState {
+    /// Apply a manager talk to this player between games.
+    /// Each talk type has different effects on morale, stamina, confidence, satisfaction.
+    pub fn apply_talk(&mut self, talk: PlayerTalk) {
+        match talk {
+            PlayerTalk::Motivate => {
+                self.morale.increase(8);
+                self.stamina.decrease(3);
+                if self.confidence == Confidence::Slumping {
+                    self.confidence = Confidence::Neutral;
+                }
+            }
+            PlayerTalk::Calm => {
+                self.morale.increase(3);
+                self.stamina.increase(2);
+                // Restore one confidence level if slumping
+                if self.confidence == Confidence::Slumping {
+                    self.confidence = Confidence::Neutral;
+                }
+            }
+            PlayerTalk::Strategize => {
+                self.satisfaction.increase(5);
+                self.morale.increase(2);
+            }
+            PlayerTalk::Rest => {
+                self.stamina.increase(8);
+                self.morale.decrease(2);
+            }
+        }
+    }
+
     pub fn apply_match_result(&mut self, is_win: bool) {
         if is_win {
             self.morale.increase(10);

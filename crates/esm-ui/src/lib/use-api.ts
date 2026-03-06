@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult, SeriesInfo, TacticsInfo, PlaystyleType, FocusType } from "./api";
+import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult, SeriesInfo, TacticsInfo, PlaystyleType, FocusType, PlayerStateInfo, TalkType } from "./api";
 
 // ---------------------------------------------------------------------------
 // Detect whether we're running inside Tauri or in a browser (dev/test)
@@ -69,6 +69,8 @@ interface ApiAdapter {
   getSeriesInfo(): Promise<SeriesInfo>;
   setTactics(playstyle: PlaystyleType, focus: FocusType): Promise<TacticsInfo>;
   getTactics(): Promise<TacticsInfo>;
+  getRosterState(): Promise<PlayerStateInfo[]>;
+  applyPlayerTalk(playerIndex: number, talk: TalkType): Promise<PlayerStateInfo[]>;
 }
 
 async function tauriAdapter(): Promise<ApiAdapter> {
@@ -96,6 +98,8 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     getSeriesInfo: api.getSeriesInfo,
     setTactics: api.setTactics,
     getTactics: api.getTactics,
+    getRosterState: api.getRosterState,
+    applyPlayerTalk: api.applyPlayerTalk,
   };
 }
 
@@ -212,6 +216,21 @@ const mockAdapter: ApiAdapter = {
   async getTactics() {
     return { playstyle: 'balanced', focus: 'teamfight' } as TacticsInfo;
   },
+  async getRosterState() {
+    return MOCK_ROSTER_STATE();
+  },
+  async applyPlayerTalk(playerIndex: number, talk: TalkType) {
+    const roster = MOCK_ROSTER_STATE();
+    // Simulate talk effect on the target player
+    const p = roster[playerIndex];
+    if (p) {
+      if (talk === 'motivate') { p.morale = Math.min(100, p.morale + 8); p.stamina = Math.max(0, p.stamina - 3); }
+      if (talk === 'calm') { p.morale = Math.min(100, p.morale + 3); p.stamina = Math.min(100, p.stamina + 2); }
+      if (talk === 'strategize') { p.satisfaction = Math.min(100, p.satisfaction + 5); p.morale = Math.min(100, p.morale + 2); }
+      if (talk === 'rest') { p.stamina = Math.min(100, p.stamina + 8); p.morale = Math.max(0, p.morale - 2); }
+    }
+    return roster;
+  },
 };
 
 const MOCK_CHAMPIONS = [
@@ -235,6 +254,16 @@ function MOCK_SERIES_INFO(): SeriesInfo {
     is_complete: mockSeriesBlueWins >= 2 || mockSeriesRedWins >= 2,
     game_number: mockSeriesBlueWins + mockSeriesRedWins + 1,
   };
+}
+
+function MOCK_ROSTER_STATE(): PlayerStateInfo[] {
+  return [
+    { nickname: 'Zeus', role: 'Top', stamina: 85, morale: 55, confidence: 'neutral', satisfaction: 50 },
+    { nickname: 'Oner', role: 'Jungle', stamina: 78, morale: 48, confidence: 'neutral', satisfaction: 50 },
+    { nickname: 'Faker', role: 'Mid', stamina: 90, morale: 62, confidence: 'confident', satisfaction: 55 },
+    { nickname: 'Gumayusi', role: 'Bot', stamina: 72, morale: 42, confidence: 'slumping', satisfaction: 45 },
+    { nickname: 'Keria', role: 'Support', stamina: 80, morale: 58, confidence: 'neutral', satisfaction: 52 },
+  ];
 }
 
 function MOCK_MATCH_RESULT(): SimulateMatchResult {
@@ -749,4 +778,34 @@ export function useTactics() {
   }, []);
 
   return { tactics, refresh, update, loading };
+}
+
+export function usePlayerTalks() {
+  const [roster, setRoster] = useState<PlayerStateInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      const adapter = await getAdapter();
+      const data = await adapter.getRosterState();
+      setRoster(data);
+    } catch (e) {
+      console.error('usePlayerTalks refresh error:', e);
+    }
+  }, []);
+
+  const applyTalk = useCallback(async (playerIndex: number, talk: TalkType) => {
+    setLoading(true);
+    try {
+      const adapter = await getAdapter();
+      const data = await adapter.applyPlayerTalk(playerIndex, talk);
+      setRoster(data);
+    } catch (e) {
+      console.error('usePlayerTalks applyTalk error:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { roster, refresh, applyTalk, loading };
 }
