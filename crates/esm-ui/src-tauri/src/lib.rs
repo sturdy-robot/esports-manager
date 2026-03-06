@@ -94,11 +94,36 @@ pub struct MatchResultInfo {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct PlayerSnapshotInfo {
+    pub kills: u32,
+    pub deaths: u32,
+    pub assists: u32,
+    pub cs: u32,
+    pub gold: u32,
+    pub is_dead: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GameSnapshotInfo {
+    pub blue_players: Vec<PlayerSnapshotInfo>,
+    pub red_players: Vec<PlayerSnapshotInfo>,
+    pub blue_team_gold: u32,
+    pub red_team_gold: u32,
+    pub dragons_blue: u32,
+    pub dragons_red: u32,
+    pub baron_alive: bool,
+    pub baron_timer: u32,
+    pub dragon_timer: u32,
+    pub herald_available: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct MatchEventInfo {
     pub minute: u32,
     pub phase: String,
     pub kind: String,
     pub commentary: Option<String>,
+    pub snapshot: Option<GameSnapshotInfo>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -732,11 +757,38 @@ fn match_result_to_info(
         .events
         .iter()
         .filter(|e| !matches!(e.kind(), MatchEventKind::FarmTick))
-        .map(|e| MatchEventInfo {
-            minute: e.minute(),
-            phase: format!("{:?}", e.phase()),
-            kind: event_kind_label(e.kind()).to_string(),
-            commentary: e.commentary().map(|c| c.text().to_string()),
+        .map(|e| {
+            let snapshot = e.snapshot().map(|s| {
+                let convert_players = |players: &[esm_engine::moba_match::event::PlayerSnapshot]| -> Vec<PlayerSnapshotInfo> {
+                    players.iter().map(|p| PlayerSnapshotInfo {
+                        kills: p.kills,
+                        deaths: p.deaths,
+                        assists: p.assists,
+                        cs: p.cs,
+                        gold: p.gold,
+                        is_dead: p.is_dead,
+                    }).collect()
+                };
+                GameSnapshotInfo {
+                    blue_players: convert_players(&s.blue_players),
+                    red_players: convert_players(&s.red_players),
+                    blue_team_gold: s.blue_team_gold,
+                    red_team_gold: s.red_team_gold,
+                    dragons_blue: s.dragons_blue,
+                    dragons_red: s.dragons_red,
+                    baron_alive: s.baron_alive,
+                    baron_timer: s.baron_timer,
+                    dragon_timer: s.dragon_timer,
+                    herald_available: s.herald_available,
+                }
+            });
+            MatchEventInfo {
+                minute: e.minute(),
+                phase: format!("{:?}", e.phase()),
+                kind: event_kind_label(e.kind()).to_string(),
+                commentary: e.commentary().map(|c| c.text().to_string()),
+                snapshot,
+            }
         })
         .collect();
 

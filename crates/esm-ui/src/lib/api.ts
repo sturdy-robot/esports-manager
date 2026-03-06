@@ -192,11 +192,34 @@ export async function getDraftState(): Promise<DraftSessionState> {
 // Match Simulation API
 // ---------------------------------------------------------------------------
 
+export interface PlayerSnapshotInfo {
+  kills: number;
+  deaths: number;
+  assists: number;
+  cs: number;
+  gold: number;
+  is_dead: boolean;
+}
+
+export interface GameSnapshotInfo {
+  blue_players: PlayerSnapshotInfo[];
+  red_players: PlayerSnapshotInfo[];
+  blue_team_gold: number;
+  red_team_gold: number;
+  dragons_blue: number;
+  dragons_red: number;
+  baron_alive: boolean;
+  baron_timer: number;
+  dragon_timer: number;
+  herald_available: boolean;
+}
+
 export interface MatchEventInfo {
   minute: number;
   phase: string;
   kind: string;
   commentary: string | null;
+  snapshot: GameSnapshotInfo | null;
 }
 
 export interface SimulateMatchResult {

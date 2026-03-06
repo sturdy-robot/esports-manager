@@ -1,16 +1,41 @@
-import { Swords, Shield, Flame, Crown, Castle, Trophy, Zap, ChevronRight } from 'lucide-react';
-import type { SimulateMatchResult, MatchEventInfo } from '@/lib/api';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Swords, Shield, Flame, Crown, Castle, Trophy, Zap,
+  ChevronRight, Play, Pause, SkipForward,
+} from 'lucide-react';
+import type { SimulateMatchResult, MatchEventInfo, GameSnapshotInfo, PlayerSnapshotInfo } from '@/lib/api';
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const BASE_INTERVAL_MS = 1500;
+const SPEEDS = [1, 2, 5, 10] as const;
+const POSITIONS = ['TOP', 'JGL', 'MID', 'BOT', 'SUP'] as const;
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 interface MatchSimUIProps {
   result: SimulateMatchResult;
   onComplete: () => void;
 }
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function formatMinute(minute: number): string {
   return `${minute}:00`;
 }
 
 function formatGold(gold: number): string {
+  if (gold >= 1000) return `${(gold / 1000).toFixed(1)}k`;
+  return String(gold);
+}
+
+function formatGoldFull(gold: number): string {
   return gold.toLocaleString();
 }
 
@@ -24,6 +49,8 @@ function eventIcon(kind: string) {
     case 'baron': return <Crown size={14} />;
     case 'inhibitor': return <Castle size={14} />;
     case 'nexus': return <Trophy size={14} />;
+    case 'multi_kill': return <Zap size={14} />;
+    case 'killing_spree': return <Flame size={14} />;
     default: return <ChevronRight size={14} />;
   }
 }
@@ -38,6 +65,8 @@ function eventColor(kind: string): string {
     case 'baron': return '#A855F7';
     case 'inhibitor': return '#EC4899';
     case 'nexus': return '#FFD700';
+    case 'multi_kill': return '#FF6B6B';
+    case 'killing_spree': return '#FF9F43';
     default: return 'var(--text-secondary)';
   }
 }
@@ -51,141 +80,303 @@ function phaseBadgeColor(phase: string): string {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Main Component
+// ---------------------------------------------------------------------------
+
 export function MatchSimUI({ result, onComplete }: MatchSimUIProps) {
+  const [revealedCount, setRevealedCount] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [speedIdx, setSpeedIdx] = useState(0);
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  const allDone = revealedCount >= result.events.length;
+  const visibleEvents = result.events.slice(0, revealedCount);
+  const latestEvent = visibleEvents.length > 0 ? visibleEvents[visibleEvents.length - 1] : null;
+  const snapshot = latestEvent?.snapshot ?? null;
+  const currentMinute = latestEvent?.minute ?? 0;
+
+  // Progressive reveal timer
+  useEffect(() => {
+    if (!isPlaying || allDone) return;
+    const ms = BASE_INTERVAL_MS / SPEEDS[speedIdx];
+    const id = setTimeout(() => setRevealedCount((prev) => prev + 1), ms);
+    return () => clearTimeout(id);
+  }, [isPlaying, speedIdx, revealedCount, allDone]);
+
+  // Auto-scroll event feed
+  useEffect(() => {
+    if (feedRef.current) {
+      feedRef.current.scrollTop = feedRef.current.scrollHeight;
+    }
+  }, [revealedCount]);
+
+  const handleSkip = useCallback(() => {
+    setRevealedCount(result.events.length);
+    setIsPlaying(false);
+  }, [result.events.length]);
+
+  const cycleSpeed = useCallback(() => {
+    setSpeedIdx((prev) => (prev + 1) % SPEEDS.length);
+  }, []);
+
+  const blueGold = snapshot?.blue_team_gold ?? 0;
+  const redGold = snapshot?.red_team_gold ?? 0;
+  const goldTotal = blueGold + redGold || 1;
+  const bluePct = (blueGold / goldTotal) * 100;
+
   return (
-    <div className="flex flex-col w-full h-full gap-4 max-w-5xl mx-auto">
-      {/* Scoreboard header */}
+    <div className="flex flex-col w-full h-full gap-2 p-2">
+      {/* Top bar: teams + gold + timer */}
       <div
-        className="flex items-center justify-between p-4 rounded-xl border"
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderColor: 'var(--border-subtle)',
-        }}
+        className="flex items-center justify-between px-4 py-3 rounded-xl border shrink-0"
+        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
       >
-        <div className="text-center flex-1">
-          <div
-            className="text-lg font-bold"
-            style={{ color: '#3B82F6' }}
-          >
-            {result.blue_team}
+        <TeamHeader name={result.blue_team} gold={blueGold} color="#3B82F6" />
+        <div className="text-center px-4">
+          <div className="text-lg font-mono font-bold" style={{ color: 'var(--text-primary)' }}>
+            {formatMinute(currentMinute)}
           </div>
-          <div
-            className="text-2xl font-mono font-black"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {formatGold(result.blue_gold)}
-          </div>
-          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>gold</div>
+          {allDone && (
+            <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-win)' }}>
+              {result.winner} wins
+            </div>
+          )}
         </div>
-
-        <div className="text-center px-6">
-          <div
-            className="text-xs font-semibold uppercase tracking-wider mb-1"
-            style={{ color: 'var(--color-win)' }}
-          >
-            Victory
-          </div>
-          <div
-            className="text-xl font-bold"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {result.winner}
-          </div>
-          <div
-            className="text-sm font-mono mt-1"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            {formatMinute(result.duration_minutes)}
-          </div>
-        </div>
-
-        <div className="text-center flex-1">
-          <div
-            className="text-lg font-bold"
-            style={{ color: '#EF4444' }}
-          >
-            {result.red_team}
-          </div>
-          <div
-            className="text-2xl font-mono font-black"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {formatGold(result.red_gold)}
-          </div>
-          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>gold</div>
-        </div>
+        <TeamHeader name={result.red_team} gold={redGold} color="#EF4444" />
       </div>
 
-      {/* Event log */}
-      <div
-        className="flex-1 rounded-xl border overflow-y-auto p-3"
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderColor: 'var(--border-subtle)',
-        }}
-      >
-        <div className="space-y-1">
-          {result.events.map((event, i) => (
-            <EventRow key={i} event={event} />
-          ))}
-        </div>
+      {/* Gold bar */}
+      <div className="h-1.5 rounded-full overflow-hidden shrink-0" style={{ backgroundColor: 'var(--bg-elevated)' }}>
+        <div
+          className="h-full transition-all duration-500 ease-out"
+          style={{ width: `${bluePct}%`, background: 'linear-gradient(90deg, #3B82F6, #60A5FA)' }}
+        />
       </div>
 
-      {/* Continue button */}
-      <div className="flex justify-center pb-2">
-        <button
-          onClick={onComplete}
-          className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2"
-          style={{
-            background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
-          }}
+      {/* Main area: scoreboard | events | scoreboard */}
+      <div className="flex gap-2 flex-1 min-h-0">
+        {/* Blue scoreboard */}
+        <TeamScoreboard
+          players={snapshot?.blue_players ?? []}
+          color="#3B82F6"
+          side="blue"
+        />
+
+        {/* Event feed */}
+        <div
+          ref={feedRef}
+          className="flex-1 rounded-xl border overflow-y-auto p-2"
+          style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
         >
-          <ChevronRight size={18} />
-          Continue
-        </button>
+          <div className="space-y-0.5">
+            {visibleEvents.map((event, i) => (
+              <EventRow key={i} event={event} isNew={i === visibleEvents.length - 1} />
+            ))}
+            {!allDone && visibleEvents.length === 0 && (
+              <div className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>
+                Match starting...
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Red scoreboard */}
+        <TeamScoreboard
+          players={snapshot?.red_players ?? []}
+          color="#EF4444"
+          side="red"
+        />
+      </div>
+
+      {/* Objectives bar */}
+      <ObjectivesBar snapshot={snapshot} />
+
+      {/* Controls */}
+      <div className="flex items-center justify-center gap-3 shrink-0 py-1">
+        {!allDone ? (
+          <>
+            <button
+              onClick={() => setIsPlaying((p) => !p)}
+              className="p-2 rounded-lg border"
+              style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+            >
+              {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+            </button>
+            <button
+              onClick={cycleSpeed}
+              className="px-3 py-1.5 rounded-lg border text-xs font-mono font-bold"
+              style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+            >
+              {SPEEDS[speedIdx]}x
+            </button>
+            <button
+              onClick={handleSkip}
+              className="p-2 rounded-lg border"
+              style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+              title="Skip to end"
+            >
+              <SkipForward size={16} />
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={onComplete}
+            className="px-8 py-2.5 rounded-lg font-bold text-white flex items-center gap-2"
+            style={{ background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)' }}
+          >
+            <ChevronRight size={18} />
+            Continue
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-function EventRow({ event }: { event: MatchEventInfo }) {
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function TeamHeader({ name, gold, color }: { name: string; gold: number; color: string }) {
+  return (
+    <div className="text-center flex-1">
+      <div className="text-sm font-bold" style={{ color }}>{name}</div>
+      <div className="text-xl font-mono font-black" style={{ color: 'var(--text-primary)' }}>
+        {formatGoldFull(gold)}
+      </div>
+    </div>
+  );
+}
+
+function TeamScoreboard({ players, color, side }: { players: PlayerSnapshotInfo[]; color: string; side: 'blue' | 'red' }) {
+  return (
+    <div
+      className="w-48 rounded-xl border overflow-hidden shrink-0 flex flex-col"
+      style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
+    >
+      <div
+        className="text-xs font-bold text-center py-1.5 uppercase tracking-wider"
+        style={{ color, backgroundColor: `${color}10` }}
+      >
+        {side === 'blue' ? 'Blue' : 'Red'} Side
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {players.length === 0 ? (
+          <div className="text-xs text-center py-4" style={{ color: 'var(--text-muted)' }}>—</div>
+        ) : (
+          players.map((p, i) => (
+            <PlayerRow key={i} player={p} position={POSITIONS[i] ?? '?'} />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PlayerRow({ player, position }: { player: PlayerSnapshotInfo; position: string }) {
+  const deadStyle = player.is_dead ? { opacity: 0.4 } : {};
+  return (
+    <div
+      className="flex items-center gap-1.5 px-2 py-1 text-xs border-b"
+      style={{ borderColor: 'var(--border-subtle)', ...deadStyle }}
+    >
+      <span className="w-7 font-bold font-mono shrink-0" style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>
+        {position}
+      </span>
+      <span className="font-mono font-bold flex-1" style={{ color: 'var(--text-primary)' }}>
+        {player.kills}/{player.deaths}/{player.assists}
+      </span>
+      <span className="font-mono" style={{ color: 'var(--text-secondary)', fontSize: '0.65rem' }}>
+        {player.cs}cs
+      </span>
+      <span className="font-mono" style={{ color: '#F59E0B', fontSize: '0.65rem' }}>
+        {formatGold(player.gold)}
+      </span>
+    </div>
+  );
+}
+
+function ObjectivesBar({ snapshot }: { snapshot: GameSnapshotInfo | null }) {
+  if (!snapshot) return null;
+  return (
+    <div
+      className="flex items-center justify-center gap-6 px-4 py-2 rounded-xl border shrink-0"
+      style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
+    >
+      <ObjectiveChip
+        icon={<Flame size={14} />}
+        label="Dragons"
+        blue={snapshot.dragons_blue}
+        red={snapshot.dragons_red}
+      />
+      <ObjectiveChip
+        icon={<Crown size={14} />}
+        label="Baron"
+        status={snapshot.baron_alive ? 'alive' : snapshot.baron_timer > 0 ? `${snapshot.baron_timer}m` : '—'}
+      />
+      <ObjectiveChip
+        icon={<Shield size={14} />}
+        label="Herald"
+        status={snapshot.herald_available ? 'up' : '—'}
+      />
+    </div>
+  );
+}
+
+function ObjectiveChip({
+  icon, label, blue, red, status,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  blue?: number;
+  red?: number;
+  status?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span style={{ color: 'var(--text-muted)' }}>{icon}</span>
+      <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+      {blue !== undefined && red !== undefined ? (
+        <span className="font-mono font-bold" style={{ color: 'var(--text-primary)' }}>
+          <span style={{ color: '#3B82F6' }}>{blue}</span>
+          {' – '}
+          <span style={{ color: '#EF4444' }}>{red}</span>
+        </span>
+      ) : (
+        <span className="font-mono" style={{ color: 'var(--text-muted)' }}>{status}</span>
+      )}
+    </div>
+  );
+}
+
+function EventRow({ event, isNew }: { event: MatchEventInfo; isNew: boolean }) {
   const color = eventColor(event.kind);
   const phaseColor = phaseBadgeColor(event.phase);
 
   return (
     <div
-      className="flex items-start gap-3 px-3 py-2 rounded-lg transition-colors"
-      style={{ backgroundColor: 'transparent' }}
+      className="flex items-start gap-2 px-2 py-1.5 rounded-lg transition-all duration-300"
+      style={{
+        backgroundColor: isNew ? `${color}08` : 'transparent',
+      }}
     >
-      {/* Timestamp */}
       <div
-        className="w-12 text-right text-xs font-mono font-bold shrink-0 pt-0.5"
+        className="w-10 text-right text-xs font-mono font-bold shrink-0 pt-0.5"
         style={{ color: 'var(--text-muted)' }}
       >
         {formatMinute(event.minute)}
       </div>
-
-      {/* Phase badge */}
       <div
-        className="text-xs font-semibold px-1.5 py-0.5 rounded shrink-0"
-        style={{
-          color: phaseColor,
-          backgroundColor: `${phaseColor}15`,
-        }}
+        className="text-xs font-semibold px-1 py-0.5 rounded shrink-0"
+        style={{ color: phaseColor, backgroundColor: `${phaseColor}15` }}
       >
         {event.phase}
       </div>
-
-      {/* Icon */}
       <div className="shrink-0 pt-0.5" style={{ color }}>
         {eventIcon(event.kind)}
       </div>
-
-      {/* Commentary */}
-      <div
-        className="text-sm flex-1"
-        style={{ color: 'var(--text-primary)' }}
-      >
+      <div className="text-xs flex-1" style={{ color: 'var(--text-primary)' }}>
         {event.commentary ?? event.kind}
       </div>
     </div>
