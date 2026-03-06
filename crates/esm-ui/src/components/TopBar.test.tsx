@@ -69,4 +69,20 @@ describe("TopBar", () => {
     renderWithProviders(<TopBar {...defaults} />);
     expect(screen.getByTitle(/switch to/i)).toBeInTheDocument();
   });
+
+  it("renders Play Match instead of Continue on match day", () => {
+    const onPlayMatch = vi.fn();
+    renderWithProviders(<TopBar {...defaults} isMatchDay={true} onPlayMatch={onPlayMatch} />);
+    expect(screen.getByRole("button", { name: /play match/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /continue/i })).not.toBeInTheDocument();
+  });
+
+  it("calls onPlayMatch when Play Match is clicked", async () => {
+    const user = userEvent.setup();
+    const onPlayMatch = vi.fn();
+    renderWithProviders(<TopBar {...defaults} isMatchDay={true} onPlayMatch={onPlayMatch} />);
+
+    await user.click(screen.getByRole("button", { name: /play match/i }));
+    expect(onPlayMatch).toHaveBeenCalledTimes(1);
+  });
 });
