@@ -5,6 +5,7 @@ pub mod economy;
 pub mod match_sim;
 pub mod moba_match;
 pub mod patch;
+pub mod schedule;
 pub mod staff_influence;
 pub mod tournament;
 pub mod transfer;
