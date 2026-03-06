@@ -242,3 +242,72 @@ fn tournament_is_complete_when_all_matches_played() {
     t.record_result(match_id, 1, 0);
     assert!(t.is_complete());
 }
+
+// ---------------------------------------------------------------------------
+// Match::add_game_win / bracket()
+// ---------------------------------------------------------------------------
+
+#[test]
+fn match_bracket_accessor() {
+    let m = Match::new(1, 0, 1, 10, BracketKind::Bo3);
+    assert_eq!(m.bracket(), BracketKind::Bo3);
+}
+
+#[test]
+fn match_add_game_win_increments_blue() {
+    let mut m = Match::new(1, 0, 1, 10, BracketKind::Bo3);
+    m.add_game_win(true);
+    assert_eq!(m.blue_wins(), 1);
+    assert_eq!(m.red_wins(), 0);
+    assert_eq!(m.status(), MatchStatus::Pending);
+}
+
+#[test]
+fn match_add_game_win_completes_bo3_at_two_wins() {
+    let mut m = Match::new(1, 0, 1, 10, BracketKind::Bo3);
+    m.add_game_win(true);
+    m.add_game_win(false);
+    assert_eq!(m.status(), MatchStatus::Pending);
+
+    m.add_game_win(true); // blue reaches 2 wins
+    assert_eq!(m.status(), MatchStatus::Completed);
+    assert_eq!(m.blue_wins(), 2);
+    assert_eq!(m.red_wins(), 1);
+    assert_eq!(m.winner_team_idx(), Some(0));
+}
+
+#[test]
+fn match_add_game_win_red_wins_bo3() {
+    let mut m = Match::new(1, 0, 1, 10, BracketKind::Bo3);
+    m.add_game_win(false);
+    m.add_game_win(false); // red reaches 2 wins
+    assert_eq!(m.status(), MatchStatus::Completed);
+    assert_eq!(m.winner_team_idx(), Some(1));
+}
+
+// ---------------------------------------------------------------------------
+// Tournament::add_game_win
+// ---------------------------------------------------------------------------
+
+#[test]
+fn tournament_add_game_win_tracks_incremental_wins() {
+    let team_names = vec!["A".to_string(), "B".to_string()];
+    let mut t = Tournament::new(
+        "Test".to_string(),
+        team_names,
+        TournamentFormat::RoundRobin,
+        BracketKind::Bo3,
+        1,
+    );
+
+    let match_id = t.schedule().matches()[0].id();
+    assert!(!t.add_game_win(match_id, true)); // 1-0, not done
+    assert!(!t.is_complete());
+
+    assert!(t.add_game_win(match_id, true)); // 2-0, series complete
+    assert!(t.is_complete());
+
+    let standings = t.standings();
+    let a = standings.iter().find(|s| s.team_idx == 0).unwrap();
+    assert_eq!(a.wins, 1);
+}
