@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DraftUI } from './DraftUI';
 import { MatchSimUI } from './MatchSimUI';
-import { useDraft, useMatchSimulation } from '@/lib/use-api';
+import { TacticsPanel } from './TacticsPanel';
+import { useDraft, useMatchSimulation, useTactics } from '@/lib/use-api';
 import type { MatchMode } from './PlayMatchButton';
+import type { PlaystyleType, FocusType } from '@/lib/api';
 
-type MatchPhase = 'pre-match' | 'draft' | 'match' | 'simulating' | 'results';
+type MatchPhase = 'pre-match' | 'draft' | 'tactics' | 'match' | 'simulating' | 'results';
 
 interface MatchFlowProps {
   mode: MatchMode;
@@ -37,6 +39,7 @@ export function MatchFlow({
   const [phase, setPhase] = useState<MatchPhase>(() => initialPhase(mode));
   const { draftState, startDraft, hover, lock } = useDraft();
   const { result: matchResult, simulate } = useMatchSimulation();
+  const { tactics, update: updateTactics } = useTactics();
 
   // For simulating phase, run the backend simulation then advance
   useEffect(() => {
@@ -66,10 +69,15 @@ export function MatchFlow({
     if (mode === 'draft-delegate') {
       setPhase('simulating');
     } else {
-      // For participate/spectate: run simulation, then show match replay
-      simulate().then(() => setPhase('match'));
+      // For participate/spectate: show tactics before match
+      setPhase('tactics');
     }
-  }, [mode, simulate]);
+  }, [mode]);
+
+  const handleTacticsConfirm = useCallback(async (playstyle: PlaystyleType, focus: FocusType) => {
+    await updateTactics(playstyle, focus);
+    simulate().then(() => setPhase('match'));
+  }, [updateTactics, simulate]);
 
   const handleMatchComplete = () => {
     setPhase('results');
@@ -126,6 +134,7 @@ export function MatchFlow({
         >
           {phase === 'pre-match' && 'Pre-Match'}
           {phase === 'draft' && 'Draft Phase'}
+          {phase === 'tactics' && 'Tactics'}
           {phase === 'match' && 'Live Match'}
           {phase === 'simulating' && 'Simulating...'}
           {phase === 'results' && 'Match Results'}
@@ -133,7 +142,7 @@ export function MatchFlow({
       </header>
 
       {/* Main content — full-height phases vs centered panels */}
-      {(phase === 'draft' || phase === 'match') ? (
+      {(phase === 'draft' || phase === 'match' || phase === 'tactics') ? (
         <main className="flex-1 flex flex-col min-h-0">
           {phase === 'draft' && draftState && (
             <DraftUI
@@ -161,10 +170,22 @@ export function MatchFlow({
             </div>
           )}
 
+          {phase === 'tactics' && (
+            <div className="flex-1 flex items-center justify-center p-8">
+              <TacticsPanel
+                tactics={tactics}
+                onConfirm={handleTacticsConfirm}
+                context="Pre-Match Strategy"
+              />
+            </div>
+          )}
+
           {phase === 'match' && matchResult && (
             <MatchSimUI
               result={matchResult}
               onComplete={handleMatchComplete}
+              tactics={tactics}
+              onTacticsChange={(p, f) => updateTactics(p, f)}
             />
           )}
 

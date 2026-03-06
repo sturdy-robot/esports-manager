@@ -3,7 +3,8 @@ import {
   Swords, Shield, Flame, Crown, Castle, Trophy, Zap,
   ChevronRight, Play, Pause, SkipForward,
 } from 'lucide-react';
-import type { SimulateMatchResult, MatchEventInfo, GameSnapshotInfo, PlayerSnapshotInfo } from '@/lib/api';
+import { TacticsPanel } from './TacticsPanel';
+import type { SimulateMatchResult, MatchEventInfo, GameSnapshotInfo, PlayerSnapshotInfo, PlaystyleType, FocusType, TacticsInfo } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -20,6 +21,10 @@ const POSITIONS = ['TOP', 'JGL', 'MID', 'BOT', 'SUP'] as const;
 interface MatchSimUIProps {
   result: SimulateMatchResult;
   onComplete: () => void;
+  /** Current tactics for mid-match adjustment UI */
+  tactics?: TacticsInfo;
+  /** Called when the player adjusts tactics mid-match */
+  onTacticsChange?: (playstyle: PlaystyleType, focus: FocusType) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -84,10 +89,12 @@ function phaseBadgeColor(phase: string): string {
 // Main Component
 // ---------------------------------------------------------------------------
 
-export function MatchSimUI({ result, onComplete }: MatchSimUIProps) {
+export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: MatchSimUIProps) {
   const [revealedCount, setRevealedCount] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [speedIdx, setSpeedIdx] = useState(0);
+  const [showTactics, setShowTactics] = useState(false);
+  const [acknowledgedPhases, setAcknowledgedPhases] = useState<Set<string>>(new Set());
   const feedRef = useRef<HTMLDivElement>(null);
 
   const allDone = revealedCount >= result.events.length;
@@ -96,13 +103,52 @@ export function MatchSimUI({ result, onComplete }: MatchSimUIProps) {
   const snapshot = latestEvent?.snapshot ?? null;
   const currentMinute = latestEvent?.minute ?? 0;
 
-  // Progressive reveal timer
+  // Derived: upcoming phase info for tactics overlay
+  const nextEvent = revealedCount < result.events.length ? result.events[revealedCount] : null;
+  const nextPhase = nextEvent?.phase ?? '';
+
+  // Detect phase-boundary pause: compute whether we should pause NOW
+  // This is derived state computed during render, not an effect.
+  const shouldPauseForTactics = (() => {
+    if (allDone || showTactics || !onTacticsChange || !tactics) return false;
+    const curPhase = latestEvent?.phase ?? '';
+    return curPhase !== '' && nextPhase !== '' && curPhase !== nextPhase && !acknowledgedPhases.has(nextPhase);
+  })();
+
+  const handleTacticsConfirm = useCallback((playstyle: PlaystyleType, focus: FocusType) => {
+    onTacticsChange?.(playstyle, focus);
+    setAcknowledgedPhases((prev) => new Set(prev).add(nextPhase));
+    setShowTactics(false);
+    setIsPlaying(true);
+  }, [onTacticsChange, nextPhase]);
+
+  const handleTacticsSkip = useCallback(() => {
+    setAcknowledgedPhases((prev) => new Set(prev).add(nextPhase));
+    setShowTactics(false);
+    setIsPlaying(true);
+  }, [nextPhase]);
+
+  // Progressive reveal timer — skips tick when shouldPauseForTactics is true
   useEffect(() => {
-    if (!isPlaying || allDone) return;
+    if (!isPlaying || allDone || showTactics || shouldPauseForTactics) return;
+
     const ms = BASE_INTERVAL_MS / SPEEDS[speedIdx];
     const id = setTimeout(() => setRevealedCount((prev) => prev + 1), ms);
     return () => clearTimeout(id);
-  }, [isPlaying, speedIdx, revealedCount, allDone]);
+  }, [isPlaying, speedIdx, revealedCount, allDone, showTactics, shouldPauseForTactics]);
+
+  // When the timer stops due to a phase boundary, show the tactics panel
+  // This runs as a separate effect triggered by shouldPauseForTactics becoming true
+  // while isPlaying is still true.
+  useEffect(() => {
+    if (shouldPauseForTactics && isPlaying) {
+      // Use a microtask to avoid synchronous setState-in-effect lint warning
+      Promise.resolve().then(() => {
+        setIsPlaying(false);
+        setShowTactics(true);
+      });
+    }
+  }, [shouldPauseForTactics, isPlaying]);
 
   // Auto-scroll event feed
   useEffect(() => {
@@ -188,6 +234,38 @@ export function MatchSimUI({ result, onComplete }: MatchSimUIProps) {
           side="red"
         />
       </div>
+
+      {/* Phase transition tactics overlay */}
+      {showTactics && tactics && (
+        <div
+          className="shrink-0 relative"
+        >
+          <div className="flex items-center justify-between px-3 py-1.5 mb-1">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: phaseBadgeColor(nextPhase) }}
+              />
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: phaseBadgeColor(nextPhase) }}>
+                Entering {nextPhase} Game
+              </span>
+            </div>
+            <button
+              onClick={handleTacticsSkip}
+              className="text-xs px-2 py-1 rounded border cursor-pointer"
+              style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-muted)', backgroundColor: 'transparent' }}
+            >
+              Keep Current
+            </button>
+          </div>
+          <TacticsPanel
+            tactics={tactics}
+            onConfirm={handleTacticsConfirm}
+            context={`Adjust for ${nextPhase} Phase`}
+            compact
+          />
+        </div>
+      )}
 
       {/* Objectives bar */}
       <ObjectivesBar snapshot={snapshot} />

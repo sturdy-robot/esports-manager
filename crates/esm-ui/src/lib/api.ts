@@ -237,6 +237,26 @@ export async function simulateMatch(): Promise<SimulateMatchResult> {
 }
 
 // ---------------------------------------------------------------------------
+// Tactics API
+// ---------------------------------------------------------------------------
+
+export type PlaystyleType = "aggressive" | "balanced" | "defensive";
+export type FocusType = "teamfight" | "splitpush" | "objective";
+
+export interface TacticsInfo {
+  playstyle: PlaystyleType;
+  focus: FocusType;
+}
+
+export async function setTactics(playstyle: PlaystyleType, focus: FocusType): Promise<TacticsInfo> {
+  return invoke<TacticsInfo>("set_tactics", { params: { playstyle, focus } });
+}
+
+export async function getTactics(): Promise<TacticsInfo> {
+  return invoke<TacticsInfo>("get_tactics");
+}
+
+// ---------------------------------------------------------------------------
 // Series API
 // ---------------------------------------------------------------------------
 

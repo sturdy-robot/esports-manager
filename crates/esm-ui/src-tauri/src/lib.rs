@@ -15,6 +15,7 @@ use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine, MobaMatch
 use esm_engine::moba_match::event::MatchEventKind;
 use esm_engine::moba_match::game_state::MatchPlayerSimulationData;
 use esm_engine::moba_match::state::TeamSide;
+use esm_engine::moba_match::tactics::{Focus, MatchTactics, Playstyle};
 use esm_engine::tournament::{BracketKind, Tournament, TournamentFormat};
 use esm_models::esport_type::EsportType;
 use esm_models::manager::{Manager, ManagerArchetype};
@@ -31,6 +32,7 @@ pub struct AppState {
     moba_teams: Mutex<Option<Vec<MobaTeam>>>,
     champion_names: Mutex<Vec<String>>,
     draft_session: Mutex<Option<DraftSession>>,
+    match_tactics: Mutex<MatchTactics>,
 }
 
 impl AppState {
@@ -42,6 +44,7 @@ impl AppState {
             moba_teams: Mutex::new(None),
             champion_names: Mutex::new(Vec::new()),
             draft_session: Mutex::new(None),
+            match_tactics: Mutex::new(MatchTactics::default()),
         }
     }
 }
@@ -729,6 +732,81 @@ fn get_draft_state(state: State<'_, AppState>) -> Result<DraftSessionState, Stri
 }
 
 // ---------------------------------------------------------------------------
+// Tactics commands
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SetTacticsParams {
+    pub playstyle: String,
+    pub focus: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TacticsInfo {
+    pub playstyle: String,
+    pub focus: String,
+}
+
+fn parse_playstyle(s: &str) -> Result<Playstyle, String> {
+    match s {
+        "aggressive" => Ok(Playstyle::Aggressive),
+        "balanced" => Ok(Playstyle::Balanced),
+        "defensive" => Ok(Playstyle::Defensive),
+        _ => Err(format!("Unknown playstyle: {s}")),
+    }
+}
+
+fn parse_focus(s: &str) -> Result<Focus, String> {
+    match s {
+        "teamfight" => Ok(Focus::Teamfight),
+        "splitpush" => Ok(Focus::Splitpush),
+        "objective" => Ok(Focus::Objective),
+        _ => Err(format!("Unknown focus: {s}")),
+    }
+}
+
+fn playstyle_str(p: Playstyle) -> &'static str {
+    match p {
+        Playstyle::Aggressive => "aggressive",
+        Playstyle::Balanced => "balanced",
+        Playstyle::Defensive => "defensive",
+    }
+}
+
+fn focus_str(f: Focus) -> &'static str {
+    match f {
+        Focus::Teamfight => "teamfight",
+        Focus::Splitpush => "splitpush",
+        Focus::Objective => "objective",
+    }
+}
+
+#[tauri::command]
+fn set_tactics(
+    state: State<'_, AppState>,
+    params: SetTacticsParams,
+) -> Result<TacticsInfo, String> {
+    let playstyle = parse_playstyle(&params.playstyle)?;
+    let focus = parse_focus(&params.focus)?;
+    let mut lock = state.match_tactics.lock().unwrap();
+    lock.playstyle = playstyle;
+    lock.focus = focus;
+    Ok(TacticsInfo {
+        playstyle: playstyle_str(lock.playstyle).to_string(),
+        focus: focus_str(lock.focus).to_string(),
+    })
+}
+
+#[tauri::command]
+fn get_tactics(state: State<'_, AppState>) -> TacticsInfo {
+    let lock = state.match_tactics.lock().unwrap();
+    TacticsInfo {
+        playstyle: playstyle_str(lock.playstyle).to_string(),
+        focus: focus_str(lock.focus).to_string(),
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Match simulation command
 // ---------------------------------------------------------------------------
 
@@ -836,7 +914,14 @@ fn simulate_match(state: State<'_, AppState>) -> Result<SimulateMatchResultInfo,
             let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
             let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
 
-            let result = MobaMatchEngine::simulate(gs.rng_mut(), &blue_attrs, &red_attrs, &config);
+            let tactics = state.match_tactics.lock().unwrap().clone();
+            let result = MobaMatchEngine::simulate_with_tactics(
+                gs.rng_mut(),
+                &blue_attrs,
+                &red_attrs,
+                &config,
+                &tactics,
+            );
 
             let blue_won = matches!(result.winner, TeamSide::Blue);
             let series_complete = tournament.add_game_win(match_id, blue_won);
@@ -1178,6 +1263,8 @@ pub fn run() {
             get_draft_state,
             simulate_match,
             get_series_info,
+            set_tactics,
+            get_tactics,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult, SeriesInfo } from "./api";
+import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult, SeriesInfo, TacticsInfo, PlaystyleType, FocusType } from "./api";
 
 // ---------------------------------------------------------------------------
 // Detect whether we're running inside Tauri or in a browser (dev/test)
@@ -67,6 +67,8 @@ interface ApiAdapter {
   getDraftState(): Promise<DraftSessionState>;
   simulateMatch(): Promise<SimulateMatchResult>;
   getSeriesInfo(): Promise<SeriesInfo>;
+  setTactics(playstyle: PlaystyleType, focus: FocusType): Promise<TacticsInfo>;
+  getTactics(): Promise<TacticsInfo>;
 }
 
 async function tauriAdapter(): Promise<ApiAdapter> {
@@ -92,6 +94,8 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     getDraftState: api.getDraftState,
     simulateMatch: api.simulateMatch,
     getSeriesInfo: api.getSeriesInfo,
+    setTactics: api.setTactics,
+    getTactics: api.getTactics,
   };
 }
 
@@ -201,6 +205,12 @@ const mockAdapter: ApiAdapter = {
   },
   async getSeriesInfo() {
     return MOCK_SERIES_INFO();
+  },
+  async setTactics(playstyle: PlaystyleType, focus: FocusType) {
+    return { playstyle, focus } as TacticsInfo;
+  },
+  async getTactics() {
+    return { playstyle: 'balanced', focus: 'teamfight' } as TacticsInfo;
   },
 };
 
@@ -709,4 +719,34 @@ export function useSeriesInfo() {
   }, []);
 
   return { series, refresh, error };
+}
+
+export function useTactics() {
+  const [tactics, setTactics] = useState<TacticsInfo>({ playstyle: 'balanced', focus: 'teamfight' });
+  const [loading, setLoading] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      const adapter = await getAdapter();
+      const info = await adapter.getTactics();
+      setTactics(info);
+    } catch (e) {
+      console.error('useTactics refresh error:', e);
+    }
+  }, []);
+
+  const update = useCallback(async (playstyle: PlaystyleType, focus: FocusType) => {
+    setLoading(true);
+    try {
+      const adapter = await getAdapter();
+      const info = await adapter.setTactics(playstyle, focus);
+      setTactics(info);
+    } catch (e) {
+      console.error('useTactics update error:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { tactics, refresh, update, loading };
 }
