@@ -4,7 +4,7 @@ import { TopBar } from "@/components/TopBar";
 import { Dashboard } from "@/components/Dashboard";
 import { Roster } from "@/components/Roster";
 import { Inbox } from "@/components/Inbox";
-import { Schedule } from "@/components/Schedule";
+import { TeamScheduleView } from "@/components/TeamScheduleView";
 import { Standings } from "@/components/Standings";
 import { Finances } from "@/components/Finances";
 import { Staff } from "@/components/Staff";
@@ -13,7 +13,7 @@ import { Results } from "@/components/Results";
 import { TournamentEnd } from "@/components/TournamentEnd";
 import { MatchLobby } from "@/components/MatchLobby";
 import { DraftUI } from "@/components/DraftUI";
-import { useRoster, useInbox, useStandings, useSchedule, useResolveMessage, usePlayMatchDelegate } from "@/lib/use-api";
+import { useRoster, useInbox, useStandings, useSchedule, useResolveMessage, usePlayMatchDelegate, useTeamSchedule } from "@/lib/use-api";
 import type { Transaction } from "@/components/Finances";
 import type { StaffMember } from "@/components/Staff";
 import type { ScoutingTarget } from "@/components/Scouting";
@@ -91,6 +91,10 @@ export function GameShell({
   const { schedule, fetchSchedule } = useSchedule();
   const { resolve } = useResolveMessage();
   const { playMatchDelegate, playing: simulating } = usePlayMatchDelegate();
+  const {
+    weekSchedule, scrims, refresh: refreshTeamSchedule,
+    scheduleScrim, cancelScrim, scheduleSoloQueue, scheduleRest, clearSlot,
+  } = useTeamSchedule();
   const [resolvingMsgId, setResolvingMsgId] = useState<string | null>(null);
 
   // Fetch live data on mount
@@ -99,7 +103,8 @@ export function GameShell({
     fetchInbox();
     fetchStandings();
     fetchSchedule();
-  }, [fetchRoster, fetchInbox, fetchStandings, fetchSchedule]);
+    refreshTeamSchedule();
+  }, [fetchRoster, fetchInbox, fetchStandings, fetchSchedule, refreshTeamSchedule]);
 
   // Wrap onContinue to also refresh data after advancing
   const handleContinue = useCallback(async () => {
@@ -181,22 +186,26 @@ export function GameShell({
         return <Roster players={rosterPlayers} />;
       case "schedule":
         return (
-          <Schedule
-            matches={schedule.map((m) => ({
-              id: String(m.id),
-              homeTeam: m.blue_team,
-              awayTeam: m.red_team,
-              day: m.scheduled_day,
-              month: month ?? 1,
-              year: year ?? 2025,
-              bestOf: 1,
-              result: m.winner
-                ? {
-                  homeWins: m.winner === m.blue_team ? 1 : 0,
-                  awayWins: m.winner === m.red_team ? 1 : 0,
-                }
-                : null,
-            }))}
+          <TeamScheduleView
+            schedule={weekSchedule}
+            scrims={scrims}
+            rosterNames={rosterPlayers.map((p) => p.nickname)}
+            teamNames={standings.map((s) => s.team_name)}
+            onScheduleScrim={async (dayIndex, timeSlot, awayTeamIndex, gameCount, draftRules) => {
+              await scheduleScrim({ away_team_index: awayTeamIndex, scheduled_day: dayIndex, time_slot: timeSlot, game_count: gameCount, draft_rules: draftRules });
+            }}
+            onScheduleSoloQueue={async (dayIndex, timeSlot, players, focus) => {
+              await scheduleSoloQueue({ day_index: dayIndex, time_slot: timeSlot, players, focus });
+            }}
+            onScheduleRest={async (dayIndex, timeSlot) => {
+              await scheduleRest({ day_index: dayIndex, time_slot: timeSlot });
+            }}
+            onClearSlot={async (dayIndex, timeSlot) => {
+              await clearSlot(dayIndex, timeSlot);
+            }}
+            onCancelScrim={async (scrimId) => {
+              await cancelScrim(scrimId);
+            }}
           />
         );
       case "standings":

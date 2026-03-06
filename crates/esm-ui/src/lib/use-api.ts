@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult, SeriesInfo, TacticsInfo, PlaystyleType, FocusType, PlayerStateInfo, TalkType } from "./api";
+import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult, SeriesInfo, TacticsInfo, PlaystyleType, FocusType, PlayerStateInfo, TalkType, WeekScheduleInfo, ScrimInfo, ScheduleScrimParams, ScheduleSoloQueueParams, ScheduleRestParams, TimeSlotType, ScheduleSlotInfo } from "./api";
 
 // ---------------------------------------------------------------------------
 // Detect whether we're running inside Tauri or in a browser (dev/test)
@@ -71,6 +71,13 @@ interface ApiAdapter {
   getTactics(): Promise<TacticsInfo>;
   getRosterState(): Promise<PlayerStateInfo[]>;
   applyPlayerTalk(playerIndex: number, talk: TalkType): Promise<PlayerStateInfo[]>;
+  getTeamSchedule(): Promise<WeekScheduleInfo>;
+  scheduleScrim(params: ScheduleScrimParams): Promise<ScrimInfo>;
+  cancelScrim(scrimId: number): Promise<string>;
+  scheduleSoloQueue(params: ScheduleSoloQueueParams): Promise<WeekScheduleInfo>;
+  scheduleRest(params: ScheduleRestParams): Promise<WeekScheduleInfo>;
+  clearScheduleSlot(dayIndex: number, timeSlot: TimeSlotType): Promise<WeekScheduleInfo>;
+  getScrimsList(): Promise<ScrimInfo[]>;
 }
 
 async function tauriAdapter(): Promise<ApiAdapter> {
@@ -100,6 +107,13 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     getTactics: api.getTactics,
     getRosterState: api.getRosterState,
     applyPlayerTalk: api.applyPlayerTalk,
+    getTeamSchedule: api.getTeamSchedule,
+    scheduleScrim: api.scheduleScrim,
+    cancelScrim: api.cancelScrim,
+    scheduleSoloQueue: api.scheduleSoloQueue,
+    scheduleRest: api.scheduleRest,
+    clearScheduleSlot: api.clearScheduleSlot,
+    getScrimsList: api.getScrimsList,
   };
 }
 
@@ -231,6 +245,39 @@ const mockAdapter: ApiAdapter = {
     }
     return roster;
   },
+  async getTeamSchedule() {
+    await delay(100);
+    return MOCK_WEEK_SCHEDULE();
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async scheduleScrim(_params: ScheduleScrimParams) {
+    await delay(200);
+    return { id: 1, home_team: 'T1', away_team: 'Gen.G', scheduled_day: 5, time_slot: 'Morning', game_count: 3, draft_rules: 'Standard', status: 'Scheduled', home_wins: 0, away_wins: 0 };
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async cancelScrim(_scrimId: number) {
+    await delay(100);
+    return 'Scrim cancelled';
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async scheduleSoloQueue(_params: ScheduleSoloQueueParams) {
+    await delay(100);
+    return MOCK_WEEK_SCHEDULE();
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async scheduleRest(_params: ScheduleRestParams) {
+    await delay(100);
+    return MOCK_WEEK_SCHEDULE();
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async clearScheduleSlot(_dayIndex: number, _timeSlot: TimeSlotType) {
+    await delay(100);
+    return MOCK_WEEK_SCHEDULE();
+  },
+  async getScrimsList() {
+    await delay(100);
+    return MOCK_SCRIMS_LIST();
+  },
 };
 
 const MOCK_CHAMPIONS = [
@@ -254,6 +301,39 @@ function MOCK_SERIES_INFO(): SeriesInfo {
     is_complete: mockSeriesBlueWins >= 2 || mockSeriesRedWins >= 2,
     game_number: mockSeriesBlueWins + mockSeriesRedWins + 1,
   };
+}
+
+function MOCK_WEEK_SCHEDULE(): WeekScheduleInfo {
+  const freeSlot = (ts: string): ScheduleSlotInfo => ({ time_slot: ts, entry_type: 'free', scrim_id: null, opponent: null, players: null, focus: null });
+  const makeSlots = (dayIdx: number): ScheduleSlotInfo[] => {
+    const slots: ScheduleSlotInfo[] = [freeSlot('Morning'), freeSlot('Afternoon'), freeSlot('Evening')];
+    if (dayIdx === 0) {
+      slots[0] = { time_slot: 'Morning', entry_type: 'scrim', scrim_id: 1, opponent: 'Gen.G', players: null, focus: null };
+      slots[1] = { time_slot: 'Afternoon', entry_type: 'solo_queue', scrim_id: null, opponent: null, players: [0, 2, 4], focus: 'mechanics' };
+    }
+    if (dayIdx === 2) {
+      slots[0] = { time_slot: 'Morning', entry_type: 'scrim', scrim_id: 2, opponent: 'DRX', players: null, focus: null };
+      slots[2] = { time_slot: 'Evening', entry_type: 'rest', scrim_id: null, opponent: null, players: null, focus: null };
+    }
+    if (dayIdx === 5) {
+      slots[0] = { time_slot: 'Morning', entry_type: 'rest', scrim_id: null, opponent: null, players: null, focus: null };
+      slots[1] = { time_slot: 'Afternoon', entry_type: 'rest', scrim_id: null, opponent: null, players: null, focus: null };
+      slots[2] = { time_slot: 'Evening', entry_type: 'rest', scrim_id: null, opponent: null, players: null, focus: null };
+    }
+    return slots;
+  };
+  return {
+    days: Array.from({ length: 7 }, (_, i) => ({ day_index: i, slots: makeSlots(i) })),
+    total_scrims: 2,
+    occupied_slots: 7,
+  };
+}
+
+function MOCK_SCRIMS_LIST(): ScrimInfo[] {
+  return [
+    { id: 1, home_team: 'T1', away_team: 'Gen.G', scheduled_day: 5, time_slot: 'Morning', game_count: 3, draft_rules: 'Standard', status: 'Scheduled', home_wins: 0, away_wins: 0 },
+    { id: 2, home_team: 'T1', away_team: 'DRX', scheduled_day: 7, time_slot: 'Morning', game_count: 5, draft_rules: 'Fearless', status: 'Scheduled', home_wins: 0, away_wins: 0 },
+  ];
 }
 
 function MOCK_ROSTER_STATE(): PlayerStateInfo[] {
@@ -808,4 +888,79 @@ export function usePlayerTalks() {
   }, []);
 
   return { roster, refresh, applyTalk, loading };
+}
+
+export function useTeamSchedule() {
+  const [weekSchedule, setWeekSchedule] = useState<WeekScheduleInfo | null>(null);
+  const [scrims, setScrims] = useState<ScrimInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const adapter = await getAdapter();
+      const [sched, scrimsList] = await Promise.all([
+        adapter.getTeamSchedule(),
+        adapter.getScrimsList(),
+      ]);
+      setWeekSchedule(sched);
+      setScrims(scrimsList);
+    } catch (e) {
+      console.error('useTeamSchedule refresh error:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const scheduleScrim = useCallback(async (params: ScheduleScrimParams) => {
+    try {
+      const adapter = await getAdapter();
+      await adapter.scheduleScrim(params);
+      await refresh();
+    } catch (e) {
+      console.error('useTeamSchedule scheduleScrim error:', e);
+    }
+  }, [refresh]);
+
+  const cancelScrim = useCallback(async (scrimId: number) => {
+    try {
+      const adapter = await getAdapter();
+      await adapter.cancelScrim(scrimId);
+      await refresh();
+    } catch (e) {
+      console.error('useTeamSchedule cancelScrim error:', e);
+    }
+  }, [refresh]);
+
+  const scheduleSoloQueue = useCallback(async (params: ScheduleSoloQueueParams) => {
+    try {
+      const adapter = await getAdapter();
+      const result = await adapter.scheduleSoloQueue(params);
+      setWeekSchedule(result);
+    } catch (e) {
+      console.error('useTeamSchedule scheduleSoloQueue error:', e);
+    }
+  }, []);
+
+  const scheduleRest = useCallback(async (params: ScheduleRestParams) => {
+    try {
+      const adapter = await getAdapter();
+      const result = await adapter.scheduleRest(params);
+      setWeekSchedule(result);
+    } catch (e) {
+      console.error('useTeamSchedule scheduleRest error:', e);
+    }
+  }, []);
+
+  const clearSlot = useCallback(async (dayIndex: number, timeSlot: TimeSlotType) => {
+    try {
+      const adapter = await getAdapter();
+      const result = await adapter.clearScheduleSlot(dayIndex, timeSlot);
+      setWeekSchedule(result);
+    } catch (e) {
+      console.error('useTeamSchedule clearSlot error:', e);
+    }
+  }, []);
+
+  return { weekSchedule, scrims, refresh, scheduleScrim, cancelScrim, scheduleSoloQueue, scheduleRest, clearSlot, loading };
 }

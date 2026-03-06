@@ -280,6 +280,96 @@ export async function applyPlayerTalk(playerIndex: number, talk: TalkType): Prom
 }
 
 // ---------------------------------------------------------------------------
+// Team Schedule API
+// ---------------------------------------------------------------------------
+
+export type TimeSlotType = "Morning" | "Afternoon" | "Evening";
+export type EntryType = "free" | "scrim" | "solo_queue" | "rest";
+export type SoloQueueFocusType = "champions" | "tactics" | "mechanics" | "mentality";
+export type DraftRulesType = "standard" | "fearless";
+
+export interface ScheduleSlotInfo {
+  time_slot: string;
+  entry_type: EntryType;
+  scrim_id: number | null;
+  opponent: string | null;
+  players: number[] | null;
+  focus: string | null;
+}
+
+export interface DayScheduleInfo {
+  day_index: number;
+  slots: ScheduleSlotInfo[];
+}
+
+export interface WeekScheduleInfo {
+  days: DayScheduleInfo[];
+  total_scrims: number;
+  occupied_slots: number;
+}
+
+export interface ScrimInfo {
+  id: number;
+  home_team: string;
+  away_team: string;
+  scheduled_day: number;
+  time_slot: string;
+  game_count: number;
+  draft_rules: string;
+  status: string;
+  home_wins: number;
+  away_wins: number;
+}
+
+export interface ScheduleScrimParams {
+  away_team_index: number;
+  scheduled_day: number;
+  time_slot: TimeSlotType;
+  game_count: number;
+  draft_rules: DraftRulesType;
+}
+
+export interface ScheduleSoloQueueParams {
+  day_index: number;
+  time_slot: TimeSlotType;
+  players: number[];
+  focus: SoloQueueFocusType;
+}
+
+export interface ScheduleRestParams {
+  day_index: number;
+  time_slot: TimeSlotType;
+}
+
+export async function getTeamSchedule(): Promise<WeekScheduleInfo> {
+  return invoke<WeekScheduleInfo>("get_team_schedule");
+}
+
+export async function scheduleScrim(params: ScheduleScrimParams): Promise<ScrimInfo> {
+  return invoke<ScrimInfo>("schedule_scrim", { params });
+}
+
+export async function cancelScrim(scrimId: number): Promise<string> {
+  return invoke<string>("cancel_scrim", { scrimId });
+}
+
+export async function scheduleSoloQueue(params: ScheduleSoloQueueParams): Promise<WeekScheduleInfo> {
+  return invoke<WeekScheduleInfo>("schedule_solo_queue", { params });
+}
+
+export async function scheduleRest(params: ScheduleRestParams): Promise<WeekScheduleInfo> {
+  return invoke<WeekScheduleInfo>("schedule_rest", { params });
+}
+
+export async function clearScheduleSlot(dayIndex: number, timeSlot: TimeSlotType): Promise<WeekScheduleInfo> {
+  return invoke<WeekScheduleInfo>("clear_schedule_slot", { dayIndex, timeSlot });
+}
+
+export async function getScrimsList(): Promise<ScrimInfo[]> {
+  return invoke<ScrimInfo[]>("get_scrims_list");
+}
+
+// ---------------------------------------------------------------------------
 // Series API
 // ---------------------------------------------------------------------------
 

@@ -1,0 +1,844 @@
+import { useState } from "react";
+import {
+  Calendar,
+  Swords,
+  Gamepad2,
+  Moon,
+  Plus,
+  X,
+  ChevronDown,
+} from "lucide-react";
+import type {
+  WeekScheduleInfo,
+  ScheduleSlotInfo,
+  TimeSlotType,
+  SoloQueueFocusType,
+  DraftRulesType,
+  ScrimInfo,
+} from "@/lib/api";
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+interface TeamScheduleViewProps {
+  schedule: WeekScheduleInfo | null;
+  scrims: ScrimInfo[];
+  rosterNames: string[];
+  onScheduleScrim: (
+    dayIndex: number,
+    timeSlot: TimeSlotType,
+    awayTeamIndex: number,
+    gameCount: number,
+    draftRules: DraftRulesType
+  ) => Promise<void>;
+  onScheduleSoloQueue: (
+    dayIndex: number,
+    timeSlot: TimeSlotType,
+    players: number[],
+    focus: SoloQueueFocusType
+  ) => Promise<void>;
+  onScheduleRest: (dayIndex: number, timeSlot: TimeSlotType) => Promise<void>;
+  onClearSlot: (dayIndex: number, timeSlot: TimeSlotType) => Promise<void>;
+  onCancelScrim: (scrimId: number) => Promise<void>;
+  teamNames: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const TIME_SLOTS: TimeSlotType[] = ["Morning", "Afternoon", "Evening"];
+const FOCUS_OPTIONS: SoloQueueFocusType[] = [
+  "champions",
+  "tactics",
+  "mechanics",
+  "mentality",
+];
+
+// ---------------------------------------------------------------------------
+// Slot cell component
+// ---------------------------------------------------------------------------
+
+function SlotCell({
+  slot,
+  dayIndex,
+  timeSlot,
+  onAdd,
+  onClear,
+}: {
+  slot: ScheduleSlotInfo;
+  dayIndex: number;
+  timeSlot: TimeSlotType;
+  onAdd: (dayIndex: number, timeSlot: TimeSlotType) => void;
+  onClear: (dayIndex: number, timeSlot: TimeSlotType) => void;
+}) {
+  if (slot.entry_type === "free") {
+    return (
+      <button
+        onClick={() => onAdd(dayIndex, timeSlot)}
+        className="w-full h-full min-h-[56px] flex items-center justify-center rounded border border-dashed transition-all cursor-pointer group"
+        style={{
+          borderColor: "var(--border-subtle)",
+          backgroundColor: "transparent",
+          color: "var(--text-muted)",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = "var(--color-accent-cyan)";
+          e.currentTarget.style.backgroundColor = "rgba(6, 182, 212, 0.05)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = "var(--border-subtle)";
+          e.currentTarget.style.backgroundColor = "transparent";
+        }}
+      >
+        <Plus size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+      </button>
+    );
+  }
+
+  const bgColor =
+    slot.entry_type === "scrim"
+      ? "rgba(6, 182, 212, 0.12)"
+      : slot.entry_type === "solo_queue"
+        ? "rgba(139, 92, 246, 0.12)"
+        : "rgba(34, 197, 94, 0.12)";
+
+  const borderColor =
+    slot.entry_type === "scrim"
+      ? "var(--color-accent-cyan)"
+      : slot.entry_type === "solo_queue"
+        ? "var(--color-accent-violet)"
+        : "var(--color-win)";
+
+  const icon =
+    slot.entry_type === "scrim" ? (
+      <Swords size={14} />
+    ) : slot.entry_type === "solo_queue" ? (
+      <Gamepad2 size={14} />
+    ) : (
+      <Moon size={14} />
+    );
+
+  const label =
+    slot.entry_type === "scrim"
+      ? `vs ${slot.opponent ?? "?"}`
+      : slot.entry_type === "solo_queue"
+        ? `SoloQ · ${slot.focus ?? ""}`
+        : "Rest";
+
+  const detail =
+    slot.entry_type === "solo_queue" && slot.players
+      ? `${slot.players.length} player${slot.players.length !== 1 ? "s" : ""}`
+      : null;
+
+  return (
+    <div
+      className="relative w-full min-h-[56px] flex flex-col justify-center px-2 py-1.5 rounded border transition-all group"
+      style={{
+        backgroundColor: bgColor,
+        borderColor: borderColor,
+        borderLeftWidth: "3px",
+      }}
+    >
+      <button
+        onClick={() => onClear(dayIndex, timeSlot)}
+        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 flex items-center justify-center rounded cursor-pointer border-none"
+        style={{
+          backgroundColor: "var(--bg-elevated)",
+          color: "var(--text-muted)",
+        }}
+      >
+        <X size={10} />
+      </button>
+      <div className="flex items-center gap-1.5">
+        <span style={{ color: borderColor }}>{icon}</span>
+        <span
+          className="text-xs font-semibold truncate"
+          style={{ color: "var(--text-primary)" }}
+        >
+          {label}
+        </span>
+      </div>
+      {detail && (
+        <span
+          className="text-[10px] mt-0.5"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {detail}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Add slot modal
+// ---------------------------------------------------------------------------
+
+type AddMode = "scrim" | "solo_queue" | "rest";
+
+function AddSlotModal({
+  dayIndex,
+  timeSlot,
+  rosterNames,
+  teamNames,
+  onClose,
+  onScheduleScrim,
+  onScheduleSoloQueue,
+  onScheduleRest,
+}: {
+  dayIndex: number;
+  timeSlot: TimeSlotType;
+  rosterNames: string[];
+  teamNames: string[];
+  onClose: () => void;
+  onScheduleScrim: (
+    awayTeamIndex: number,
+    gameCount: number,
+    draftRules: DraftRulesType
+  ) => Promise<void>;
+  onScheduleSoloQueue: (
+    players: number[],
+    focus: SoloQueueFocusType
+  ) => Promise<void>;
+  onScheduleRest: () => Promise<void>;
+}) {
+  const [mode, setMode] = useState<AddMode | null>(null);
+  const [awayTeamIdx, setAwayTeamIdx] = useState(0);
+  const [gameCount, setGameCount] = useState(3);
+  const [draftRules, setDraftRules] = useState<DraftRulesType>("standard");
+  const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
+  const [focus, setFocus] = useState<SoloQueueFocusType>("mechanics");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      if (mode === "scrim") {
+        await onScheduleScrim(awayTeamIdx, gameCount, draftRules);
+      } else if (mode === "solo_queue") {
+        await onScheduleSoloQueue(selectedPlayers, focus);
+      } else if (mode === "rest") {
+        await onScheduleRest();
+      }
+      onClose();
+    } catch {
+      // Error handling could be added
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const togglePlayer = (idx: number) => {
+    setSelectedPlayers((prev) =>
+      prev.includes(idx) ? prev.filter((p) => p !== idx) : [...prev, idx]
+    );
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+      onClick={onClose}
+    >
+      <div
+        className="rounded-xl p-5 w-[400px] max-w-[90vw] animate-fade-in-up"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          border: "1px solid var(--border-subtle)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3
+            className="text-sm font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {DAY_LABELS[dayIndex]} · {timeSlot}
+          </h3>
+          <button
+            onClick={onClose}
+            className="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none"
+            style={{
+              backgroundColor: "var(--bg-elevated)",
+              color: "var(--text-muted)",
+            }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+
+        {!mode && (
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => setMode("scrim")}
+              className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+              style={{
+                backgroundColor: "var(--bg-elevated)",
+                borderColor: "var(--border-subtle)",
+                color: "var(--text-primary)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--color-accent-cyan)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-subtle)";
+              }}
+            >
+              <Swords size={18} style={{ color: "var(--color-accent-cyan)" }} />
+              <div className="text-left">
+                <div className="text-sm font-semibold">Scrim</div>
+                <div
+                  className="text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Practice match vs another team
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => setMode("solo_queue")}
+              className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+              style={{
+                backgroundColor: "var(--bg-elevated)",
+                borderColor: "var(--border-subtle)",
+                color: "var(--text-primary)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor =
+                  "var(--color-accent-violet)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-subtle)";
+              }}
+            >
+              <Gamepad2
+                size={18}
+                style={{ color: "var(--color-accent-violet)" }}
+              />
+              <div className="text-left">
+                <div className="text-sm font-semibold">Solo Queue</div>
+                <div
+                  className="text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Individual practice session
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => setMode("rest")}
+              className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+              style={{
+                backgroundColor: "var(--bg-elevated)",
+                borderColor: "var(--border-subtle)",
+                color: "var(--text-primary)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--color-win)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-subtle)";
+              }}
+            >
+              <Moon size={18} style={{ color: "var(--color-win)" }} />
+              <div className="text-left">
+                <div className="text-sm font-semibold">Rest</div>
+                <div
+                  className="text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Recovery day for all players
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+
+        {mode === "scrim" && (
+          <div className="flex flex-col gap-3">
+            <div>
+              <label
+                className="text-xs font-semibold mb-1 block"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Opponent
+              </label>
+              <div className="relative">
+                <select
+                  value={awayTeamIdx}
+                  onChange={(e) => setAwayTeamIdx(Number(e.target.value))}
+                  className="w-full p-2 rounded text-sm appearance-none cursor-pointer"
+                  style={{
+                    backgroundColor: "var(--bg-elevated)",
+                    color: "var(--text-primary)",
+                    border: "1px solid var(--border-subtle)",
+                  }}
+                >
+                  {teamNames.map((name, i) => (
+                    <option key={i} value={i}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={14}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{ color: "var(--text-muted)" }}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label
+                  className="text-xs font-semibold mb-1 block"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Games
+                </label>
+                <div className="flex gap-1">
+                  {[3, 5].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setGameCount(n)}
+                      className="flex-1 py-1.5 rounded text-xs font-mono font-bold cursor-pointer border-none transition-colors"
+                      style={{
+                        backgroundColor:
+                          gameCount === n
+                            ? "var(--color-accent-cyan)"
+                            : "var(--bg-elevated)",
+                        color:
+                          gameCount === n ? "#fff" : "var(--text-secondary)",
+                      }}
+                    >
+                      Bo{n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex-1">
+                <label
+                  className="text-xs font-semibold mb-1 block"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Draft
+                </label>
+                <div className="flex gap-1">
+                  {(["standard", "fearless"] as DraftRulesType[]).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setDraftRules(r)}
+                      className="flex-1 py-1.5 rounded text-xs font-semibold cursor-pointer border-none transition-colors capitalize"
+                      style={{
+                        backgroundColor:
+                          draftRules === r
+                            ? "var(--color-accent-violet)"
+                            : "var(--bg-elevated)",
+                        color:
+                          draftRules === r ? "#fff" : "var(--text-secondary)",
+                      }}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="w-full py-2 rounded-lg text-sm font-bold cursor-pointer border-none transition-colors"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))",
+                color: "#fff",
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting ? "Scheduling…" : "Schedule Scrim"}
+            </button>
+          </div>
+        )}
+
+        {mode === "solo_queue" && (
+          <div className="flex flex-col gap-3">
+            <div>
+              <label
+                className="text-xs font-semibold mb-1 block"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Players
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {rosterNames.map((name, i) => (
+                  <button
+                    key={i}
+                    onClick={() => togglePlayer(i)}
+                    className="px-2.5 py-1 rounded text-xs font-semibold cursor-pointer border-none transition-colors"
+                    style={{
+                      backgroundColor: selectedPlayers.includes(i)
+                        ? "var(--color-accent-violet)"
+                        : "var(--bg-elevated)",
+                      color: selectedPlayers.includes(i)
+                        ? "#fff"
+                        : "var(--text-secondary)",
+                    }}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label
+                className="text-xs font-semibold mb-1 block"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Focus
+              </label>
+              <div className="flex gap-1">
+                {FOCUS_OPTIONS.map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFocus(f)}
+                    className="flex-1 py-1.5 rounded text-xs font-semibold cursor-pointer border-none transition-colors capitalize"
+                    style={{
+                      backgroundColor:
+                        focus === f
+                          ? "var(--color-accent-violet)"
+                          : "var(--bg-elevated)",
+                      color: focus === f ? "#fff" : "var(--text-secondary)",
+                    }}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || selectedPlayers.length === 0}
+              className="w-full py-2 rounded-lg text-sm font-bold cursor-pointer border-none transition-colors"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))",
+                color: "#fff",
+                opacity: submitting || selectedPlayers.length === 0 ? 0.6 : 1,
+              }}
+            >
+              {submitting ? "Scheduling…" : "Schedule Solo Queue"}
+            </button>
+          </div>
+        )}
+
+        {mode === "rest" && (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              All players will rest during this slot, recovering stamina.
+            </p>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="w-full py-2 rounded-lg text-sm font-bold cursor-pointer border-none transition-colors"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))",
+                color: "#fff",
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting ? "Scheduling…" : "Schedule Rest"}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
+export function TeamScheduleView({
+  schedule,
+  scrims,
+  rosterNames,
+  onScheduleScrim,
+  onScheduleSoloQueue,
+  onScheduleRest,
+  onClearSlot,
+  onCancelScrim,
+  teamNames,
+}: TeamScheduleViewProps) {
+  const [addingSlot, setAddingSlot] = useState<{
+    dayIndex: number;
+    timeSlot: TimeSlotType;
+  } | null>(null);
+
+  if (!schedule) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16">
+        <Calendar size={48} style={{ color: "var(--text-muted)" }} />
+        <p style={{ color: "var(--text-muted)" }}>Loading schedule…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 animate-fade-in-up">
+      {/* Header stats */}
+      <div className="flex items-center justify-between">
+        <h2
+          className="text-lg font-bold"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Weekly Schedule
+        </h2>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <Swords size={14} style={{ color: "var(--color-accent-cyan)" }} />
+            <span
+              className="text-sm font-mono font-bold"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {schedule.total_scrims}
+            </span>
+            <span
+              className="text-xs"
+              style={{ color: "var(--text-muted)" }}
+            >
+              scrims
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Calendar size={14} style={{ color: "var(--text-muted)" }} />
+            <span
+              className="text-sm font-mono font-bold"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {schedule.occupied_slots}
+            </span>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              / 21 slots
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Weekly grid */}
+      <div
+        className="rounded-xl border overflow-hidden"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          borderColor: "var(--border-subtle)",
+        }}
+      >
+        {/* Header row */}
+        <div
+          className="grid grid-cols-[80px_repeat(7,1fr)] border-b"
+          style={{ borderColor: "var(--border-subtle)" }}
+        >
+          <div
+            className="p-2 text-xs font-semibold"
+            style={{ color: "var(--text-muted)" }}
+          />
+          {DAY_LABELS.map((label, i) => (
+            <div
+              key={i}
+              className="p-2 text-center text-xs font-bold uppercase tracking-wider"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {/* Slot rows */}
+        {TIME_SLOTS.map((ts, rowIdx) => (
+          <div
+            key={ts}
+            className="grid grid-cols-[80px_repeat(7,1fr)]"
+            style={{
+              borderBottom:
+                rowIdx < TIME_SLOTS.length - 1
+                  ? "1px solid var(--border-subtle)"
+                  : undefined,
+            }}
+          >
+            <div
+              className="p-2 flex items-center text-xs font-semibold"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {ts}
+            </div>
+            {schedule.days.map((day) => {
+              const slot = day.slots.find((s) => s.time_slot === ts);
+              if (!slot) return <div key={day.day_index} className="p-1.5" />;
+              return (
+                <div key={day.day_index} className="p-1.5">
+                  <SlotCell
+                    slot={slot}
+                    dayIndex={day.day_index}
+                    timeSlot={ts}
+                    onAdd={(d, t) => setAddingSlot({ dayIndex: d, timeSlot: t })}
+                    onClear={onClearSlot}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-3 h-3 rounded-sm"
+            style={{ backgroundColor: "rgba(6, 182, 212, 0.3)" }}
+          />
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Scrim
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-3 h-3 rounded-sm"
+            style={{ backgroundColor: "rgba(139, 92, 246, 0.3)" }}
+          />
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Solo Queue
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-3 h-3 rounded-sm"
+            style={{ backgroundColor: "rgba(34, 197, 94, 0.3)" }}
+          />
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Rest
+          </span>
+        </div>
+      </div>
+
+      {/* Upcoming scrims list */}
+      {scrims.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h3
+            className="text-sm font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Scrims
+          </h3>
+          <div className="flex flex-col gap-1.5">
+            {scrims.map((s) => (
+              <div
+                key={s.id}
+                className="flex items-center justify-between p-3 rounded-lg border"
+                style={{
+                  backgroundColor: "var(--bg-elevated)",
+                  borderColor: "var(--border-subtle)",
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <Swords
+                    size={14}
+                    style={{ color: "var(--color-accent-cyan)" }}
+                  />
+                  <div>
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      vs {s.away_team}
+                    </span>
+                    <span
+                      className="text-xs ml-2"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Day {s.scheduled_day} · {s.time_slot} · Bo
+                      {s.game_count}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-xs font-mono px-2 py-0.5 rounded"
+                    style={{
+                      backgroundColor:
+                        s.status === "Scheduled"
+                          ? "rgba(6, 182, 212, 0.15)"
+                          : s.status === "Completed"
+                            ? "rgba(34, 197, 94, 0.15)"
+                            : "rgba(239, 68, 68, 0.15)",
+                      color:
+                        s.status === "Scheduled"
+                          ? "var(--color-accent-cyan)"
+                          : s.status === "Completed"
+                            ? "var(--color-win)"
+                            : "var(--color-loss)",
+                    }}
+                  >
+                    {s.status}
+                  </span>
+                  {s.status === "Scheduled" && (
+                    <button
+                      onClick={() => onCancelScrim(s.id)}
+                      className="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none transition-colors"
+                      style={{
+                        backgroundColor: "var(--bg-surface)",
+                        color: "var(--text-muted)",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = "var(--color-loss)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = "var(--text-muted)";
+                      }}
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add slot modal */}
+      {addingSlot && (
+        <AddSlotModal
+          dayIndex={addingSlot.dayIndex}
+          timeSlot={addingSlot.timeSlot}
+          rosterNames={rosterNames}
+          teamNames={teamNames}
+          onClose={() => setAddingSlot(null)}
+          onScheduleScrim={(awayIdx, gc, dr) =>
+            onScheduleScrim(
+              addingSlot.dayIndex,
+              addingSlot.timeSlot,
+              awayIdx,
+              gc,
+              dr
+            )
+          }
+          onScheduleSoloQueue={(players, focus) =>
+            onScheduleSoloQueue(
+              addingSlot.dayIndex,
+              addingSlot.timeSlot,
+              players,
+              focus
+            )
+          }
+          onScheduleRest={() =>
+            onScheduleRest(addingSlot.dayIndex, addingSlot.timeSlot)
+          }
+        />
+      )}
+    </div>
+  );
+}
