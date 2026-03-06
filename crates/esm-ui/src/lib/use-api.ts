@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams } from "./api";
+import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult } from "./api";
 
 // ---------------------------------------------------------------------------
 // Detect whether we're running inside Tauri or in a browser (dev/test)
@@ -65,6 +65,7 @@ interface ApiAdapter {
   draftHover(champion: string): Promise<DraftSessionState>;
   draftLock(): Promise<DraftSessionState>;
   getDraftState(): Promise<DraftSessionState>;
+  simulateMatch(): Promise<SimulateMatchResult>;
 }
 
 async function tauriAdapter(): Promise<ApiAdapter> {
@@ -88,6 +89,7 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     draftHover: api.draftHover,
     draftLock: api.draftLock,
     getDraftState: api.getDraftState,
+    simulateMatch: api.simulateMatch,
   };
 }
 
@@ -191,6 +193,10 @@ const mockAdapter: ApiAdapter = {
   async getDraftState() {
     return MOCK_DRAFT_STATE();
   },
+  async simulateMatch() {
+    await delay(300);
+    return MOCK_MATCH_RESULT();
+  },
 };
 
 const MOCK_CHAMPIONS = [
@@ -199,6 +205,33 @@ const MOCK_CHAMPIONS = [
   "Lee Sin", "Viego", "Jarvan IV", "Jinx", "Kai'Sa",
   "Ezreal", "Aphelios", "Thresh", "Nautilus", "Lulu",
 ];
+
+function MOCK_MATCH_RESULT(): SimulateMatchResult {
+  return {
+    winner: 'T1',
+    duration_minutes: 32,
+    blue_team: 'T1',
+    red_team: 'Gen.G',
+    blue_gold: 58200,
+    red_gold: 51800,
+    events: [
+      { minute: 3, phase: 'Early', kind: 'solo_kill', commentary: 'FIRST BLOOD! Player1 takes down Player3 in the mid lane!' },
+      { minute: 6, phase: 'Early', kind: 'dragon', commentary: 'T1 slays the dragon! That\'s dragon number 1 for them.' },
+      { minute: 8, phase: 'Early', kind: 'herald', commentary: 'T1 takes down the Rift Herald! Time to crack open a tower.' },
+      { minute: 10, phase: 'Early', kind: 'tower', commentary: 'T1 takes down the top tower! The map opens up.' },
+      { minute: 14, phase: 'Early', kind: 'solo_kill', commentary: 'Player2 finds the solo kill onto Player4 in bot!' },
+      { minute: 16, phase: 'Mid', kind: 'teamfight', commentary: 'T1 wins the teamfight 3 to 1!' },
+      { minute: 18, phase: 'Mid', kind: 'tower', commentary: 'T1 takes down the mid tower! The map opens up.' },
+      { minute: 20, phase: 'Mid', kind: 'baron', commentary: 'BARON NASHOR IS DOWN! T1 secures the baron buff — this is huge!' },
+      { minute: 22, phase: 'Mid', kind: 'tower', commentary: 'T1 takes down the bot tower! The map opens up.' },
+      { minute: 24, phase: 'Mid', kind: 'dragon', commentary: 'T1 slays the dragon! That\'s dragon number 2 for them.' },
+      { minute: 26, phase: 'Late', kind: 'teamfight', commentary: 'AN ACE! T1 wipes the floor in that teamfight — 4 for 1!' },
+      { minute: 28, phase: 'Late', kind: 'inhibitor', commentary: 'T1 destroys the mid inhibitor! Super minions incoming!' },
+      { minute: 30, phase: 'Late', kind: 'baron', commentary: 'BARON NASHOR IS DOWN! T1 secures the baron buff — this is huge!' },
+      { minute: 32, phase: 'Late', kind: 'nexus', commentary: 'AND THAT\'S THE GAME! T1 destroys the Nexus for the victory! GG!' },
+    ],
+  };
+}
 
 function MOCK_DRAFT_STATE(): DraftSessionState {
   return {
@@ -607,4 +640,30 @@ export function useDraft() {
   }, []);
 
   return { draftState, startDraft, hover, lock, refresh, loading, error };
+}
+
+export function useMatchSimulation() {
+  const [result, setResult] = useState<SimulateMatchResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const simulate = useCallback(async (): Promise<SimulateMatchResult | null> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      const res = await adapter.simulateMatch();
+      setResult(res);
+      return res;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('useMatchSimulation error:', msg);
+      setError(msg);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { result, simulate, loading, error };
 }

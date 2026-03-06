@@ -185,3 +185,28 @@ export async function draftLock(): Promise<DraftSessionState> {
 export async function getDraftState(): Promise<DraftSessionState> {
   return invoke<DraftSessionState>("get_draft_state");
 }
+
+// ---------------------------------------------------------------------------
+// Match Simulation API
+// ---------------------------------------------------------------------------
+
+export interface MatchEventInfo {
+  minute: number;
+  phase: string;
+  kind: string;
+  commentary: string | null;
+}
+
+export interface SimulateMatchResult {
+  winner: string;
+  duration_minutes: number;
+  blue_team: string;
+  red_team: string;
+  blue_gold: number;
+  red_gold: number;
+  events: MatchEventInfo[];
+}
+
+export async function simulateMatch(): Promise<SimulateMatchResult> {
+  return invoke<SimulateMatchResult>("simulate_match");
+}

@@ -11,7 +11,8 @@ use esm_db::save_manager::{SaveEntry, SaveManager};
 use esm_engine::draft::DraftFormat;
 use esm_engine::draft_session::{DraftSession, DraftSessionState};
 use esm_engine::match_sim::TeamSide as DraftTeamSide;
-use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine};
+use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine, MobaMatchResult};
+use esm_engine::moba_match::event::MatchEventKind;
 use esm_engine::moba_match::game_state::MatchPlayerSimulationData;
 use esm_engine::moba_match::state::TeamSide;
 use esm_engine::tournament::{BracketKind, Tournament, TournamentFormat};
@@ -90,6 +91,25 @@ pub struct MatchResultInfo {
     pub red_team: String,
     pub winner: String,
     pub duration_minutes: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MatchEventInfo {
+    pub minute: u32,
+    pub phase: String,
+    pub kind: String,
+    pub commentary: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SimulateMatchResultInfo {
+    pub winner: String,
+    pub duration_minutes: u32,
+    pub blue_team: String,
+    pub red_team: String,
+    pub blue_gold: u32,
+    pub red_gold: u32,
+    pub events: Vec<MatchEventInfo>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -646,6 +666,121 @@ fn get_draft_state(state: State<'_, AppState>) -> Result<DraftSessionState, Stri
     Ok(session.state())
 }
 
+// ---------------------------------------------------------------------------
+// Match simulation command
+// ---------------------------------------------------------------------------
+
+fn event_kind_label(kind: &MatchEventKind) -> &'static str {
+    match kind {
+        MatchEventKind::FarmTick => "farm",
+        MatchEventKind::SoloKill { .. } => "solo_kill",
+        MatchEventKind::Teamfight { .. } => "teamfight",
+        MatchEventKind::TowerDestroyed { .. } => "tower",
+        MatchEventKind::DragonKill { .. } => "dragon",
+        MatchEventKind::HeraldKill { .. } => "herald",
+        MatchEventKind::BaronKill { .. } => "baron",
+        MatchEventKind::InhibitorDestroyed { .. } => "inhibitor",
+        MatchEventKind::NexusDestroyed { .. } => "nexus",
+    }
+}
+
+fn match_result_to_info(
+    result: &MobaMatchResult,
+    blue_name: &str,
+    red_name: &str,
+) -> SimulateMatchResultInfo {
+    let events: Vec<MatchEventInfo> = result
+        .events
+        .iter()
+        .filter(|e| !matches!(e.kind(), MatchEventKind::FarmTick))
+        .map(|e| MatchEventInfo {
+            minute: e.minute(),
+            phase: format!("{:?}", e.phase()),
+            kind: event_kind_label(e.kind()).to_string(),
+            commentary: e.commentary().map(|c| c.text().to_string()),
+        })
+        .collect();
+
+    let winner = match result.winner {
+        TeamSide::Blue => blue_name.to_string(),
+        TeamSide::Red => red_name.to_string(),
+    };
+
+    SimulateMatchResultInfo {
+        winner,
+        duration_minutes: result.duration_minutes,
+        blue_team: blue_name.to_string(),
+        red_team: red_name.to_string(),
+        blue_gold: result.blue_team_gold,
+        red_gold: result.red_team_gold,
+        events,
+    }
+}
+
+#[tauri::command]
+fn simulate_match(state: State<'_, AppState>) -> Result<SimulateMatchResultInfo, String> {
+    let mut lock = state.game_state.lock().unwrap();
+    let gs = lock.as_mut().ok_or("No active game session")?;
+    let mut t_lock = state.tournament.lock().unwrap();
+    let m_lock = state.moba_teams.lock().unwrap();
+
+    if let (Some(tournament), Some(moba_teams)) = (t_lock.as_mut(), m_lock.as_ref()) {
+        let player_idx = gs.player_team_index();
+        let day = gs.calendar().days_elapsed();
+
+        let player_match = tournament.matches_today(day).into_iter().find(|m| {
+            (m.blue_team_idx() == player_idx || m.red_team_idx() == player_idx)
+                && m.winner_team_idx().is_none()
+        });
+
+        if let Some(m) = player_match {
+            let match_id = m.id();
+            let blue_idx = m.blue_team_idx();
+            let red_idx = m.red_team_idx();
+
+            let config = MobaMatchConfig::default();
+            let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
+            let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
+
+            let result = MobaMatchEngine::simulate(gs.rng_mut(), &blue_attrs, &red_attrs, &config);
+
+            let (bw, rw) = match result.winner {
+                TeamSide::Blue => (1u32, 0u32),
+                TeamSide::Red => (0u32, 1u32),
+            };
+            tournament.record_result(match_id, bw, rw);
+
+            let is_blue = blue_idx == player_idx;
+            let player_won = (is_blue && bw > 0) || (!is_blue && rw > 0);
+            gs.teams_mut()[player_idx].apply_match_result(player_won);
+
+            let info = match_result_to_info(
+                &result,
+                moba_teams[blue_idx].name(),
+                moba_teams[red_idx].name(),
+            );
+
+            if tournament.is_complete() {
+                let msg = esm_core::inbox::Message::new(
+                    "Tournament Concluded".to_string(),
+                    format!(
+                        "The {} has concluded! Check the final standings.",
+                        tournament.name()
+                    ),
+                    esm_core::inbox::MessagePriority::HardBlock,
+                    esm_core::inbox::MessageCategory::News,
+                    gs.calendar().days_elapsed(),
+                );
+                gs.inbox_mut().push(msg);
+            }
+
+            return Ok(info);
+        }
+    }
+
+    Err("No pending match today".to_string())
+}
+
 #[tauri::command]
 fn resolve_message(msg_id: String, state: State<'_, AppState>) -> Result<(), String> {
     let mut lock = state.game_state.lock().unwrap();
@@ -887,6 +1022,7 @@ pub fn run() {
             draft_hover,
             draft_lock,
             get_draft_state,
+            simulate_match,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
