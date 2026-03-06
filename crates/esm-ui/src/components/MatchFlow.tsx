@@ -77,7 +77,7 @@ export function MatchFlow({
 
   return (
     <div
-      className="flex flex-col min-h-screen"
+      className="flex flex-col h-full"
       style={{ backgroundColor: 'var(--bg-base)' }}
     >
       {/* Match header — replaces sidebar/topbar */}
@@ -132,63 +132,71 @@ export function MatchFlow({
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="flex-1 flex items-center justify-center p-8">
-        {phase === 'pre-match' && (
-          <PreMatchPanel
-            teamName={teamName}
-            opponentName={opponentName}
-            onProceed={handleProceedToDraft}
-          />
-        )}
-
-        {phase === 'draft' && draftState && (
-          <DraftUI
-            draftState={draftState}
-            playerSide={teamSide}
-            teamName={teamName}
-            opponentName={opponentName}
-            onHover={handleDraftHover}
-            onLock={handleDraftLock}
-            onComplete={handleDraftComplete}
-          />
-        )}
-
-        {phase === 'draft' && !draftState && (
-          <div className="text-center">
-            <div
-              className="w-16 h-16 mx-auto mb-4 rounded-full animate-pulse"
-              style={{ background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))' }}
+      {/* Main content — full-height phases vs centered panels */}
+      {(phase === 'draft' || phase === 'match') ? (
+        <main className="flex-1 flex flex-col min-h-0">
+          {phase === 'draft' && draftState && (
+            <DraftUI
+              draftState={draftState}
+              playerSide={teamSide}
+              teamName={teamName}
+              opponentName={opponentName}
+              onHover={handleDraftHover}
+              onLock={handleDraftLock}
+              onComplete={handleDraftComplete}
             />
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Loading draft...
-            </p>
-          </div>
-        )}
+          )}
 
-        {phase === 'match' && matchResult && (
-          <MatchSimUI
-            result={matchResult}
-            onComplete={handleMatchComplete}
-          />
-        )}
+          {phase === 'draft' && !draftState && (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <div
+                  className="w-16 h-16 mx-auto mb-4 rounded-full animate-pulse"
+                  style={{ background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))' }}
+                />
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Loading draft...
+                </p>
+              </div>
+            </div>
+          )}
 
-        {phase === 'match' && !matchResult && (
-          <SimulatingPanel />
-        )}
+          {phase === 'match' && matchResult && (
+            <MatchSimUI
+              result={matchResult}
+              onComplete={handleMatchComplete}
+            />
+          )}
 
-        {phase === 'simulating' && (
-          <SimulatingPanel />
-        )}
+          {phase === 'match' && !matchResult && (
+            <div className="flex-1 flex items-center justify-center">
+              <SimulatingPanel />
+            </div>
+          )}
+        </main>
+      ) : (
+        <main className="flex-1 flex items-center justify-center p-8">
+          {phase === 'pre-match' && (
+            <PreMatchPanel
+              teamName={teamName}
+              opponentName={opponentName}
+              onProceed={handleProceedToDraft}
+            />
+          )}
 
-        {phase === 'results' && (
-          <ResultsPanel
-            teamName={teamName}
-            opponentName={opponentName}
-            onExit={onComplete}
-          />
-        )}
-      </main>
+          {phase === 'simulating' && (
+            <SimulatingPanel />
+          )}
+
+          {phase === 'results' && (
+            <ResultsPanel
+              teamName={teamName}
+              opponentName={opponentName}
+              onExit={onComplete}
+            />
+          )}
+        </main>
+      )}
     </div>
   );
 }

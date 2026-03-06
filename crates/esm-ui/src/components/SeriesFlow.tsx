@@ -85,12 +85,12 @@ export function SeriesFlow({
   }
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--bg-base)' }}>
+    <div className="flex flex-col h-screen" style={{ backgroundColor: 'var(--bg-base)' }}>
       {/* Series banner */}
       <SeriesBanner series={series} />
 
       {/* Current phase content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {phase === 'game' && (
           <MatchFlow
             key={gameKey}
