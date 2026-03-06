@@ -1,46 +1,237 @@
-import { useState } from 'react';
-import { Bot } from 'lucide-react';
+import { Lock, CheckCircle } from 'lucide-react';
+import type { DraftSessionState } from '@/lib/api';
 
-export function DraftUI() {
-    const [activeTab, setActiveTab] = useState('bans');
+interface DraftUIProps {
+  draftState: DraftSessionState;
+  playerSide: 'blue' | 'red';
+  teamName: string;
+  opponentName: string;
+  onHover: (champion: string) => void;
+  onLock: () => void;
+  onComplete: () => void;
+}
 
-    return (
-        <div className="flex flex-col h-full animate-fade-in-up">
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold font-display" style={{ color: 'var(--text-primary)' }}>Draft Phase</h2>
-                <div className="flex bg-elevated rounded-lg p-1" style={{ backgroundColor: 'var(--bg-elevated)' }}>
-                    <button
-                        onClick={() => setActiveTab('bans')}
-                        className={`px-4 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'bans' ? 'accent-gradient text-white' : ''}`}
-                        style={{ color: activeTab === 'bans' ? '#fff' : 'var(--text-secondary)' }}
-                    >
-                        Bans
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('picks')}
-                        className={`px-4 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'picks' ? 'accent-gradient text-white' : ''}`}
-                        style={{ color: activeTab === 'picks' ? '#fff' : 'var(--text-secondary)' }}
-                    >
-                        Picks
-                    </button>
-                </div>
-            </div>
+export function DraftUI({
+  draftState,
+  playerSide,
+  teamName,
+  opponentName,
+  onHover,
+  onLock,
+  onComplete,
+}: DraftUIProps) {
+  const blueName = playerSide === 'blue' ? teamName : opponentName;
+  const redName = playerSide === 'red' ? teamName : opponentName;
 
-            <div
-                className="flex-1 rounded-xl flex items-center justify-center border"
-                style={{
-                    backgroundColor: 'var(--bg-surface)',
-                    borderColor: 'var(--border-subtle)',
-                }}
-            >
-                <div className="text-center max-w-sm">
-                    <Bot size={48} className="mx-auto mb-4" style={{ color: 'var(--color-accent-cyan)' }} />
-                    <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Draft Interface Pending</h3>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        The interactive Draft UI is under construction. It will feature real-time champion selection, timers, and state machine transitions hooked to the Rust core.
-                    </p>
-                </div>
-            </div>
+  const phaseLabel = draftState.is_complete
+    ? 'Draft Complete'
+    : draftState.current_phase === 'Ban'
+      ? 'Ban Phase'
+      : 'Pick Phase';
+
+  return (
+    <div className="flex flex-col w-full h-full gap-4">
+      {/* Header: team names + phase + progress */}
+      <div className="flex items-center justify-between px-4">
+        <div
+          className="text-lg font-bold px-4 py-2 rounded-lg"
+          style={{ color: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.1)' }}
+        >
+          {blueName}
         </div>
-    )
+
+        <div className="text-center">
+          <div
+            className="text-sm font-semibold uppercase tracking-wider mb-1"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            {phaseLabel}
+          </div>
+          <div
+            className="text-xs font-mono"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {draftState.current_step} / {draftState.total_steps}
+          </div>
+        </div>
+
+        <div
+          className="text-lg font-bold px-4 py-2 rounded-lg"
+          style={{ color: '#EF4444', backgroundColor: 'rgba(239,68,68,0.1)' }}
+        >
+          {redName}
+        </div>
+      </div>
+
+      {/* Bans row */}
+      <div className="flex items-center justify-between px-4 gap-4">
+        <BanSlots bans={draftState.blue_bans} maxBans={5} side="blue" />
+        <div
+          className="text-xs font-semibold uppercase"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          Bans
+        </div>
+        <BanSlots bans={draftState.red_bans} maxBans={5} side="red" />
+      </div>
+
+      {/* Picks row */}
+      <div className="flex items-center justify-between px-4 gap-4">
+        <PickSlots picks={draftState.blue_picks} maxPicks={5} side="blue" />
+        <div
+          className="text-xs font-semibold uppercase"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          Picks
+        </div>
+        <PickSlots picks={draftState.red_picks} maxPicks={5} side="red" />
+      </div>
+
+      {/* Champion grid */}
+      {!draftState.is_complete && (
+        <div
+          className="flex-1 rounded-xl border p-4 overflow-y-auto"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            borderColor: 'var(--border-subtle)',
+          }}
+        >
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+            {draftState.available_champions.map((champ) => {
+              const isHovered = draftState.active_hover === champ;
+              return (
+                <button
+                  key={champ}
+                  aria-label={champ}
+                  data-hovered={isHovered ? 'true' : 'false'}
+                  disabled={!draftState.is_player_turn}
+                  onClick={() => onHover(champ)}
+                  className="flex flex-col items-center justify-center p-2 rounded-lg text-xs font-semibold transition-all duration-150 border"
+                  style={{
+                    backgroundColor: isHovered
+                      ? 'rgba(6,182,212,0.15)'
+                      : 'var(--bg-elevated)',
+                    borderColor: isHovered
+                      ? 'var(--color-accent-cyan)'
+                      : 'var(--border-subtle)',
+                    color: isHovered
+                      ? 'var(--color-accent-cyan)'
+                      : 'var(--text-primary)',
+                    opacity: draftState.is_player_turn ? 1 : 0.5,
+                    cursor: draftState.is_player_turn ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  {champ}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Lock / Complete button */}
+      <div className="flex justify-center px-4 pb-2">
+        {draftState.is_complete ? (
+          <button
+            onClick={onComplete}
+            className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2"
+            style={{
+              background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+            }}
+          >
+            <CheckCircle size={18} />
+            Continue
+          </button>
+        ) : draftState.active_hover ? (
+          <button
+            onClick={onLock}
+            className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2"
+            style={{
+              background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+            }}
+          >
+            <Lock size={18} />
+            Lock In
+          </button>
+        ) : (
+          <div
+            className="px-8 py-3 text-sm font-semibold"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {draftState.is_player_turn
+              ? 'Select a champion to hover'
+              : 'Waiting for opponent...'}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function BanSlots({
+  bans,
+  maxBans,
+  side,
+}: {
+  bans: string[];
+  maxBans: number;
+  side: 'blue' | 'red';
+}) {
+  const slots = Array.from({ length: maxBans }, (_, i) => bans[i] ?? null);
+  const borderColor = side === 'blue' ? 'rgba(59,130,246,0.3)' : 'rgba(239,68,68,0.3)';
+
+  return (
+    <div className="flex gap-1">
+      {slots.map((champ, i) => (
+        <div
+          key={i}
+          className="w-16 h-8 rounded flex items-center justify-center text-xs font-mono border"
+          style={{
+            backgroundColor: champ ? 'rgba(239,68,68,0.1)' : 'var(--bg-elevated)',
+            borderColor: champ ? borderColor : 'var(--border-subtle)',
+            color: champ ? '#EF4444' : 'var(--text-muted)',
+            textDecoration: champ ? 'line-through' : 'none',
+          }}
+        >
+          {champ ?? '—'}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PickSlots({
+  picks,
+  maxPicks,
+  side,
+}: {
+  picks: string[];
+  maxPicks: number;
+  side: 'blue' | 'red';
+}) {
+  const slots = Array.from({ length: maxPicks }, (_, i) => picks[i] ?? null);
+  const accentColor = side === 'blue' ? '#3B82F6' : '#EF4444';
+  const bgTint = side === 'blue' ? 'rgba(59,130,246,0.1)' : 'rgba(239,68,68,0.1)';
+
+  return (
+    <div className="flex gap-1">
+      {slots.map((champ, i) => (
+        <div
+          key={i}
+          className="w-20 h-10 rounded-lg flex items-center justify-center text-xs font-bold border"
+          style={{
+            backgroundColor: champ ? bgTint : 'var(--bg-elevated)',
+            borderColor: champ ? accentColor : 'var(--border-subtle)',
+            color: champ ? accentColor : 'var(--text-muted)',
+          }}
+        >
+          {champ ?? '—'}
+        </div>
+      ))}
+    </div>
+  );
 }
