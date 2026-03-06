@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { DraftUI } from './DraftUI';
+import { useDraft } from '@/lib/use-api';
 import type { MatchMode } from './PlayMatchButton';
 
 type MatchPhase = 'pre-match' | 'draft' | 'match' | 'simulating' | 'results';
@@ -30,6 +32,7 @@ export function MatchFlow({
   onComplete,
 }: MatchFlowProps) {
   const [phase, setPhase] = useState<MatchPhase>(() => initialPhase(mode));
+  const { draftState, startDraft, hover, lock } = useDraft();
 
   // For delegate mode, auto-advance from simulating to results
   useEffect(() => {
@@ -39,17 +42,29 @@ export function MatchFlow({
     }
   }, [phase]);
 
-  const handleProceedToDraft = () => {
+  const handleProceedToDraft = useCallback(async () => {
+    await startDraft({
+      player_side: teamSide,
+      format: 'five_ban',
+    });
     setPhase('draft');
-  };
+  }, [startDraft, teamSide]);
 
-  const handleDraftComplete = () => {
+  const handleDraftHover = useCallback(async (champion: string) => {
+    await hover(champion);
+  }, [hover]);
+
+  const handleDraftLock = useCallback(async () => {
+    await lock();
+  }, [lock]);
+
+  const handleDraftComplete = useCallback(() => {
     if (mode === 'draft-delegate') {
       setPhase('simulating');
     } else {
       setPhase('match');
     }
-  };
+  }, [mode]);
 
   const handleMatchComplete = () => {
     setPhase('results');
@@ -122,12 +137,28 @@ export function MatchFlow({
           />
         )}
 
-        {phase === 'draft' && (
-          <DraftPanel
+        {phase === 'draft' && draftState && (
+          <DraftUI
+            draftState={draftState}
+            playerSide={teamSide}
             teamName={teamName}
             opponentName={opponentName}
+            onHover={handleDraftHover}
+            onLock={handleDraftLock}
             onComplete={handleDraftComplete}
           />
+        )}
+
+        {phase === 'draft' && !draftState && (
+          <div className="text-center">
+            <div
+              className="w-16 h-16 mx-auto mb-4 rounded-full animate-pulse"
+              style={{ background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))' }}
+            />
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              Loading draft...
+            </p>
+          </div>
         )}
 
         {phase === 'match' && (
@@ -193,46 +224,6 @@ function PreMatchPanel({
         }}
       >
         Proceed to Draft
-      </button>
-    </div>
-  );
-}
-
-function DraftPanel({
-  teamName,
-  opponentName,
-  onComplete,
-}: {
-  teamName: string;
-  opponentName: string;
-  onComplete: () => void;
-}) {
-  return (
-    <div
-      className="w-full max-w-4xl p-8 rounded-xl border text-center"
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--border-subtle)',
-      }}
-    >
-      <h2
-        className="text-2xl font-bold mb-2"
-        style={{ color: 'var(--text-primary)' }}
-      >
-        Draft Phase
-      </h2>
-      <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-        {teamName} vs {opponentName}
-      </p>
-      <button
-        onClick={onComplete}
-        className="px-6 py-2.5 rounded-md text-sm font-semibold cursor-pointer border-none transition-all"
-        style={{
-          background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))',
-          color: '#fff',
-        }}
-      >
-        Complete Draft
       </button>
     </div>
   );

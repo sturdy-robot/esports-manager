@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/render';
 import { MatchFlow } from './MatchFlow';
@@ -37,7 +37,10 @@ describe('MatchFlow', () => {
     renderWithProviders(<MatchFlow {...defaultProps} mode="participate" />);
 
     await user.click(screen.getByRole('button', { name: /proceed to draft/i }));
-    expect(screen.getByRole('heading', { name: /draft phase/i })).toBeInTheDocument();
+    // DraftUI renders "Ban Phase" as the initial phase indicator
+    await waitFor(() => {
+      expect(screen.getByText(/ban phase/i)).toBeInTheDocument();
+    });
   });
 
   it('skips directly to simulating in delegate mode', () => {
@@ -51,7 +54,9 @@ describe('MatchFlow', () => {
     // Starts at pre-match, proceed to draft
     expect(screen.getByRole('heading', { name: /pre-match/i })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /proceed to draft/i }));
-    expect(screen.getByRole('heading', { name: /draft phase/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/ban phase/i)).toBeInTheDocument();
+    });
   });
 
   it('calls onComplete when user exits match flow', async () => {
