@@ -163,6 +163,7 @@ export interface DraftSessionState {
   is_complete: boolean;
   is_player_turn: boolean;
   available_champions: string[];
+  timer_seconds: number;
 }
 
 export interface StartDraftParams {

@@ -1,5 +1,30 @@
-import { Lock, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Lock, CheckCircle, Clock } from 'lucide-react';
 import type { DraftSessionState } from '@/lib/api';
+
+/**
+ * Custom hook: countdown timer that resets when `step` changes.
+ * All state mutations happen inside async callbacks (setTimeout / setInterval),
+ * never synchronously in the effect body, to satisfy react-compiler purity rules.
+ */
+function useDraftTimer(totalSeconds: number, step: number, active: boolean) {
+  const [timeLeft, setTimeLeft] = useState(totalSeconds);
+
+  useEffect(() => {
+    // Reset via microtask — avoids synchronous setState in effect body
+    const resetId = setTimeout(() => setTimeLeft(totalSeconds), 0);
+    if (!active) return () => clearTimeout(resetId);
+    const id = setInterval(() => {
+      setTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => {
+      clearTimeout(resetId);
+      clearInterval(id);
+    };
+  }, [active, step, totalSeconds]);
+
+  return timeLeft;
+}
 
 interface DraftUIProps {
   draftState: DraftSessionState;
@@ -29,6 +54,33 @@ export function DraftUI({
       ? 'Ban Phase'
       : 'Pick Phase';
 
+  // ---- Draft Timer ----
+  const timeLeft = useDraftTimer(
+    draftState.timer_seconds,
+    draftState.current_step,
+    !draftState.is_complete,
+  );
+
+  // Auto-lock when timer expires on player's turn
+  const handleAutoLock = useCallback(() => {
+    if (!draftState.is_player_turn || draftState.is_complete) return;
+    if (draftState.active_hover) {
+      onLock();
+    } else if (draftState.available_champions.length > 0) {
+      onHover(draftState.available_champions[0]);
+      setTimeout(() => onLock(), 50);
+    }
+  }, [draftState, onLock, onHover]);
+
+  useEffect(() => {
+    if (timeLeft === 0 && draftState.is_player_turn && !draftState.is_complete) {
+      handleAutoLock();
+    }
+  }, [timeLeft, draftState.is_player_turn, draftState.is_complete, handleAutoLock]);
+
+  const timerColor = timeLeft <= 5 ? '#EF4444' : timeLeft <= 10 ? '#F59E0B' : 'var(--text-secondary)';
+  const timerPct = draftState.timer_seconds > 0 ? (timeLeft / draftState.timer_seconds) * 100 : 0;
+
   return (
     <div className="flex flex-col w-full h-full gap-4">
       {/* Header: team names + phase + progress */}
@@ -47,12 +99,35 @@ export function DraftUI({
           >
             {phaseLabel}
           </div>
-          <div
-            className="text-xs font-mono"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            {draftState.current_step} / {draftState.total_steps}
+          <div className="flex items-center justify-center gap-2">
+            <div
+              className="text-xs font-mono"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              {draftState.current_step} / {draftState.total_steps}
+            </div>
+            {!draftState.is_complete && (
+              <div className="flex items-center gap-1" style={{ color: timerColor }}>
+                <Clock size={12} />
+                <span className="text-sm font-mono font-bold">{timeLeft}s</span>
+              </div>
+            )}
           </div>
+          {/* Timer bar */}
+          {!draftState.is_complete && (
+            <div
+              className="mt-1 h-0.5 rounded-full overflow-hidden"
+              style={{ backgroundColor: 'var(--bg-elevated)', width: '120px' }}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-1000 ease-linear"
+                style={{
+                  width: `${timerPct}%`,
+                  backgroundColor: timerColor,
+                }}
+              />
+            </div>
+          )}
         </div>
 
         <div

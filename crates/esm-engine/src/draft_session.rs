@@ -22,13 +22,17 @@ pub struct DraftSessionState {
     pub is_complete: bool,
     pub is_player_turn: bool,
     pub available_champions: Vec<String>,
+    pub timer_seconds: u32,
 }
+
+const DEFAULT_TIMER_SECONDS: u32 = 30;
 
 pub struct DraftSession {
     draft: Draft,
     player_team: TeamSide,
     champion_pool: Vec<String>,
     ai: AutoDraftAI,
+    timer_seconds: u32,
 }
 
 impl DraftSession {
@@ -38,7 +42,12 @@ impl DraftSession {
             player_team,
             champion_pool,
             ai: AutoDraftAI::new(),
+            timer_seconds: DEFAULT_TIMER_SECONDS,
         }
+    }
+
+    pub fn set_timer_seconds(&mut self, seconds: u32) {
+        self.timer_seconds = seconds;
     }
 
     pub fn state(&self) -> DraftSessionState {
@@ -65,6 +74,7 @@ impl DraftSession {
             is_complete: self.draft.is_complete(),
             is_player_turn,
             available_champions: available,
+            timer_seconds: self.timer_seconds,
         }
     }
 
@@ -176,6 +186,21 @@ mod tests {
         assert_eq!(state.current_step, 0);
         assert!(!state.is_complete);
         assert_eq!(state.total_steps, 20);
+    }
+
+    #[test]
+    fn state_includes_timer_seconds() {
+        let session = DraftSession::new(DraftFormat::FiveBan, TeamSide::Blue, sample_champions());
+        let state = session.state();
+        assert_eq!(state.timer_seconds, 30);
+    }
+
+    #[test]
+    fn custom_timer_seconds() {
+        let mut session =
+            DraftSession::new(DraftFormat::FiveBan, TeamSide::Blue, sample_champions());
+        session.set_timer_seconds(45);
+        assert_eq!(session.state().timer_seconds, 45);
     }
 
     #[test]
