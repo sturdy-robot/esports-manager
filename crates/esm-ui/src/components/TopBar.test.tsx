@@ -70,19 +70,21 @@ describe("TopBar", () => {
     expect(screen.getByTitle(/switch to/i)).toBeInTheDocument();
   });
 
-  it("renders Play Match instead of Continue on match day", () => {
+  it("renders PlayMatchButton with Participate label on match day", () => {
     const onPlayMatch = vi.fn();
     renderWithProviders(<TopBar {...defaults} isMatchDay={true} onPlayMatch={onPlayMatch} />);
-    expect(screen.getByRole("button", { name: /play match/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /participate/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /match options/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /continue/i })).not.toBeInTheDocument();
   });
 
-  it("calls onPlayMatch when Play Match is clicked", async () => {
+  it("calls onPlayMatch with mode after confirmation", async () => {
     const user = userEvent.setup();
     const onPlayMatch = vi.fn();
     renderWithProviders(<TopBar {...defaults} isMatchDay={true} onPlayMatch={onPlayMatch} />);
 
-    await user.click(screen.getByRole("button", { name: /play match/i }));
-    expect(onPlayMatch).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: /participate/i }));
+    await user.click(screen.getByRole("button", { name: /^confirm$/i }));
+    expect(onPlayMatch).toHaveBeenCalledWith("participate");
   });
 });

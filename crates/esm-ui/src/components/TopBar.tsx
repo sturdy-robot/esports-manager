@@ -1,5 +1,7 @@
 import { Sun, Moon, Play, Save } from 'lucide-react'
 import { useTheme } from '@/lib/use-theme'
+import { PlayMatchButton } from './PlayMatchButton'
+import type { MatchMode } from './PlayMatchButton'
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -16,7 +18,7 @@ interface TopBarProps {
   isMatchDay?: boolean
   onSave?: () => void
   onContinue?: () => void
-  onPlayMatch?: () => void
+  onPlayMatch?: (mode: MatchMode) => void
 }
 
 export function TopBar({
@@ -130,17 +132,7 @@ export function TopBar({
 
         {/* Play Match or Continue — always rightmost */}
         {isMatchDay && onPlayMatch ? (
-          <button
-            onClick={onPlayMatch}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-warning), var(--color-loss))',
-              color: '#fff',
-            }}
-          >
-            <Play size={12} />
-            Play Match
-          </button>
+          <PlayMatchButton onConfirm={onPlayMatch} />
         ) : onContinue ? (
           <button
             onClick={onContinue}
