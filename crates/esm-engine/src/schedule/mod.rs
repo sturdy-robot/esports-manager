@@ -1,3 +1,4 @@
+pub mod processor;
 pub mod scrim;
 pub mod scrim_manager;
 pub mod solo_queue;
