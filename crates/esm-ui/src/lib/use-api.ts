@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo } from "./api";
+import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams } from "./api";
 
 // ---------------------------------------------------------------------------
 // Detect whether we're running inside Tauri or in a browser (dev/test)
@@ -61,6 +61,10 @@ interface ApiAdapter {
   getSchedule(): Promise<ScheduleMatchInfo[]>;
   resolveMessage(msgId: string): Promise<void>;
   playMatchDelegate(): Promise<GameInfo>;
+  startDraft(params: StartDraftParams): Promise<DraftSessionState>;
+  draftHover(champion: string): Promise<DraftSessionState>;
+  draftLock(): Promise<DraftSessionState>;
+  getDraftState(): Promise<DraftSessionState>;
 }
 
 async function tauriAdapter(): Promise<ApiAdapter> {
@@ -80,6 +84,10 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     getSchedule: api.getSchedule,
     resolveMessage: api.resolveMessage,
     playMatchDelegate: api.playMatchDelegate,
+    startDraft: api.startDraft,
+    draftHover: api.draftHover,
+    draftLock: api.draftLock,
+    getDraftState: api.getDraftState,
   };
 }
 
@@ -166,7 +174,48 @@ const mockAdapter: ApiAdapter = {
     await delay(500);
     return { ...MOCK_GAME_INFO, is_match_day: false };
   },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async startDraft(_params: StartDraftParams) {
+    await delay(200);
+    return MOCK_DRAFT_STATE();
+  },
+  async draftHover(champion: string) {
+    await delay(50);
+    return { ...MOCK_DRAFT_STATE(), active_hover: champion };
+  },
+  async draftLock() {
+    await delay(100);
+    const s = MOCK_DRAFT_STATE();
+    return { ...s, current_step: s.current_step + 2 };
+  },
+  async getDraftState() {
+    return MOCK_DRAFT_STATE();
+  },
 };
+
+const MOCK_CHAMPIONS = [
+  "Orianna", "Azir", "Ahri", "Syndra", "Zed",
+  "Malphite", "Ornn", "Gnar", "Fiora", "Jayce",
+  "Lee Sin", "Viego", "Jarvan IV", "Jinx", "Kai'Sa",
+  "Ezreal", "Aphelios", "Thresh", "Nautilus", "Lulu",
+];
+
+function MOCK_DRAFT_STATE(): DraftSessionState {
+  return {
+    current_step: 0,
+    total_steps: 20,
+    current_phase: "Ban",
+    current_team: "Blue",
+    blue_bans: [],
+    red_bans: [],
+    blue_picks: [],
+    red_picks: [],
+    active_hover: null,
+    is_complete: false,
+    is_player_turn: true,
+    available_champions: [...MOCK_CHAMPIONS],
+  };
+}
 
 function delay(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -491,4 +540,71 @@ export function usePlayMatchDelegate() {
   }, []);
 
   return { playMatchDelegate, playing, error };
+}
+
+export function useDraft() {
+  const [draftState, setDraftState] = useState<DraftSessionState | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const startDraft = useCallback(async (params: StartDraftParams): Promise<DraftSessionState | null> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      const state = await adapter.startDraft(params);
+      setDraftState(state);
+      return state;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('useDraft startDraft error:', msg);
+      setError(msg);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const hover = useCallback(async (champion: string): Promise<DraftSessionState | null> => {
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      const state = await adapter.draftHover(champion);
+      setDraftState(state);
+      return state;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+      return null;
+    }
+  }, []);
+
+  const lock = useCallback(async (): Promise<DraftSessionState | null> => {
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      const state = await adapter.draftLock();
+      setDraftState(state);
+      return state;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+      return null;
+    }
+  }, []);
+
+  const refresh = useCallback(async (): Promise<DraftSessionState | null> => {
+    try {
+      const adapter = await getAdapter();
+      const state = await adapter.getDraftState();
+      setDraftState(state);
+      return state;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+      return null;
+    }
+  }, []);
+
+  return { draftState, startDraft, hover, lock, refresh, loading, error };
 }

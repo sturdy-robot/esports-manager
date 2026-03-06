@@ -142,3 +142,46 @@ export async function resolveMessage(msgId: string): Promise<void> {
 export async function playMatchDelegate(): Promise<GameInfo> {
   return invoke<GameInfo>("play_match_delegate");
 }
+
+// ---------------------------------------------------------------------------
+// Draft API
+// ---------------------------------------------------------------------------
+
+export type DraftPhase = "Ban" | "Pick";
+export type DraftTeamSide = "Blue" | "Red";
+
+export interface DraftSessionState {
+  current_step: number;
+  total_steps: number;
+  current_phase: DraftPhase | null;
+  current_team: DraftTeamSide | null;
+  blue_bans: string[];
+  red_bans: string[];
+  blue_picks: string[];
+  red_picks: string[];
+  active_hover: string | null;
+  is_complete: boolean;
+  is_player_turn: boolean;
+  available_champions: string[];
+}
+
+export interface StartDraftParams {
+  player_side: "blue" | "red";
+  format: "three_ban" | "five_ban" | "fearless";
+}
+
+export async function startDraft(params: StartDraftParams): Promise<DraftSessionState> {
+  return invoke<DraftSessionState>("start_draft", { params });
+}
+
+export async function draftHover(champion: string): Promise<DraftSessionState> {
+  return invoke<DraftSessionState>("draft_hover", { champion });
+}
+
+export async function draftLock(): Promise<DraftSessionState> {
+  return invoke<DraftSessionState>("draft_lock");
+}
+
+export async function getDraftState(): Promise<DraftSessionState> {
+  return invoke<DraftSessionState>("get_draft_state");
+}
