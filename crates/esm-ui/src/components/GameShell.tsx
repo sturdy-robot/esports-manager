@@ -96,6 +96,7 @@ export function GameShell({
     scheduleScrim, cancelScrim, scheduleSoloQueue, scheduleRest, clearSlot,
   } = useTeamSchedule();
   const [resolvingMsgId, setResolvingMsgId] = useState<string | null>(null);
+  const hasUrgentUnread = inboxMessages.some((m) => m.priority === 'Urgent' && !m.read);
 
   // Fetch live data on mount
   useEffect(() => {
@@ -306,6 +307,7 @@ export function GameShell({
           onSave={onSave}
           onContinue={handleContinue}
           onPlayMatch={onPlayMatchProp ? handlePlayMatch : undefined}
+          continueDisabled={hasUrgentUnread}
         />
         <main className="flex-1 overflow-y-auto p-6">
           {renderPage()}

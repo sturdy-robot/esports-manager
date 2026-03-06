@@ -16,6 +16,7 @@ interface TopBarProps {
   phase?: string
   teamName?: string
   isMatchDay?: boolean
+  continueDisabled?: boolean
   onSave?: () => void
   onContinue?: () => void
   onPlayMatch?: (mode: MatchMode) => void
@@ -29,6 +30,7 @@ export function TopBar({
   phase = 'Morning',
   teamName,
   isMatchDay = false,
+  continueDisabled = false,
   onSave,
   onContinue,
   onPlayMatch,
@@ -136,10 +138,14 @@ export function TopBar({
         ) : onContinue ? (
           <button
             onClick={onContinue}
+            disabled={continueDisabled}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all"
             style={{
-              background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))',
-              color: '#fff',
+              background: continueDisabled
+                ? 'var(--bg-elevated)'
+                : 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))',
+              color: continueDisabled ? 'var(--text-muted)' : '#fff',
+              cursor: continueDisabled ? 'not-allowed' : 'pointer',
             }}
           >
             <Play size={12} />

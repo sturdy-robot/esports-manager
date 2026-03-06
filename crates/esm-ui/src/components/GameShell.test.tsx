@@ -3,6 +3,7 @@ import { renderWithProviders } from '../test/render';
 import { screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameShell } from './GameShell';
+import { useInbox } from '../lib/use-api';
 
 const mockFetch = vi.fn();
 
@@ -86,6 +87,34 @@ describe('GameShell', () => {
         fireEvent.click(screen.getByRole('button', { name: /schedule/i }));
         expect(screen.getByRole('heading', { name: /weekly schedule/i })).toBeInTheDocument();
         expect(screen.queryByText(/loading schedule/i)).not.toBeInTheDocument();
+    });
+
+    it('disables Continue button when urgent unread messages exist', () => {
+        vi.mocked(useInbox).mockReturnValue({
+            messages: [
+                { id: '1', subject: 'Contract Expiring', category: 'Contract', priority: 'Urgent', day: 1, read: false },
+            ],
+            fetchInbox: mockFetch,
+            loading: false,
+            error: null,
+        });
+        renderWithProviders(<GameShell {...defaultProps} onContinue={vi.fn()} />);
+        const continueBtn = screen.getByRole('button', { name: /continue/i });
+        expect(continueBtn).toBeDisabled();
+    });
+
+    it('enables Continue button when no urgent unread messages exist', () => {
+        vi.mocked(useInbox).mockReturnValue({
+            messages: [
+                { id: '1', subject: 'Info Note', category: 'Match', priority: 'Info', day: 1, read: false },
+            ],
+            fetchInbox: mockFetch,
+            loading: false,
+            error: null,
+        });
+        renderWithProviders(<GameShell {...defaultProps} onContinue={vi.fn()} />);
+        const continueBtn = screen.getByRole('button', { name: /continue/i });
+        expect(continueBtn).not.toBeDisabled();
     });
 
     it('calls onPlayMatch with mode when PlayMatchButton is confirmed on match day', async () => {
