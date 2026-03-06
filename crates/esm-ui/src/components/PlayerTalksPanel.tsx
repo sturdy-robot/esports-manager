@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Flame, Shield, Target, Coffee,
   Heart, Zap, TrendingUp, TrendingDown,
@@ -63,6 +63,7 @@ const TALKS: TalkOption[] = [
 
 export function PlayerTalksPanel({ onDone }: PlayerTalksPanelProps) {
   const { roster, refresh, applyTalk, loading } = usePlayerTalks();
+  const [talkedSet, setTalkedSet] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     refresh();
@@ -70,6 +71,7 @@ export function PlayerTalksPanel({ onDone }: PlayerTalksPanelProps) {
 
   const handleTalk = async (playerIndex: number, talk: TalkType) => {
     await applyTalk(playerIndex, talk);
+    setTalkedSet((prev) => new Set(prev).add(playerIndex));
   };
 
   return (
@@ -100,7 +102,7 @@ export function PlayerTalksPanel({ onDone }: PlayerTalksPanelProps) {
             player={player}
             index={i}
             onTalk={handleTalk}
-            disabled={loading}
+            disabled={loading || talkedSet.has(i)}
           />
         ))}
       </div>
@@ -137,6 +139,7 @@ function PlayerCard({
 }) {
   return (
     <div
+      data-testid="player-card"
       className="flex items-center gap-3 p-3 rounded-lg border"
       style={{
         backgroundColor: 'var(--bg-elevated)',

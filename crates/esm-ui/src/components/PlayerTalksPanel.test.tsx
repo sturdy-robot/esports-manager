@@ -48,4 +48,22 @@ describe('PlayerTalksPanel', () => {
     expect(screen.getByText('Confident')).toBeInTheDocument();
     expect(screen.getByText('Slumping')).toBeInTheDocument();
   });
+
+  it('disables all talk buttons for a player after one talk is applied', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<PlayerTalksPanel onDone={vi.fn()} />);
+    await screen.findByText('Zeus');
+
+    // Get all Motivate buttons (one per player)
+    const motivateButtons = screen.getAllByTitle(/Motivate/);
+    // Click the first player's Motivate
+    await user.click(motivateButtons[0]);
+
+    // After the talk, all 4 talk buttons for the first player should be disabled
+    const firstPlayerRow = motivateButtons[0].closest('[data-testid="player-card"]');
+    expect(firstPlayerRow).toBeTruthy();
+    const buttonsInRow = firstPlayerRow!.querySelectorAll('button');
+    const disabledButtons = Array.from(buttonsInRow).filter((b) => b.disabled);
+    expect(disabledButtons.length).toBe(4);
+  });
 });
