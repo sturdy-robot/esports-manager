@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 use super::event::MatchEvent;
 use super::game_state::{MatchGameState, MatchPlayerSimulationData};
 use super::player_state::MatchPlayerState;
-use super::sim_events::{all_events, enabled_events, pick_event};
+use super::sim_events::{all_events, enabled_events_with_tactics, pick_event};
 use super::state::TeamSide;
+use super::tactics::MatchTactics;
 
 // ---------------------------------------------------------------------------
 // Config
@@ -59,11 +60,29 @@ impl MobaMatchEngine {
     /// 5. Repeat until a winner is determined.
     ///
     /// There is **no time limit**. Games end naturally when a nexus falls.
+    /// Run a full match simulation with default (balanced) tactics.
     pub fn simulate(
         rng: &mut GameRng,
         blue_sim_data: &[MatchPlayerSimulationData],
         red_sim_data: &[MatchPlayerSimulationData],
         config: &MobaMatchConfig,
+    ) -> MobaMatchResult {
+        Self::simulate_with_tactics(
+            rng,
+            blue_sim_data,
+            red_sim_data,
+            config,
+            &MatchTactics::default(),
+        )
+    }
+
+    /// Run a full match simulation with the given tactical modifiers.
+    pub fn simulate_with_tactics(
+        rng: &mut GameRng,
+        blue_sim_data: &[MatchPlayerSimulationData],
+        red_sim_data: &[MatchPlayerSimulationData],
+        config: &MobaMatchConfig,
+        tactics: &MatchTactics,
     ) -> MobaMatchResult {
         let mut state = MatchGameState::new(
             blue_sim_data.to_vec(),
@@ -73,15 +92,10 @@ impl MobaMatchEngine {
 
         let events = all_events();
 
-        // Spawn baron at minute 20 (it won't be contestable until then via is_enabled)
-        // We'll handle baron spawn inside tick_minute via baron_spawn_timer logic.
-
         while !state.is_over() {
-            let enabled = enabled_events(&state, &events);
+            let enabled = enabled_events_with_tactics(&state, &events, tactics);
 
             if enabled.is_empty() {
-                // Safety: should never happen since FarmTick is always enabled.
-                // If it does, just tick time forward.
                 state.tick_minute();
                 continue;
             }
@@ -90,8 +104,6 @@ impl MobaMatchEngine {
             let match_event = events[event_idx].process(&mut state, rng);
             state.record_event(match_event);
 
-            // Ensure baron spawns when timer elapses (handled in tick_minute)
-            // and that baron is initially spawned at minute 20.
             if state.minute >= 20
                 && !state.map.objectives().baron_alive()
                 && state.baron_spawn_timer == 0

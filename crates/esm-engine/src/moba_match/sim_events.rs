@@ -4,6 +4,7 @@ use super::event::{Commentary, MatchEvent, MatchEventKind, MobaMatchPhase};
 use super::game_state::MatchGameState;
 use super::map::Lane;
 use super::state::TeamSide;
+use super::tactics::MatchTactics;
 
 const ALL_LANES: [Lane; 3] = [Lane::Top, Lane::Mid, Lane::Bot];
 const INHIB_RESPAWN_SECONDS: u32 = 300;
@@ -680,6 +681,37 @@ pub fn enabled_events(state: &MatchGameState, events: &[Box<dyn SimEvent>]) -> V
         .enumerate()
         .filter(|(_, e)| e.is_enabled(state))
         .map(|(i, e)| (i, e.weight(state)))
+        .filter(|(_, w)| *w > 0.0)
+        .collect()
+}
+
+/// Return the tactical weight multiplier for a given event name.
+fn tactical_mult(name: &str, tactics: &MatchTactics) -> f64 {
+    match name {
+        "FarmTick" => tactics.farm_mult(),
+        "SoloKill" => tactics.solo_kill_mult(),
+        "Teamfight" => tactics.teamfight_mult(),
+        "TowerSiege" | "InhibSiege" | "NexusSiege" => tactics.tower_mult(),
+        "DragonFight" | "HeraldFight" | "BaronFight" => tactics.objective_mult(),
+        _ => 1.0,
+    }
+}
+
+/// Like `enabled_events` but applies tactical weight multipliers.
+pub fn enabled_events_with_tactics(
+    state: &MatchGameState,
+    events: &[Box<dyn SimEvent>],
+    tactics: &MatchTactics,
+) -> Vec<(usize, f64)> {
+    events
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| e.is_enabled(state))
+        .map(|(i, e)| {
+            let base = e.weight(state);
+            let mult = tactical_mult(e.name(), tactics);
+            (i, base * mult)
+        })
         .filter(|(_, w)| *w > 0.0)
         .collect()
 }

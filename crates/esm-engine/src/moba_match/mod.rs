@@ -5,3 +5,4 @@ pub mod map;
 pub mod player_state;
 pub mod sim_events;
 pub mod state;
+pub mod tactics;
