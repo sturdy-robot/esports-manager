@@ -184,7 +184,16 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
             {formatMinute(currentMinute)}
           </div>
           {allDone && (
-            <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-win)' }}>
+            <div
+              data-testid="winner-banner"
+              className="text-sm font-bold uppercase tracking-wider px-3 py-1 rounded-md"
+              style={{
+                background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(139,92,246,0.15))',
+                color: 'var(--color-win)',
+                border: '1px solid rgba(34,197,94,0.3)',
+                boxShadow: '0 0 12px rgba(34,197,94,0.2)',
+              }}
+            >
               {result.winner} wins
             </div>
           )}
@@ -276,21 +285,21 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
           <>
             <button
               onClick={() => setIsPlaying((p) => !p)}
-              className="p-2 rounded-lg border"
+              className="p-2 rounded-lg border cursor-pointer transition-all duration-150 glow-hover"
               style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
             >
               {isPlaying ? <Pause size={16} /> : <Play size={16} />}
             </button>
             <button
               onClick={cycleSpeed}
-              className="px-3 py-1.5 rounded-lg border text-xs font-mono font-bold"
+              className="px-3 py-1.5 rounded-lg border text-xs font-mono font-bold cursor-pointer transition-all duration-150 glow-hover"
               style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
             >
               {SPEEDS[speedIdx]}x
             </button>
             <button
               onClick={handleSkip}
-              className="p-2 rounded-lg border"
+              className="p-2 rounded-lg border cursor-pointer transition-all duration-150 glow-hover"
               style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
               title="Skip to end"
             >
@@ -300,8 +309,11 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
         ) : (
           <button
             onClick={onComplete}
-            className="px-8 py-2.5 rounded-lg font-bold text-white flex items-center gap-2"
-            style={{ background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)' }}
+            className="px-8 py-2.5 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
+            style={{
+              background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+              boxShadow: '0 0 16px rgba(6,182,212,0.3)',
+            }}
           >
             <ChevronRight size={18} />
             Continue
@@ -436,7 +448,8 @@ function EventRow({ event, isNew }: { event: MatchEventInfo; isNew: boolean }) {
     <div
       className="flex items-start gap-2 px-2 py-1.5 rounded-lg transition-all duration-300"
       style={{
-        backgroundColor: isNew ? `${color}08` : 'transparent',
+        backgroundColor: isNew ? `${color}12` : 'transparent',
+        borderLeft: isNew ? `2px solid ${color}` : '2px solid transparent',
       }}
     >
       <div

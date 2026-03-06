@@ -116,4 +116,13 @@ describe('MatchSimUI', () => {
     expect(root.className).toContain('min-h-0');
     expect(root.className).not.toContain('h-full');
   });
+
+  it('shows winner banner with victory styling after match ends', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MatchSimUI {...defaultProps} />);
+    await skipToEnd(user);
+    const banner = screen.getByTestId('winner-banner');
+    expect(banner).toBeInTheDocument();
+    expect(banner.textContent).toMatch(/T1\s+wins/i);
+  });
 });

@@ -165,4 +165,22 @@ describe('DraftUI', () => {
     expect(root.className).toContain('min-h-0');
     expect(root.className).not.toContain('h-full');
   });
+
+  it('shows turn indicator on the active team', () => {
+    const state = makeDraftState({ current_team: 'Blue' });
+    renderWithProviders(<DraftUI {...defaultProps} draftState={state} />);
+    const blueTeam = screen.getByTestId('team-header-blue');
+    expect(blueTeam.getAttribute('data-active')).toBe('true');
+    const redTeam = screen.getByTestId('team-header-red');
+    expect(redTeam.getAttribute('data-active')).toBe('false');
+  });
+
+  it('shows turn indicator on red team when it is red turn', () => {
+    const state = makeDraftState({ current_team: 'Red' });
+    renderWithProviders(<DraftUI {...defaultProps} draftState={state} />);
+    const redTeam = screen.getByTestId('team-header-red');
+    expect(redTeam.getAttribute('data-active')).toBe('true');
+    const blueTeam = screen.getByTestId('team-header-blue');
+    expect(blueTeam.getAttribute('data-active')).toBe('false');
+  });
 });

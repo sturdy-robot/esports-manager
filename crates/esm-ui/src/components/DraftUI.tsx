@@ -81,13 +81,26 @@ export function DraftUI({
   const timerColor = timeLeft <= 5 ? '#EF4444' : timeLeft <= 10 ? '#F59E0B' : 'var(--text-secondary)';
   const timerPct = draftState.timer_seconds > 0 ? (timeLeft / draftState.timer_seconds) * 100 : 0;
 
+  const isBlueActive = draftState.current_team === 'Blue';
+  const isRedActive = draftState.current_team === 'Red';
+
   return (
     <div className="flex flex-col w-full flex-1 min-h-0 gap-4">
       {/* Header: team names + phase + progress */}
-      <div className="flex items-center justify-between px-4">
+      <div
+        className="flex items-center justify-between px-6 py-3 rounded-xl border"
+        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
+      >
         <div
-          className="text-lg font-bold px-4 py-2 rounded-lg"
-          style={{ color: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.1)' }}
+          data-testid="team-header-blue"
+          data-active={isBlueActive ? 'true' : 'false'}
+          className="text-lg font-bold px-4 py-2 rounded-lg transition-all duration-300"
+          style={{
+            color: '#3B82F6',
+            backgroundColor: isBlueActive ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.05)',
+            boxShadow: isBlueActive ? '0 0 12px rgba(59,130,246,0.3)' : 'none',
+            border: isBlueActive ? '1px solid rgba(59,130,246,0.4)' : '1px solid transparent',
+          }}
         >
           {blueName}
         </div>
@@ -131,18 +144,28 @@ export function DraftUI({
         </div>
 
         <div
-          className="text-lg font-bold px-4 py-2 rounded-lg"
-          style={{ color: '#EF4444', backgroundColor: 'rgba(239,68,68,0.1)' }}
+          data-testid="team-header-red"
+          data-active={isRedActive ? 'true' : 'false'}
+          className="text-lg font-bold px-4 py-2 rounded-lg transition-all duration-300"
+          style={{
+            color: '#EF4444',
+            backgroundColor: isRedActive ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.05)',
+            boxShadow: isRedActive ? '0 0 12px rgba(239,68,68,0.3)' : 'none',
+            border: isRedActive ? '1px solid rgba(239,68,68,0.4)' : '1px solid transparent',
+          }}
         >
           {redName}
         </div>
       </div>
 
       {/* Bans row */}
-      <div className="flex items-center justify-between px-4 gap-4">
+      <div
+        className="flex items-center justify-between px-6 py-2 gap-4 rounded-lg border"
+        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
+      >
         <BanSlots bans={draftState.blue_bans} maxBans={5} side="blue" />
         <div
-          className="text-xs font-semibold uppercase"
+          className="text-xs font-semibold uppercase tracking-wider"
           style={{ color: 'var(--text-muted)' }}
         >
           Bans
@@ -151,10 +174,13 @@ export function DraftUI({
       </div>
 
       {/* Picks row */}
-      <div className="flex items-center justify-between px-4 gap-4">
+      <div
+        className="flex items-center justify-between px-6 py-2 gap-4 rounded-lg border"
+        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
+      >
         <PickSlots picks={draftState.blue_picks} maxPicks={5} side="blue" />
         <div
-          className="text-xs font-semibold uppercase"
+          className="text-xs font-semibold uppercase tracking-wider"
           style={{ color: 'var(--text-muted)' }}
         >
           Picks
@@ -209,9 +235,10 @@ export function DraftUI({
         {draftState.is_complete ? (
           <button
             onClick={onComplete}
-            className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2"
+            className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
             style={{
               background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+              boxShadow: '0 0 16px rgba(6,182,212,0.3)',
             }}
           >
             <CheckCircle size={18} />
@@ -220,9 +247,10 @@ export function DraftUI({
         ) : draftState.active_hover ? (
           <button
             onClick={onLock}
-            className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2"
+            className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
             style={{
               background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+              boxShadow: '0 0 16px rgba(6,182,212,0.3)',
             }}
           >
             <Lock size={18} />
