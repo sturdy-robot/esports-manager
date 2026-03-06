@@ -1,5 +1,6 @@
 pub mod scrim;
 pub mod solo_queue;
+pub mod validation;
 
 use serde::{Deserialize, Serialize};
 
