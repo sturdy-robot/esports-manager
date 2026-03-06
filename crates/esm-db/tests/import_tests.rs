@@ -80,10 +80,10 @@ fn import_team_fields_are_correct() {
 fn import_creates_players() {
     let db = import_sample();
     let t1_roster = PlayerRow::list_by_team(db.conn(), 1).unwrap();
-    assert_eq!(t1_roster.len(), 2); // Faker + Zeus
+    assert_eq!(t1_roster.len(), 5); // Faker + Zeus + 3 generated
 
     let gen_roster = PlayerRow::list_by_team(db.conn(), 2).unwrap();
-    assert_eq!(gen_roster.len(), 1); // Chovy
+    assert_eq!(gen_roster.len(), 5); // Chovy + 4 generated
 }
 
 #[test]
@@ -194,8 +194,8 @@ fn build_teams_team_names_match() {
 fn build_teams_rosters_are_populated() {
     let pack = DataPack::from_json(&sample_datapack_json()).unwrap();
     let teams = build_teams_from_datapack(&pack);
-    assert_eq!(teams[0].roster().len(), 2); // Faker + Zeus
-    assert_eq!(teams[1].roster().len(), 1); // Chovy
+    assert_eq!(teams[0].roster().len(), 5); // 5 players (generated)
+    assert_eq!(teams[1].roster().len(), 5); // 5 players (generated)
 }
 
 #[test]

@@ -78,6 +78,12 @@ pub struct ChampionData {
     pub tags: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlayerNamesData {
+    pub first_names: Vec<String>,
+    pub last_names: Vec<String>,
+}
+
 // ---------------------------------------------------------------------------
 // DataPack
 // ---------------------------------------------------------------------------
@@ -87,6 +93,12 @@ pub struct DataPack {
     pub teams: Vec<TeamData>,
     pub players: Vec<PlayerData>,
     pub champions: Vec<ChampionData>,
+    #[serde(default)]
+    pub player_names: std::collections::HashMap<String, PlayerNamesData>,
+    #[serde(default)]
+    pub player_nicknames: Vec<String>,
+    #[serde(default)]
+    pub team_names: Vec<String>,
 }
 
 impl DataPack {
@@ -94,6 +106,43 @@ impl DataPack {
     pub fn from_json(json: &str) -> Result<Self, DataPackError> {
         serde_json::from_str(json).map_err(|e| DataPackError {
             message: format!("JSON parse error: {e}"),
+        })
+    }
+
+    /// Load a DataPack from a directory containing split JSON configuration files.
+    pub fn load_from_dir(path: &std::path::Path) -> Result<Self, DataPackError> {
+        let read_json = |filename: &str| -> Result<String, DataPackError> {
+            std::fs::read_to_string(path.join(filename)).map_err(|e| DataPackError {
+                message: format!("Failed to read {}: {}", filename, e),
+            })
+        };
+
+        let teams: Vec<TeamData> = serde_json::from_str(&read_json("teams.json")?)
+            .map_err(|e| DataPackError { message: format!("Failed to parse teams.json: {}", e) })?;
+            
+        let players: Vec<PlayerData> = serde_json::from_str(&read_json("players.json")?)
+            .map_err(|e| DataPackError { message: format!("Failed to parse players.json: {}", e) })?;
+            
+        let champions: Vec<ChampionData> = serde_json::from_str(&read_json("champions.json")?)
+            .map_err(|e| DataPackError { message: format!("Failed to parse champions.json: {}", e) })?;
+            
+        let player_names: std::collections::HashMap<String, PlayerNamesData> = 
+            serde_json::from_str(&read_json("player_names.json")?)
+            .map_err(|e| DataPackError { message: format!("Failed to parse player_names.json: {}", e) })?;
+            
+        let player_nicknames: Vec<String> = serde_json::from_str(&read_json("player_nicknames.json")?)
+            .map_err(|e| DataPackError { message: format!("Failed to parse player_nicknames.json: {}", e) })?;
+            
+        let team_names: Vec<String> = serde_json::from_str(&read_json("team_names.json")?)
+            .map_err(|e| DataPackError { message: format!("Failed to parse team_names.json: {}", e) })?;
+
+        Ok(Self {
+            teams,
+            players,
+            champions,
+            player_names,
+            player_nicknames,
+            team_names,
         })
     }
 

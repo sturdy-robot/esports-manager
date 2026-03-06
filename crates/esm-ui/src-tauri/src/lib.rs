@@ -403,7 +403,7 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                 .collect();
 
             let config = MobaMatchConfig::default();
-            for (match_id, blue_idx, red_idx) in todays {
+            for (match_id, blue_idx, red_idx) in &todays {
                 if blue_idx < moba_teams.len() && red_idx < moba_teams.len() {
                     let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
                     let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
@@ -428,6 +428,17 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                     });
                 }
             }
+
+            if !todays.is_empty() && tournament.is_complete() {
+                let msg = esm_core::inbox::Message::new(
+                    "Tournament Concluded".to_string(),
+                    format!("The {} has concluded! Check the final standings.", tournament.name()),
+                    esm_core::inbox::MessagePriority::HardBlock,
+                    esm_core::inbox::MessageCategory::News,
+                    gs.calendar().days_elapsed(),
+                );
+                gs.inbox_mut().push(msg);
+            }
         }
     } else {
         gs.advance_phase();
@@ -437,6 +448,22 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
     let mut info = game_info_from_state(gs, tournament_ref.unwrap_or(&empty_tournament()));
     info.match_results = match_results;
     Ok(info)
+}
+
+#[tauri::command]
+fn resolve_message(msg_id: String, state: State<'_, AppState>) -> Result<(), String> {
+    let mut lock = state.game_state.lock().unwrap();
+    let gs = lock.as_mut().ok_or("No active game session")?;
+    
+    // msg_id is formatted as "msg_{index}"
+    if let Some(idx_str) = msg_id.strip_prefix("msg_") {
+        if let Ok(idx) = idx_str.parse::<usize>() {
+            gs.inbox_mut().resolve_at(idx);
+            return Ok(());
+        }
+    }
+    
+    Err(format!("Invalid message ID: {msg_id}"))
 }
 
 #[tauri::command]
@@ -642,6 +669,7 @@ pub fn run() {
             advance_turn,
             get_roster,
             get_inbox,
+            resolve_message,
             get_game_info,
             get_standings,
             get_schedule,

@@ -96,6 +96,7 @@ pub struct PlayerState {
     pub stamina: BoundedAttribute,
     pub morale: BoundedAttribute,
     pub confidence: Confidence,
+    pub satisfaction: BoundedAttribute,
 }
 
 impl Default for PlayerState {
@@ -104,6 +105,7 @@ impl Default for PlayerState {
             stamina: BoundedAttribute::new(100),
             morale: BoundedAttribute::new(50),
             confidence: Confidence::default(),
+            satisfaction: BoundedAttribute::new(50),
         }
     }
 }

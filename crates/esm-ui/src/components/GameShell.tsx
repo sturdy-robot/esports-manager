@@ -10,7 +10,8 @@ import { Finances } from "@/components/Finances";
 import { Staff } from "@/components/Staff";
 import { Scouting } from "@/components/Scouting";
 import { Results } from "@/components/Results";
-import { useRoster, useInbox, useStandings, useSchedule } from "@/lib/use-api";
+import { TournamentEnd } from "@/components/TournamentEnd";
+import { useRoster, useInbox, useStandings, useSchedule, useResolveMessage } from "@/lib/use-api";
 import type { Transaction } from "@/components/Finances";
 import type { StaffMember } from "@/components/Staff";
 import type { ScoutingTarget } from "@/components/Scouting";
@@ -25,6 +26,7 @@ const pageTitles: Record<string, string> = {
   finances: "Finances",
   staff: "Staff",
   scouting: "Scouting",
+  "tournament-end": "Season Results",
 };
 
 // Placeholder scouting until wired to Tauri backend
@@ -78,6 +80,8 @@ export function GameShell({
   const { messages: inboxMessages, fetchInbox } = useInbox();
   const { standings, fetchStandings } = useStandings();
   const { schedule, fetchSchedule } = useSchedule();
+  const { resolve } = useResolveMessage();
+  const [resolvingMsgId, setResolvingMsgId] = useState<string | null>(null);
 
   // Fetch live data on mount
   useEffect(() => {
@@ -97,6 +101,20 @@ export function GameShell({
       fetchSchedule();
     }
   }, [onContinueProp, fetchRoster, fetchInbox, fetchStandings, fetchSchedule]);
+
+  const handleResolveMessage = async (id: string, subject: string) => {
+    setResolvingMsgId(id);
+    const ok = await resolve(id);
+    setResolvingMsgId(null);
+    if (ok) {
+      if (subject === "Tournament Concluded") {
+        setActivePage("tournament-end");
+        fetchInbox(); // refresh inbox so message is marked read
+      } else {
+        fetchInbox();
+      }
+    }
+  };
 
   // Map API PlayerInfo → component RosterPlayer
   const rosterPlayers = roster.map((p) => ({
@@ -149,9 +167,9 @@ export function GameShell({
               bestOf: 1,
               result: m.winner
                 ? {
-                    homeWins: m.winner === m.blue_team ? 1 : 0,
-                    awayWins: m.winner === m.red_team ? 1 : 0,
-                  }
+                  homeWins: m.winner === m.blue_team ? 1 : 0,
+                  awayWins: m.winner === m.red_team ? 1 : 0,
+                }
                 : null,
             }))}
           />
@@ -171,7 +189,7 @@ export function GameShell({
           />
         );
       case "inbox":
-        return <Inbox messages={inboxMapped} />;
+        return <Inbox messages={inboxMapped} onResolveMessage={handleResolveMessage} resolvingMsgId={resolvingMsgId} />;
       case "finances":
         return <Finances balance={1200000} income={75000} expenses={53000} transactions={PLACEHOLDER_TRANSACTIONS} />;
       case "staff":
@@ -195,6 +213,15 @@ export function GameShell({
                 bestOf: 1,
                 playerTeamWon: m.winner === teamName,
               }))}
+          />
+        );
+      case "tournament-end":
+        return (
+          <TournamentEnd
+            seasonName={`${year} Season`}
+            standings={standings}
+            teamName={teamName}
+            onFinish={() => setActivePage("dashboard")}
           />
         );
       default:

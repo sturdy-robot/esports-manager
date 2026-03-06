@@ -59,6 +59,7 @@ interface ApiAdapter {
   getGameInfo(): Promise<GameInfo>;
   getStandings(): Promise<StandingInfo[]>;
   getSchedule(): Promise<ScheduleMatchInfo[]>;
+  resolveMessage(msgId: string): Promise<void>;
 }
 
 async function tauriAdapter(): Promise<ApiAdapter> {
@@ -76,6 +77,7 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     getGameInfo: api.getGameInfo,
     getStandings: api.getStandings,
     getSchedule: api.getSchedule,
+    resolveMessage: api.resolveMessage,
   };
 }
 
@@ -153,6 +155,10 @@ const mockAdapter: ApiAdapter = {
       { id: 1, blue_team: "T1", red_team: "Gen.G", scheduled_day: 3, status: "Pending", winner: null },
       { id: 2, blue_team: "DRX", red_team: "KT Rolster", scheduled_day: 3, status: "Pending", winner: null },
     ];
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async resolveMessage(_msgId: string) {
+    await delay(100);
   },
 };
 
@@ -432,4 +438,28 @@ export function useInbox() {
   }, []);
 
   return { messages, fetchInbox, loading, error };
+}
+
+export function useResolveMessage() {
+  const [resolving, setResolving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const resolve = useCallback(async (msgId: string): Promise<boolean> => {
+    setResolving(true);
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      await adapter.resolveMessage(msgId);
+      return true;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('useResolveMessage error:', msg);
+      setError(msg);
+      return false;
+    } finally {
+      setResolving(false);
+    }
+  }, []);
+
+  return { resolve, resolving, error };
 }

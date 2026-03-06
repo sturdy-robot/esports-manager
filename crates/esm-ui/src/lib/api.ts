@@ -134,3 +134,7 @@ export async function getStandings(): Promise<StandingInfo[]> {
 export async function getSchedule(): Promise<ScheduleMatchInfo[]> {
   return invoke<ScheduleMatchInfo[]>("get_schedule");
 }
+
+export async function resolveMessage(msgId: string): Promise<void> {
+  return invoke<void>("resolve_message", { msgId });
+}

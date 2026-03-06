@@ -102,6 +102,7 @@ pub struct PlayerRow {
     pub stamina: i32,
     pub morale: i32,
     pub confidence: String,
+    pub satisfaction: i32,
     pub team_id: Option<i64>,
 }
 
@@ -125,6 +126,7 @@ impl PlayerRow {
             stamina: row.get("stamina")?,
             morale: row.get("morale")?,
             confidence: row.get("confidence")?,
+            satisfaction: row.get("satisfaction")?,
             team_id: row.get("team_id")?,
         })
     }
@@ -134,13 +136,13 @@ impl PlayerRow {
             "INSERT INTO moba_players (id, nickname, first_name, last_name, primary_role,
              endurance, reaction_time, decision_making, clutch, discipline,
              tilt_resistance, mechanics, vision_control, teamfighting,
-             stamina, morale, confidence, team_id)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
+             stamina, morale, confidence, satisfaction, team_id)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
             params![
                 p.id, p.nickname, p.first_name, p.last_name, p.primary_role,
                 p.endurance, p.reaction_time, p.decision_making, p.clutch, p.discipline,
                 p.tilt_resistance, p.mechanics, p.vision_control, p.teamfighting,
-                p.stamina, p.morale, p.confidence, p.team_id,
+                p.stamina, p.morale, p.confidence, p.satisfaction, p.team_id,
             ],
         )?;
         Ok(())
@@ -166,13 +168,13 @@ impl PlayerRow {
             "UPDATE moba_players SET nickname = ?1, first_name = ?2, last_name = ?3, primary_role = ?4,
              endurance = ?5, reaction_time = ?6, decision_making = ?7, clutch = ?8,
              discipline = ?9, tilt_resistance = ?10, mechanics = ?11, vision_control = ?12,
-             teamfighting = ?13, stamina = ?14, morale = ?15, confidence = ?16, team_id = ?17
-             WHERE id = ?18",
+             teamfighting = ?13, stamina = ?14, morale = ?15, confidence = ?16, satisfaction = ?17, team_id = ?18
+             WHERE id = ?19",
             params![
                 p.nickname, p.first_name, p.last_name, p.primary_role,
                 p.endurance, p.reaction_time, p.decision_making, p.clutch,
                 p.discipline, p.tilt_resistance, p.mechanics, p.vision_control,
-                p.teamfighting, p.stamina, p.morale, p.confidence, p.team_id,
+                p.teamfighting, p.stamina, p.morale, p.confidence, p.satisfaction, p.team_id,
                 p.id,
             ],
         )?;

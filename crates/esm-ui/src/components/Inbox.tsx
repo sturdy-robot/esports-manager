@@ -11,6 +11,8 @@ export interface InboxMessage {
 
 interface InboxProps {
   messages: InboxMessage[];
+  onResolveMessage?: (id: string, subject: string) => void;
+  resolvingMsgId?: string | null;
 }
 
 const PRIORITY_STYLES: Record<
@@ -22,7 +24,7 @@ const PRIORITY_STYLES: Record<
   Info: { bg: "rgba(96, 165, 250, 0.15)", color: "var(--color-info)" },
 };
 
-export function Inbox({ messages }: InboxProps) {
+export function Inbox({ messages, onResolveMessage, resolvingMsgId }: InboxProps) {
   return (
     <div className="flex flex-col gap-4 animate-fade-in-up">
       <h2
@@ -111,6 +113,22 @@ export function Inbox({ messages }: InboxProps) {
                       style={{ color: "var(--color-loss)" }}
                     />
                   </span>
+                )}
+
+                {/* Resolve Action */}
+                {!msg.read && (msg.priority === "Urgent" || msg.priority === "Action") && (
+                  <button
+                    onClick={() => onResolveMessage && onResolveMessage(msg.id, msg.subject)}
+                    disabled={resolvingMsgId === msg.id}
+                    className="ml-4 px-3 py-1.5 text-xs font-semibold rounded transition-colors"
+                    style={{
+                      backgroundColor: "var(--color-accent-cyan)",
+                      color: "var(--bg-base)",
+                      opacity: resolvingMsgId === msg.id ? 0.7 : 1,
+                    }}
+                  >
+                    {resolvingMsgId === msg.id ? "Resolving..." : msg.subject === "Tournament Concluded" ? "View Results" : "Resolve"}
+                  </button>
                 )}
               </div>
             );
