@@ -57,4 +57,15 @@ impl Team {
     pub fn player_by_role_mut(&mut self, role: Role) -> Option<&mut Player> {
         self.roster.iter_mut().find(|p| p.role() == role)
     }
+
+    pub fn apply_match_result(&mut self, is_win: bool) {
+        if is_win {
+            self.reputation.increase(1);
+        } else {
+            self.reputation.decrease(1);
+        }
+        for player in &mut self.roster {
+            player.state_mut().apply_match_result(is_win);
+        }
+    }
 }

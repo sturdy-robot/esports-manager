@@ -148,3 +148,46 @@ fn draft_action_after_complete_fails() {
     let result = draft.apply_action(DraftAction::SelectChampion("Extra".to_string()));
     assert!(result.is_err());
 }
+
+// ---------------------------------------------------------------------------
+// Hovering and Locking State Machine
+// ---------------------------------------------------------------------------
+
+#[test]
+fn draft_can_hover_champion() {
+    let mut draft = Draft::new(DraftFormat::ThreeBan);
+    let result = draft.apply_action(DraftAction::HoverChampion("Orianna".to_string()));
+    assert!(result.is_ok());
+    assert_eq!(draft.current_step(), 0); // Hovering does not advance the step
+    assert_eq!(draft.active_hover(), Some("Orianna"));
+}
+
+#[test]
+fn draft_locking_without_hover_fails() {
+    let mut draft = Draft::new(DraftFormat::ThreeBan);
+    let result = draft.apply_action(DraftAction::LockChampion);
+    assert_eq!(result, Err(esm_engine::draft::DraftError::NoChampionHovered));
+}
+
+#[test]
+fn draft_hover_then_lock_advances_step() {
+    let mut draft = Draft::new(DraftFormat::ThreeBan);
+    draft.apply_action(DraftAction::HoverChampion("Ahri".to_string())).unwrap();
+    let result = draft.apply_action(DraftAction::LockChampion);
+    assert!(result.is_ok());
+    assert_eq!(draft.current_step(), 1);
+    assert!(draft.blue_bans().contains(&"Ahri".to_string()));
+    assert_eq!(draft.active_hover(), None); // Hover is cleared after locking
+}
+
+#[test]
+fn draft_hovering_already_selected_fails() {
+    let mut draft = Draft::new(DraftFormat::ThreeBan);
+    draft.apply_action(DraftAction::HoverChampion("Ahri".to_string())).unwrap();
+    draft.apply_action(DraftAction::LockChampion).unwrap();
+    
+    // Step 1: Red ban
+    let result = draft.apply_action(DraftAction::HoverChampion("Ahri".to_string()));
+    assert_eq!(result, Err(esm_engine::draft::DraftError::ChampionAlreadySelected("Ahri".to_string())));
+}
+

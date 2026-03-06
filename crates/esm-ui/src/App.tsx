@@ -176,6 +176,7 @@ function App() {
           month={gameInfo?.month}
           day={gameInfo?.day}
           phase={gameInfo?.phase}
+          isMatchDay={gameInfo?.is_match_day}
           onContinue={handleContinue}
           onSave={handleSave}
           onExitToMenu={goToMenu}

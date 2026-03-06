@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
 // Enums
@@ -103,5 +104,34 @@ impl Champion {
 
     pub fn has_tag(&self, tag: &ChampionTag) -> bool {
         self.tags.contains(tag)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Champion Pool
+// ---------------------------------------------------------------------------
+
+pub type ChampionId = i64;
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ChampionPool {
+    masteries: HashMap<ChampionId, MasteryLevel>,
+}
+
+impl ChampionPool {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn get_mastery(&self, champion_id: ChampionId) -> MasteryLevel {
+        *self.masteries.get(&champion_id).unwrap_or(&MasteryLevel::Bronze)
+    }
+
+    pub fn set_mastery(&mut self, champion_id: ChampionId, level: MasteryLevel) {
+        self.masteries.insert(champion_id, level);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&ChampionId, &MasteryLevel)> {
+        self.masteries.iter()
     }
 }

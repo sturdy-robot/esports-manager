@@ -185,4 +185,22 @@ impl PlayerRow {
         conn.execute("DELETE FROM moba_players WHERE id = ?1", [id])?;
         Ok(())
     }
+
+    pub fn get_masteries(conn: &Connection, player_id: i64) -> SqlResult<Vec<(i64, i32)>> {
+        let mut stmt = conn.prepare("SELECT champion_id, mastery FROM moba_player_masteries WHERE player_id = ?1")?;
+        let rows = stmt.query_map([player_id], |row| {
+            Ok((row.get("champion_id")?, row.get("mastery")?))
+        })?;
+        rows.collect()
+    }
+
+    pub fn set_mastery(conn: &Connection, player_id: i64, champion_id: i64, mastery: i32) -> SqlResult<()> {
+        conn.execute(
+            "INSERT INTO moba_player_masteries (player_id, champion_id, mastery)
+             VALUES (?1, ?2, ?3)
+             ON CONFLICT(player_id, champion_id) DO UPDATE SET mastery = excluded.mastery",
+            params![player_id, champion_id, mastery],
+        )?;
+        Ok(())
+    }
 }

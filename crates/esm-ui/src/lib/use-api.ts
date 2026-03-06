@@ -60,6 +60,7 @@ interface ApiAdapter {
   getStandings(): Promise<StandingInfo[]>;
   getSchedule(): Promise<ScheduleMatchInfo[]>;
   resolveMessage(msgId: string): Promise<void>;
+  playMatchDelegate(): Promise<GameInfo>;
 }
 
 async function tauriAdapter(): Promise<ApiAdapter> {
@@ -78,6 +79,7 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     getStandings: api.getStandings,
     getSchedule: api.getSchedule,
     resolveMessage: api.resolveMessage,
+    playMatchDelegate: api.playMatchDelegate,
   };
 }
 
@@ -159,6 +161,10 @@ const mockAdapter: ApiAdapter = {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async resolveMessage(_msgId: string) {
     await delay(100);
+  },
+  async playMatchDelegate() {
+    await delay(500);
+    return { ...MOCK_GAME_INFO, is_match_day: false };
   },
 };
 
@@ -462,4 +468,27 @@ export function useResolveMessage() {
   }, []);
 
   return { resolve, resolving, error };
+}
+
+export function usePlayMatchDelegate() {
+  const [playing, setPlaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const playMatchDelegate = useCallback(async (): Promise<GameInfo | null> => {
+    setPlaying(true);
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      return await adapter.playMatchDelegate();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('usePlayMatchDelegate error:', msg);
+      setError(msg);
+      return null;
+    } finally {
+      setPlaying(false);
+    }
+  }, []);
+
+  return { playMatchDelegate, playing, error };
 }

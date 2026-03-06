@@ -2,7 +2,7 @@ use esm_core::rng::GameRng;
 use serde::{Deserialize, Serialize};
 
 use super::event::MatchEvent;
-use super::game_state::MatchGameState;
+use super::game_state::{MatchGameState, MatchPlayerSimulationData};
 use super::player_state::MatchPlayerState;
 use super::sim_events::{all_events, enabled_events, pick_event};
 use super::state::TeamSide;
@@ -48,9 +48,8 @@ pub struct MobaMatchEngine;
 impl MobaMatchEngine {
     /// Run a full match simulation.
     ///
-    /// `blue_attrs` and `red_attrs`: each is a slice of player attribute arrays.
-    /// Each array has 9 values: [endurance, reaction_time, decision_making,
-    /// clutch, discipline, tilt_resistance, mechanics, vision_control, teamfighting].
+    /// `blue_sim_data` and `red_sim_data`: each is a slice of `MatchPlayerSimulationData` structs.
+    /// Each struct contains base attributes, stamina, morale, and mastery multiplier.
     ///
     /// The engine loop:
     /// 1. Collect all enabled events based on current game state.
@@ -62,13 +61,13 @@ impl MobaMatchEngine {
     /// There is **no time limit**. Games end naturally when a nexus falls.
     pub fn simulate(
         rng: &mut GameRng,
-        blue_attrs: &[[u8; 9]],
-        red_attrs: &[[u8; 9]],
+        blue_sim_data: &[MatchPlayerSimulationData],
+        red_sim_data: &[MatchPlayerSimulationData],
         config: &MobaMatchConfig,
     ) -> MobaMatchResult {
         let mut state = MatchGameState::new(
-            blue_attrs.to_vec(),
-            red_attrs.to_vec(),
+            blue_sim_data.to_vec(),
+            red_sim_data.to_vec(),
             config.players_per_side,
         );
 

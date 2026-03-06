@@ -1,5 +1,5 @@
-pub mod activity;
 pub mod draft;
+pub mod draft_ai;
 pub mod economy;
 pub mod match_sim;
 pub mod moba_match;

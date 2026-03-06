@@ -9,6 +9,7 @@ use esm_core::game_state::GameState;
 use esm_core::turn::TurnProcessor;
 use esm_db::save_manager::{SaveEntry, SaveManager};
 use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine};
+use esm_engine::moba_match::game_state::MatchPlayerSimulationData;
 use esm_engine::moba_match::state::TeamSide;
 use esm_engine::tournament::{BracketKind, Tournament, TournamentFormat};
 use esm_models::esport_type::EsportType;
@@ -403,7 +404,16 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                 .collect();
 
             let config = MobaMatchConfig::default();
+            let player_idx = gs.player_team_index();
             for (match_id, blue_idx, red_idx) in &todays {
+                let blue_idx = *blue_idx;
+                let red_idx = *red_idx;
+                
+                if blue_idx == player_idx || red_idx == player_idx {
+                    // Stop! Don't simulate this one, it's the player's match!
+                    continue;
+                }
+                
                 if blue_idx < moba_teams.len() && red_idx < moba_teams.len() {
                     let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
                     let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
@@ -414,7 +424,7 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                         TeamSide::Blue => (1u32, 0u32),
                         TeamSide::Red => (0u32, 1u32),
                     };
-                    tournament.record_result(match_id, bw, rw);
+                    tournament.record_result(*match_id, bw, rw);
 
                     let winner_name = match result.winner {
                         TeamSide::Blue => moba_teams[blue_idx].name().to_string(),
@@ -427,6 +437,20 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                         duration_minutes: result.duration_minutes,
                     });
                 }
+            }
+            
+            // Add pre-match staff message if player has a match today
+            if let Some(player_match) = todays.iter().find(|(_, b, r)| *b == player_idx || *r == player_idx) {
+                let opponent_idx = if player_match.1 == player_idx { player_match.2 } else { player_match.1 };
+                let opponent_name = moba_teams.get(opponent_idx).map(|t| t.name().to_string()).unwrap_or_default();
+                let msg = esm_core::inbox::Message::new(
+                    format!("Pre-match Report: vs {}", opponent_name),
+                    format!("Coach:\nWe're playing against {} today. Make sure you select the best activity schedule beforehand to manage player stamina.", opponent_name),
+                    esm_core::inbox::MessagePriority::ReadOptional,
+                    esm_core::inbox::MessageCategory::Staff,
+                    day,
+                );
+                gs.inbox_mut().push(msg);
             }
 
             if !todays.is_empty() && tournament.is_complete() {
@@ -442,6 +466,79 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
         }
     } else {
         gs.advance_phase();
+    }
+
+    let tournament_ref = t_lock.as_ref();
+    let mut info = game_info_from_state(gs, tournament_ref.unwrap_or(&empty_tournament()));
+    info.match_results = match_results;
+    Ok(info)
+}
+
+#[tauri::command]
+fn play_match_delegate(state: State<'_, AppState>) -> Result<GameInfo, String> {
+    let mut lock = state.game_state.lock().unwrap();
+    let gs = lock.as_mut().ok_or("No active game session")?;
+    let mut t_lock = state.tournament.lock().unwrap();
+    let m_lock = state.moba_teams.lock().unwrap();
+
+    let mut match_results: Vec<MatchResultInfo> = Vec::new();
+
+    if let (Some(tournament), Some(moba_teams)) = (t_lock.as_mut(), m_lock.as_ref()) {
+        let player_idx = gs.player_team_index();
+        let day = gs.calendar().days_elapsed();
+        
+        let player_match = tournament
+            .matches_today(day)
+            .into_iter()
+            .find(|m| (m.blue_team_idx() == player_idx || m.red_team_idx() == player_idx) && m.winner_team_idx().is_none());
+            
+        if let Some(m) = player_match {
+            let match_id = m.id();
+            let blue_idx = m.blue_team_idx();
+            let red_idx = m.red_team_idx();
+            
+            let config = MobaMatchConfig::default();
+            let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
+            let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
+            
+            let result = MobaMatchEngine::simulate(gs.rng_mut(), &blue_attrs, &red_attrs, &config);
+
+            let (bw, rw) = match result.winner {
+                TeamSide::Blue => (1u32, 0u32),
+                TeamSide::Red => (0u32, 1u32),
+            };
+            tournament.record_result(match_id, bw, rw);
+            
+            let is_blue = blue_idx == player_idx;
+            let player_won = (is_blue && bw > 0) || (!is_blue && rw > 0);
+            gs.teams_mut()[player_idx].apply_match_result(player_won);
+
+            let winner_name = match result.winner {
+                TeamSide::Blue => moba_teams[blue_idx].name().to_string(),
+                TeamSide::Red => moba_teams[red_idx].name().to_string(),
+            };
+            
+            match_results.push(MatchResultInfo {
+                blue_team: moba_teams[blue_idx].name().to_string(),
+                red_team: moba_teams[red_idx].name().to_string(),
+                winner: winner_name,
+                duration_minutes: result.duration_minutes,
+            });
+            
+            // Same logic to conclude tournament if this was the last match
+            if tournament.is_complete() {
+                let msg = esm_core::inbox::Message::new(
+                    "Tournament Concluded".to_string(),
+                    format!("The {} has concluded! Check the final standings.", tournament.name()),
+                    esm_core::inbox::MessagePriority::HardBlock,
+                    esm_core::inbox::MessageCategory::News,
+                    gs.calendar().days_elapsed(),
+                );
+                gs.inbox_mut().push(msg);
+            }
+        } else {
+            return Err("No pending match today".to_string());
+        }
     }
 
     let tournament_ref = t_lock.as_ref();
@@ -551,8 +648,14 @@ fn game_info_from_state(gs: &GameState, tournament: &Tournament) -> GameInfo {
         .map(|t| t.name().to_string())
         .unwrap_or_default();
 
-    let next_day = gs.calendar().days_elapsed() + 1;
-    let is_match_day = !tournament.matches_today(next_day).is_empty();
+    let player_idx = gs.player_team_index();
+    let is_match_day = tournament
+        .matches_today(gs.calendar().days_elapsed())
+        .iter()
+        .any(|m| {
+            (m.blue_team_idx() == player_idx || m.red_team_idx() == player_idx)
+                && m.winner_team_idx().is_none()
+        });
 
     GameInfo {
         year: gs.calendar().year(),
@@ -567,13 +670,13 @@ fn game_info_from_state(gs: &GameState, tournament: &Tournament) -> GameInfo {
     }
 }
 
-fn extract_team_attrs(moba_team: &MobaTeam) -> Vec<[u8; 9]> {
+fn extract_team_attrs(moba_team: &MobaTeam) -> Vec<MatchPlayerSimulationData> {
     moba_team
         .roster()
         .iter()
         .map(|p| {
             let a = p.attributes();
-            [
+            let attributes = [
                 a.endurance.value(),
                 a.reaction_time.value(),
                 a.decision_making.value(),
@@ -583,7 +686,14 @@ fn extract_team_attrs(moba_team: &MobaTeam) -> Vec<[u8; 9]> {
                 a.mechanics.value(),
                 a.vision_control.value(),
                 a.teamfighting.value(),
-            ]
+            ];
+            
+            MatchPlayerSimulationData {
+                attributes,
+                stamina: p.state().stamina.value(),
+                morale: p.state().morale.value(),
+                mastery_multiplier: 1.0, // UI simulation might not specify full champion drafts yet
+            }
         })
         .collect()
 }
@@ -667,6 +777,7 @@ pub fn run() {
             delete_save,
             save_game,
             advance_turn,
+            play_match_delegate,
             get_roster,
             get_inbox,
             resolve_message,

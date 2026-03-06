@@ -141,7 +141,9 @@ pub struct DraftSlot {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DraftAction {
-    SelectChampion(String),
+    SelectChampion(String), // Legacy for quick select
+    HoverChampion(String),
+    LockChampion,
 }
 
 // ---------------------------------------------------------------------------
@@ -152,6 +154,7 @@ pub enum DraftAction {
 pub enum DraftError {
     DraftComplete,
     ChampionAlreadySelected(String),
+    NoChampionHovered,
 }
 
 // ---------------------------------------------------------------------------
@@ -168,6 +171,7 @@ pub struct Draft {
     blue_picks: Vec<String>,
     red_picks: Vec<String>,
     all_selected: HashSet<String>,
+    active_hover: Option<String>,
 }
 
 impl Draft {
@@ -182,6 +186,7 @@ impl Draft {
             blue_picks: Vec::new(),
             red_picks: Vec::new(),
             all_selected: HashSet::new(),
+            active_hover: None,
         }
     }
 
@@ -209,20 +214,38 @@ impl Draft {
                 if self.all_selected.contains(name) {
                     return Err(DraftError::ChampionAlreadySelected(name.clone()));
                 }
-
-                self.all_selected.insert(name.clone());
-
-                match (slot.phase, slot.team) {
-                    (DraftPhase::Ban, TeamSide::Blue) => self.blue_bans.push(name.clone()),
-                    (DraftPhase::Ban, TeamSide::Red) => self.red_bans.push(name.clone()),
-                    (DraftPhase::Pick, TeamSide::Blue) => self.blue_picks.push(name.clone()),
-                    (DraftPhase::Pick, TeamSide::Red) => self.red_picks.push(name.clone()),
+                self.lock_name(name.clone(), slot);
+                self.current_step += 1;
+                self.active_hover = None;
+            }
+            DraftAction::HoverChampion(ref name) => {
+                if self.all_selected.contains(name) {
+                    return Err(DraftError::ChampionAlreadySelected(name.clone()));
+                }
+                self.active_hover = Some(name.clone());
+            }
+            DraftAction::LockChampion => {
+                if let Some(name) = self.active_hover.take() {
+                    self.lock_name(name, slot);
+                    self.current_step += 1;
+                } else {
+                    return Err(DraftError::NoChampionHovered);
                 }
             }
         }
 
-        self.current_step += 1;
         Ok(())
+    }
+
+    fn lock_name(&mut self, name: String, slot: DraftSlot) {
+        self.all_selected.insert(name.clone());
+
+        match (slot.phase, slot.team) {
+            (DraftPhase::Ban, TeamSide::Blue) => self.blue_bans.push(name),
+            (DraftPhase::Ban, TeamSide::Red) => self.red_bans.push(name),
+            (DraftPhase::Pick, TeamSide::Blue) => self.blue_picks.push(name),
+            (DraftPhase::Pick, TeamSide::Red) => self.red_picks.push(name),
+        }
     }
 
     pub fn blue_bans(&self) -> &[String] {
@@ -243,6 +266,10 @@ impl Draft {
 
     pub fn all_selected(&self) -> &HashSet<String> {
         &self.all_selected
+    }
+
+    pub fn active_hover(&self) -> Option<&str> {
+        self.active_hover.as_deref()
     }
 
     pub fn format(&self) -> DraftFormat {

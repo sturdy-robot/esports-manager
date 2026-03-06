@@ -138,3 +138,7 @@ export async function getSchedule(): Promise<ScheduleMatchInfo[]> {
 export async function resolveMessage(msgId: string): Promise<void> {
   return invoke<void>("resolve_message", { msgId });
 }
+
+export async function playMatchDelegate(): Promise<GameInfo> {
+  return invoke<GameInfo>("play_match_delegate");
+}

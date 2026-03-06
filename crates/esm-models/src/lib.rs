@@ -1,3 +1,4 @@
+pub mod activity;
 pub mod champion;
 pub mod contract;
 pub mod esport_type;

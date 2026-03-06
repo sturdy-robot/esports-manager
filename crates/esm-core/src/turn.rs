@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::game_state::GameState;
+use esm_models::activity::ActivityScheduler;
 
 // ---------------------------------------------------------------------------
 // Turn processing constants
@@ -43,8 +44,8 @@ impl TurnProcessor {
         // Auto-resolve unresolved RequiresResponse messages with default outcome
         state.inbox_mut().resolve_all_actionable();
 
-        // Apply daily stamina recovery to all players on all teams
-        Self::apply_daily_stamina_recovery(state);
+        // Process daily schedules for all players (stamina, morale, etc.)
+        Self::process_daily_schedules(state);
 
         // Advance the calendar
         state.advance_day();
@@ -55,13 +56,29 @@ impl TurnProcessor {
         })
     }
 
-    fn apply_daily_stamina_recovery(state: &mut GameState) {
+    fn process_daily_schedules(state: &mut GameState) {
         for team in state.teams_mut() {
             for player in team.roster_mut() {
-                player
-                    .state_mut()
-                    .stamina
-                    .increase(BASE_DAILY_STAMINA_RECOVERY);
+                let schedule = player.schedule();
+                let effect = ActivityScheduler::compute_daily_effect(schedule);
+                
+                let net_stamina_change = (BASE_DAILY_STAMINA_RECOVERY as i16) 
+                    + (effect.stamina_recovery as i16) 
+                    - (effect.stamina_cost as i16);
+                
+                let state = player.state_mut();
+                if net_stamina_change > 0 {
+                    state.stamina.increase(net_stamina_change as u8);
+                } else if net_stamina_change < 0 {
+                    let decrease = net_stamina_change.unsigned_abs() as u8;
+                    state.stamina.decrease(decrease);
+                    
+                    // Penalty: if stamina drops to 0, player loses morale and satisfaction
+                    if state.stamina.value() == 0 {
+                        state.morale.decrease(5);
+                        state.satisfaction.decrease(2);
+                    }
+                }
             }
         }
     }

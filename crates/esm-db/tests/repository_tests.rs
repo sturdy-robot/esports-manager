@@ -39,6 +39,7 @@ fn sample_player(team_id: Option<i64>) -> PlayerRow {
         stamina: 100,
         morale: 50,
         confidence: "Neutral".to_string(),
+        satisfaction: 50,
         team_id,
     }
 }
@@ -190,4 +191,31 @@ fn player_without_team() {
 
     let loaded = PlayerRow::get_by_id(db.conn(), 1).unwrap().unwrap();
     assert_eq!(loaded.team_id, None);
+}
+
+#[test]
+fn player_masteries_crud() {
+    let db = make_db();
+    
+    // Insert a champion first, otherwise foreign key constraints fail
+    db.conn().execute(
+        "INSERT INTO moba_champions (id, name, class, scaling) VALUES (1, 'Ahri', 'Mage', 'Mid')",
+        []
+    ).unwrap();
+
+    let player = sample_player(None);
+    PlayerRow::insert(db.conn(), &player).unwrap();
+
+    // Set mastery
+    PlayerRow::set_mastery(db.conn(), 1, 1, 5).unwrap(); // Challenger
+
+    // Get mastery
+    let masteries = PlayerRow::get_masteries(db.conn(), 1).unwrap();
+    assert_eq!(masteries.len(), 1);
+    assert_eq!(masteries[0], (1, 5));
+
+    // Update mastery
+    PlayerRow::set_mastery(db.conn(), 1, 1, 2).unwrap(); // Gold
+    let updated = PlayerRow::get_masteries(db.conn(), 1).unwrap();
+    assert_eq!(updated[0], (1, 2));
 }

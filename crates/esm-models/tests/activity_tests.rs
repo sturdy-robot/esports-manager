@@ -1,4 +1,4 @@
-use esm_engine::activity::{Activity, ActivityScheduler, DailySchedule};
+use esm_models::activity::{Activity, ActivityScheduler, DailySchedule};
 
 // ---------------------------------------------------------------------------
 // Activity enum & effects

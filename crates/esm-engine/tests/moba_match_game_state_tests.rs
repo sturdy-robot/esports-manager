@@ -1,9 +1,9 @@
 use esm_core::rng::GameRng;
 use esm_engine::moba_match::event::MobaMatchPhase;
-use esm_engine::moba_match::game_state::MatchGameState;
+use esm_engine::moba_match::game_state::{MatchGameState, MatchPlayerSimulationData};
 use esm_engine::moba_match::state::TeamSide;
 
-fn make_attrs() -> Vec<[u8; 9]> {
+fn make_attrs() -> Vec<MatchPlayerSimulationData> {
     vec![
         [70, 85, 80, 78, 70, 65, 90, 72, 85],
         [80, 82, 85, 75, 78, 70, 88, 80, 82],
@@ -11,6 +11,14 @@ fn make_attrs() -> Vec<[u8; 9]> {
         [72, 88, 78, 82, 68, 60, 93, 70, 85],
         [78, 86, 90, 80, 82, 75, 85, 92, 88],
     ]
+    .into_iter()
+    .map(|attributes| MatchPlayerSimulationData {
+        attributes,
+        stamina: 100,
+        morale: 50,
+        mastery_multiplier: 1.0,
+    })
+    .collect()
 }
 
 fn make_state() -> MatchGameState {
@@ -98,7 +106,7 @@ fn game_state_team_power_is_sum_of_all_attrs() {
     let s = make_state();
     let expected: f64 = make_attrs()
         .iter()
-        .map(|a| a.iter().map(|&v| v as f64).sum::<f64>())
+        .map(|a| a.effective_power())
         .sum();
     assert!((s.team_power(TeamSide::Blue) - expected).abs() < 0.001);
 }

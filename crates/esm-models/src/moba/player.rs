@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::player::{BoundedAttribute, PlayerState};
+use crate::champion::ChampionPool;
 
 // ---------------------------------------------------------------------------
 // MobaRole
@@ -87,6 +88,7 @@ pub struct MobaPlayer {
     roles: RoleAssignment,
     attributes: MobaPlayerAttributes,
     state: PlayerState,
+    champion_pool: ChampionPool,
 }
 
 impl MobaPlayer {
@@ -104,6 +106,7 @@ impl MobaPlayer {
             roles,
             attributes,
             state: PlayerState::default(),
+            champion_pool: ChampionPool::default(),
         }
     }
 
@@ -137,6 +140,14 @@ impl MobaPlayer {
 
     pub fn state_mut(&mut self) -> &mut PlayerState {
         &mut self.state
+    }
+
+    pub fn champion_pool(&self) -> &ChampionPool {
+        &self.champion_pool
+    }
+
+    pub fn champion_pool_mut(&mut self) -> &mut ChampionPool {
+        &mut self.champion_pool
     }
 
     /// Compute the effective value of an attribute when playing a specific role.

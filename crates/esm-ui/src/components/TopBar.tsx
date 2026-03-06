@@ -13,8 +13,10 @@ interface TopBarProps {
   day?: number
   phase?: string
   teamName?: string
+  isMatchDay?: boolean
   onSave?: () => void
   onContinue?: () => void
+  onPlayMatch?: () => void
 }
 
 export function TopBar({
@@ -24,8 +26,10 @@ export function TopBar({
   day = 1,
   phase = 'Morning',
   teamName,
+  isMatchDay = false,
   onSave,
   onContinue,
+  onPlayMatch,
 }: TopBarProps) {
   const { theme, toggleTheme } = useTheme()
   const monthLabel = MONTH_NAMES[(month - 1) % 12]
@@ -124,8 +128,20 @@ export function TopBar({
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button>
 
-        {/* Continue — always rightmost */}
-        {onContinue && (
+        {/* Play Match or Continue — always rightmost */}
+        {isMatchDay && onPlayMatch ? (
+          <button
+            onClick={onPlayMatch}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-warning), var(--color-loss))',
+              color: '#fff',
+            }}
+          >
+            <Play size={12} />
+            Play Match
+          </button>
+        ) : onContinue ? (
           <button
             onClick={onContinue}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all"
@@ -137,7 +153,7 @@ export function TopBar({
             <Play size={12} />
             Continue
           </button>
-        )}
+        ) : null}
       </div>
     </header>
   )

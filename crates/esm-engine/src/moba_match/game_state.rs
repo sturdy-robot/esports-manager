@@ -11,6 +11,26 @@ const DRAGON_SPAWN_MINUTE: u32 = 5;
 const HERALD_DESPAWN_MINUTE: u32 = 20;
 const BARON_SPAWN_MINUTE: u32 = 20;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MatchPlayerSimulationData {
+    pub attributes: [u8; 9],
+    pub stamina: u8,
+    pub morale: u8,
+    pub mastery_multiplier: f64,
+}
+
+impl MatchPlayerSimulationData {
+    /// Compute effective power including stamina penalty, morale boost, and mastery.
+    pub fn effective_power(&self) -> f64 {
+        let base_power: f64 = self.attributes.iter().map(|&v| v as f64).sum();
+        
+        let stamina_factor = (self.stamina as f64) / 100.0;
+        let morale_factor = 0.8 + ((self.morale as f64) / 100.0) * 0.4; // 0.8 at 0 morale, 1.2 at 100
+        
+        base_power * stamina_factor * morale_factor * self.mastery_multiplier
+    }
+}
+
 /// The full mutable game state that events operate on.
 /// This is the single source of truth during a match simulation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,8 +39,8 @@ pub struct MatchGameState {
     pub map: MapState,
     pub blue_players: Vec<MatchPlayerState>,
     pub red_players: Vec<MatchPlayerState>,
-    pub blue_attrs: Vec<[u8; 9]>,
-    pub red_attrs: Vec<[u8; 9]>,
+    pub blue_sim_data: Vec<MatchPlayerSimulationData>,
+    pub red_sim_data: Vec<MatchPlayerSimulationData>,
     pub events: Vec<MatchEvent>,
     pub winner: Option<TeamSide>,
     pub first_blood_claimed: bool,
@@ -29,14 +49,14 @@ pub struct MatchGameState {
 }
 
 impl MatchGameState {
-    pub fn new(blue_attrs: Vec<[u8; 9]>, red_attrs: Vec<[u8; 9]>, players_per_side: usize) -> Self {
+    pub fn new(blue_sim_data: Vec<MatchPlayerSimulationData>, red_sim_data: Vec<MatchPlayerSimulationData>, players_per_side: usize) -> Self {
         Self {
             minute: 0,
             map: MapState::new(),
             blue_players: (0..players_per_side).map(MatchPlayerState::new).collect(),
             red_players: (0..players_per_side).map(MatchPlayerState::new).collect(),
-            blue_attrs,
-            red_attrs,
+            blue_sim_data,
+            red_sim_data,
             events: Vec::new(),
             winner: None,
             first_blood_claimed: false,
@@ -66,14 +86,11 @@ impl MatchGameState {
     }
 
     pub fn team_power(&self, side: TeamSide) -> f64 {
-        let attrs = match side {
-            TeamSide::Blue => &self.blue_attrs,
-            TeamSide::Red => &self.red_attrs,
+        let sim_data = match side {
+            TeamSide::Blue => &self.blue_sim_data,
+            TeamSide::Red => &self.red_sim_data,
         };
-        attrs
-            .iter()
-            .map(|a| a.iter().map(|&v| v as f64).sum::<f64>())
-            .sum()
+        sim_data.iter().map(|d| d.effective_power()).sum()
     }
 
     pub fn alive_count(&self, side: TeamSide) -> usize {
@@ -140,12 +157,12 @@ impl MatchGameState {
 
         // Clutch factor for the behind team (index 3 = clutch attribute)
         if self.gold_delta() < -2000 {
-            let clutch_avg: f64 = self.blue_attrs.iter().map(|a| a[3] as f64).sum::<f64>()
-                / self.blue_attrs.len().max(1) as f64;
+            let clutch_avg: f64 = self.blue_sim_data.iter().map(|d| d.attributes[3] as f64).sum::<f64>()
+                / self.blue_sim_data.len().max(1) as f64;
             blue_prob += (clutch_avg / 100.0) * 0.05;
         } else if self.gold_delta() > 2000 {
-            let clutch_avg: f64 = self.red_attrs.iter().map(|a| a[3] as f64).sum::<f64>()
-                / self.red_attrs.len().max(1) as f64;
+            let clutch_avg: f64 = self.red_sim_data.iter().map(|d| d.attributes[3] as f64).sum::<f64>()
+                / self.red_sim_data.len().max(1) as f64;
             blue_prob -= (clutch_avg / 100.0) * 0.05;
         }
 

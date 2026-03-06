@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::activity::DailySchedule;
+
 // ---------------------------------------------------------------------------
 // Value Objects
 // ---------------------------------------------------------------------------
@@ -110,6 +112,28 @@ impl Default for PlayerState {
     }
 }
 
+impl PlayerState {
+    pub fn apply_match_result(&mut self, is_win: bool) {
+        if is_win {
+            self.morale.increase(10);
+            self.confidence = match self.confidence {
+                Confidence::Slumping => Confidence::Neutral,
+                Confidence::Neutral => Confidence::Confident,
+                Confidence::Confident => Confidence::Hyped,
+                Confidence::Hyped => Confidence::Hyped,
+            };
+        } else {
+            self.morale.decrease(10);
+            self.confidence = match self.confidence {
+                Confidence::Hyped => Confidence::Confident,
+                Confidence::Confident => Confidence::Neutral,
+                Confidence::Neutral => Confidence::Slumping,
+                Confidence::Slumping => Confidence::Slumping,
+            };
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Player Entity
 // ---------------------------------------------------------------------------
@@ -122,6 +146,7 @@ pub struct Player {
     role: Role,
     attributes: PlayerAttributes,
     state: PlayerState,
+    schedule: DailySchedule,
 }
 
 impl Player {
@@ -139,6 +164,7 @@ impl Player {
             role,
             attributes,
             state: PlayerState::default(),
+            schedule: DailySchedule::default(),
         }
     }
 
@@ -168,5 +194,13 @@ impl Player {
 
     pub fn state_mut(&mut self) -> &mut PlayerState {
         &mut self.state
+    }
+
+    pub fn schedule(&self) -> &DailySchedule {
+        &self.schedule
+    }
+
+    pub fn schedule_mut(&mut self) -> &mut DailySchedule {
+        &mut self.schedule
     }
 }

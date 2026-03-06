@@ -5,6 +5,7 @@ use esm_core::game_state::GameState;
 use esm_core::turn::TurnProcessor;
 use esm_data::datapack::DataPack;
 use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine};
+use esm_engine::moba_match::game_state::MatchPlayerSimulationData;
 use esm_engine::moba_match::state::TeamSide;
 use esm_engine::tournament::{BracketKind, Tournament, TournamentFormat};
 use esm_models::esport_type::EsportType;
@@ -14,13 +15,13 @@ use esm_models::moba::team::MobaTeam;
 use esm_models::player::BoundedAttribute;
 use esm_models::team::Team;
 
-fn extract_team_attrs(moba_team: &MobaTeam) -> Vec<[u8; 9]> {
+fn extract_team_attrs(moba_team: &MobaTeam) -> Vec<MatchPlayerSimulationData> {
     moba_team
         .roster()
         .iter()
         .map(|p| {
             let a = p.attributes();
-            [
+            let attributes = [
                 a.endurance.value(),
                 a.reaction_time.value(),
                 a.decision_making.value(),
@@ -30,7 +31,13 @@ fn extract_team_attrs(moba_team: &MobaTeam) -> Vec<[u8; 9]> {
                 a.mechanics.value(),
                 a.vision_control.value(),
                 a.teamfighting.value(),
-            ]
+            ];
+            MatchPlayerSimulationData {
+                attributes,
+                stamina: p.state().stamina.value(),
+                morale: p.state().morale.value(),
+                mastery_multiplier: 1.0,
+            }
         })
         .collect()
 }

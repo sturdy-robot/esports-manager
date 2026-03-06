@@ -11,7 +11,9 @@ import { Staff } from "@/components/Staff";
 import { Scouting } from "@/components/Scouting";
 import { Results } from "@/components/Results";
 import { TournamentEnd } from "@/components/TournamentEnd";
-import { useRoster, useInbox, useStandings, useSchedule, useResolveMessage } from "@/lib/use-api";
+import { MatchLobby } from "@/components/MatchLobby";
+import { DraftUI } from "@/components/DraftUI";
+import { useRoster, useInbox, useStandings, useSchedule, useResolveMessage, usePlayMatchDelegate } from "@/lib/use-api";
 import type { Transaction } from "@/components/Finances";
 import type { StaffMember } from "@/components/Staff";
 import type { ScoutingTarget } from "@/components/Scouting";
@@ -26,6 +28,8 @@ const pageTitles: Record<string, string> = {
   finances: "Finances",
   staff: "Staff",
   scouting: "Scouting",
+  "match-lobby": "Match Day",
+  draft: "Draft Phase",
   "tournament-end": "Season Results",
 };
 
@@ -60,7 +64,9 @@ interface GameShellProps {
   month?: number;
   day?: number;
   phase?: string;
+  isMatchDay?: boolean;
   onContinue?: () => void;
+  onPlayMatch?: () => void;
   onSave?: () => void;
   onExitToMenu?: () => void;
 }
@@ -71,6 +77,7 @@ export function GameShell({
   month = 1,
   day = 1,
   phase = "Morning",
+  isMatchDay = false,
   onContinue: onContinueProp,
   onSave,
   onExitToMenu,
@@ -81,6 +88,7 @@ export function GameShell({
   const { standings, fetchStandings } = useStandings();
   const { schedule, fetchSchedule } = useSchedule();
   const { resolve } = useResolveMessage();
+  const { playMatchDelegate, playing: simulating } = usePlayMatchDelegate();
   const [resolvingMsgId, setResolvingMsgId] = useState<string | null>(null);
 
   // Fetch live data on mount
@@ -101,6 +109,19 @@ export function GameShell({
       fetchSchedule();
     }
   }, [onContinueProp, fetchRoster, fetchInbox, fetchStandings, fetchSchedule]);
+
+  const handlePlayMatch = useCallback(() => {
+    setActivePage("match-lobby");
+  }, []);
+
+  const handleDelegate = useCallback(async () => {
+    const info = await playMatchDelegate();
+    if (info) {
+      await fetchSchedule();
+      await fetchStandings();
+      setActivePage("results");
+    }
+  }, [playMatchDelegate, fetchSchedule, fetchStandings]);
 
   const handleResolveMessage = async (id: string, subject: string) => {
     setResolvingMsgId(id);
@@ -224,6 +245,22 @@ export function GameShell({
             onFinish={() => setActivePage("dashboard")}
           />
         );
+      case "match-lobby": {
+        const pMatch = schedule.find(
+          (m) => (m.blue_team === teamName || m.red_team === teamName) && m.winner === null
+        );
+        return (
+          <MatchLobby
+            match={pMatch ? { homeTeam: pMatch.blue_team, awayTeam: pMatch.red_team, day: pMatch.scheduled_day } : undefined}
+            teamName={teamName}
+            simulating={simulating}
+            onDelegate={handleDelegate}
+            onDraft={() => setActivePage("draft")}
+          />
+        );
+      }
+      case "draft":
+        return <DraftUI />;
       default:
         return (
           <div className="flex items-center justify-center h-64">
@@ -252,8 +289,10 @@ export function GameShell({
           month={month}
           day={day}
           phase={phase}
+          isMatchDay={isMatchDay}
           onSave={onSave}
           onContinue={handleContinue}
+          onPlayMatch={handlePlayMatch}
         />
         <main className="flex-1 overflow-y-auto p-6">
           {renderPage()}
