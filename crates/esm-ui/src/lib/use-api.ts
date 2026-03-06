@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult } from "./api";
+import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult, SeriesInfo } from "./api";
 
 // ---------------------------------------------------------------------------
 // Detect whether we're running inside Tauri or in a browser (dev/test)
@@ -66,6 +66,7 @@ interface ApiAdapter {
   draftLock(): Promise<DraftSessionState>;
   getDraftState(): Promise<DraftSessionState>;
   simulateMatch(): Promise<SimulateMatchResult>;
+  getSeriesInfo(): Promise<SeriesInfo>;
 }
 
 async function tauriAdapter(): Promise<ApiAdapter> {
@@ -90,6 +91,7 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     draftLock: api.draftLock,
     getDraftState: api.getDraftState,
     simulateMatch: api.simulateMatch,
+    getSeriesInfo: api.getSeriesInfo,
   };
 }
 
@@ -197,6 +199,9 @@ const mockAdapter: ApiAdapter = {
     await delay(300);
     return MOCK_MATCH_RESULT();
   },
+  async getSeriesInfo() {
+    return MOCK_SERIES_INFO();
+  },
 };
 
 const MOCK_CHAMPIONS = [
@@ -205,6 +210,22 @@ const MOCK_CHAMPIONS = [
   "Lee Sin", "Viego", "Jarvan IV", "Jinx", "Kai'Sa",
   "Ezreal", "Aphelios", "Thresh", "Nautilus", "Lulu",
 ];
+
+const mockSeriesBlueWins = 0;
+const mockSeriesRedWins = 0;
+
+function MOCK_SERIES_INFO(): SeriesInfo {
+  return {
+    match_id: 1,
+    blue_team: 'T1',
+    red_team: 'Gen.G',
+    blue_wins: mockSeriesBlueWins,
+    red_wins: mockSeriesRedWins,
+    wins_needed: 2,
+    is_complete: mockSeriesBlueWins >= 2 || mockSeriesRedWins >= 2,
+    game_number: mockSeriesBlueWins + mockSeriesRedWins + 1,
+  };
+}
 
 function MOCK_MATCH_RESULT(): SimulateMatchResult {
   return {
@@ -666,4 +687,25 @@ export function useMatchSimulation() {
   }, []);
 
   return { result, simulate, loading, error };
+}
+
+export function useSeriesInfo() {
+  const [series, setSeries] = useState<SeriesInfo | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async (): Promise<SeriesInfo | null> => {
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      const info = await adapter.getSeriesInfo();
+      setSeries(info);
+      return info;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+      return null;
+    }
+  }, []);
+
+  return { series, refresh, error };
 }

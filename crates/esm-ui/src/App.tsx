@@ -5,7 +5,7 @@ import { LoadGame } from '@/components/LoadGame'
 import { TeamSelection } from '@/components/TeamSelection'
 import { Settings } from '@/components/Settings'
 import { GameShell } from '@/components/GameShell'
-import { MatchFlow } from '@/components/MatchFlow'
+import { SeriesFlow } from '@/components/SeriesFlow'
 import { useListSaves, useDeleteSave, useLoadSave, useNewGame, useSaveGame, useAdvanceTurn } from '@/lib/use-api'
 import type { MenuTarget } from '@/components/MainMenu'
 import type { ManagerFormData } from '@/components/NewGame'
@@ -201,7 +201,7 @@ function App() {
       )
     case 'match-flow':
       return (
-        <MatchFlow
+        <SeriesFlow
           mode={matchMode}
           teamName={gameInfo?.team_name ?? 'Team'}
           opponentName="Opponent"

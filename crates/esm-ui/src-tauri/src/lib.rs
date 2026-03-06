@@ -113,6 +113,18 @@ pub struct SimulateMatchResultInfo {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct SeriesInfo {
+    pub match_id: u32,
+    pub blue_team: String,
+    pub red_team: String,
+    pub blue_wins: u32,
+    pub red_wins: u32,
+    pub wins_needed: u32,
+    pub is_complete: bool,
+    pub game_number: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct StandingInfo {
     pub rank: usize,
     pub team_name: String,
@@ -252,13 +264,13 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
 
     let gs = GameState::new(2025, seed, esport_type, manager, params.team_index, teams);
 
-    // Create tournament (Double Round Robin, Bo1, starting day 3)
+    // Create tournament (Double Round Robin, Bo3, starting day 3)
     let team_names: Vec<String> = moba_teams.iter().map(|t| t.name().to_string()).collect();
     let tournament = Tournament::new(
         "Season 2025".to_string(),
         team_names,
         TournamentFormat::DoubleRoundRobin,
-        BracketKind::Bo1,
+        BracketKind::Bo3,
         3,
     );
 
@@ -431,12 +443,12 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
             let todays: Vec<_> = tournament
                 .matches_today(day)
                 .iter()
-                .map(|m| (m.id(), m.blue_team_idx(), m.red_team_idx()))
+                .map(|m| (m.id(), m.blue_team_idx(), m.red_team_idx(), m.bracket()))
                 .collect();
 
             let config = MobaMatchConfig::default();
             let player_idx = gs.player_team_index();
-            for (match_id, blue_idx, red_idx) in &todays {
+            for (match_id, blue_idx, red_idx, bracket) in &todays {
                 let blue_idx = *blue_idx;
                 let red_idx = *red_idx;
 
@@ -448,24 +460,37 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                 if blue_idx < moba_teams.len() && red_idx < moba_teams.len() {
                     let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
                     let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
-                    let result =
-                        MobaMatchEngine::simulate(gs.rng_mut(), &blue_attrs, &red_attrs, &config);
 
-                    let (bw, rw) = match result.winner {
-                        TeamSide::Blue => (1u32, 0u32),
-                        TeamSide::Red => (0u32, 1u32),
-                    };
+                    // Simulate full series (Bo1/Bo3/Bo5)
+                    let wins_needed = bracket.wins_needed();
+                    let mut bw = 0u32;
+                    let mut rw = 0u32;
+                    let mut last_duration = 0u32;
+                    while bw < wins_needed && rw < wins_needed {
+                        let result = MobaMatchEngine::simulate(
+                            gs.rng_mut(),
+                            &blue_attrs,
+                            &red_attrs,
+                            &config,
+                        );
+                        match result.winner {
+                            TeamSide::Blue => bw += 1,
+                            TeamSide::Red => rw += 1,
+                        }
+                        last_duration = result.duration_minutes;
+                    }
                     tournament.record_result(*match_id, bw, rw);
 
-                    let winner_name = match result.winner {
-                        TeamSide::Blue => moba_teams[blue_idx].name().to_string(),
-                        TeamSide::Red => moba_teams[red_idx].name().to_string(),
+                    let winner_name = if bw > rw {
+                        moba_teams[blue_idx].name().to_string()
+                    } else {
+                        moba_teams[red_idx].name().to_string()
                     };
                     match_results.push(MatchResultInfo {
                         blue_team: moba_teams[blue_idx].name().to_string(),
                         red_team: moba_teams[red_idx].name().to_string(),
                         winner: winner_name,
-                        duration_minutes: result.duration_minutes,
+                        duration_minutes: last_duration,
                     });
                 }
             }
@@ -473,7 +498,7 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
             // Add pre-match staff message if player has a match today
             if let Some(player_match) = todays
                 .iter()
-                .find(|(_, b, r)| *b == player_idx || *r == player_idx)
+                .find(|(_, b, r, _)| *b == player_idx || *r == player_idx)
             {
                 let opponent_idx = if player_match.1 == player_idx {
                     player_match.2
@@ -717,6 +742,9 @@ fn match_result_to_info(
     }
 }
 
+/// Simulate one game of the player's current series.
+/// Uses add_game_win to track incremental wins. Only applies match_result
+/// effects when the series is complete.
 #[tauri::command]
 fn simulate_match(state: State<'_, AppState>) -> Result<SimulateMatchResultInfo, String> {
     let mut lock = state.game_state.lock().unwrap();
@@ -744,15 +772,44 @@ fn simulate_match(state: State<'_, AppState>) -> Result<SimulateMatchResultInfo,
 
             let result = MobaMatchEngine::simulate(gs.rng_mut(), &blue_attrs, &red_attrs, &config);
 
-            let (bw, rw) = match result.winner {
-                TeamSide::Blue => (1u32, 0u32),
-                TeamSide::Red => (0u32, 1u32),
-            };
-            tournament.record_result(match_id, bw, rw);
+            let blue_won = matches!(result.winner, TeamSide::Blue);
+            let series_complete = tournament.add_game_win(match_id, blue_won);
 
-            let is_blue = blue_idx == player_idx;
-            let player_won = (is_blue && bw > 0) || (!is_blue && rw > 0);
-            gs.teams_mut()[player_idx].apply_match_result(player_won);
+            // Only apply team effects when the series is fully decided
+            if series_complete {
+                let is_blue = blue_idx == player_idx;
+                let player_won = (is_blue && blue_won) || (!is_blue && !blue_won);
+                // For Bo3, check actual series winner
+                // Re-fetch match to get final wins
+                let final_match = tournament
+                    .matches_today(day)
+                    .into_iter()
+                    .find(|m| m.id() == match_id);
+                if let Some(fm) = final_match {
+                    let player_won_series = if fm.blue_team_idx() == player_idx {
+                        fm.blue_wins() > fm.red_wins()
+                    } else {
+                        fm.red_wins() > fm.blue_wins()
+                    };
+                    gs.teams_mut()[player_idx].apply_match_result(player_won_series);
+                } else {
+                    gs.teams_mut()[player_idx].apply_match_result(player_won);
+                }
+
+                if tournament.is_complete() {
+                    let msg = esm_core::inbox::Message::new(
+                        "Tournament Concluded".to_string(),
+                        format!(
+                            "The {} has concluded! Check the final standings.",
+                            tournament.name()
+                        ),
+                        esm_core::inbox::MessagePriority::HardBlock,
+                        esm_core::inbox::MessageCategory::News,
+                        gs.calendar().days_elapsed(),
+                    );
+                    gs.inbox_mut().push(msg);
+                }
+            }
 
             let info = match_result_to_info(
                 &result,
@@ -760,25 +817,56 @@ fn simulate_match(state: State<'_, AppState>) -> Result<SimulateMatchResultInfo,
                 moba_teams[red_idx].name(),
             );
 
-            if tournament.is_complete() {
-                let msg = esm_core::inbox::Message::new(
-                    "Tournament Concluded".to_string(),
-                    format!(
-                        "The {} has concluded! Check the final standings.",
-                        tournament.name()
-                    ),
-                    esm_core::inbox::MessagePriority::HardBlock,
-                    esm_core::inbox::MessageCategory::News,
-                    gs.calendar().days_elapsed(),
-                );
-                gs.inbox_mut().push(msg);
-            }
-
             return Ok(info);
         }
     }
 
     Err("No pending match today".to_string())
+}
+
+/// Get the current series state for the player's match today.
+#[tauri::command]
+fn get_series_info(state: State<'_, AppState>) -> Result<SeriesInfo, String> {
+    let lock = state.game_state.lock().unwrap();
+    let gs = lock.as_ref().ok_or("No active game session")?;
+    let t_lock = state.tournament.lock().unwrap();
+    let m_lock = state.moba_teams.lock().unwrap();
+
+    if let (Some(tournament), Some(moba_teams)) = (t_lock.as_ref(), m_lock.as_ref()) {
+        let player_idx = gs.player_team_index();
+        let day = gs.calendar().days_elapsed();
+
+        let player_match = tournament
+            .matches_today(day)
+            .into_iter()
+            .find(|m| m.blue_team_idx() == player_idx || m.red_team_idx() == player_idx);
+
+        if let Some(m) = player_match {
+            let blue_idx = m.blue_team_idx();
+            let red_idx = m.red_team_idx();
+            let blue_name = moba_teams
+                .get(blue_idx)
+                .map(|t| t.name().to_string())
+                .unwrap_or_default();
+            let red_name = moba_teams
+                .get(red_idx)
+                .map(|t| t.name().to_string())
+                .unwrap_or_default();
+
+            return Ok(SeriesInfo {
+                match_id: m.id(),
+                blue_team: blue_name,
+                red_team: red_name,
+                blue_wins: m.blue_wins(),
+                red_wins: m.red_wins(),
+                wins_needed: m.bracket().wins_needed(),
+                is_complete: m.winner_team_idx().is_some(),
+                game_number: m.blue_wins() + m.red_wins() + 1,
+            });
+        }
+    }
+
+    Err("No match today".to_string())
 }
 
 #[tauri::command]
@@ -1023,6 +1111,7 @@ pub fn run() {
             draft_lock,
             get_draft_state,
             simulate_match,
+            get_series_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

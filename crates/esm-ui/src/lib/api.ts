@@ -210,3 +210,22 @@ export interface SimulateMatchResult {
 export async function simulateMatch(): Promise<SimulateMatchResult> {
   return invoke<SimulateMatchResult>("simulate_match");
 }
+
+// ---------------------------------------------------------------------------
+// Series API
+// ---------------------------------------------------------------------------
+
+export interface SeriesInfo {
+  match_id: number;
+  blue_team: string;
+  red_team: string;
+  blue_wins: number;
+  red_wins: number;
+  wins_needed: number;
+  is_complete: boolean;
+  game_number: number;
+}
+
+export async function getSeriesInfo(): Promise<SeriesInfo> {
+  return invoke<SeriesInfo>("get_series_info");
+}

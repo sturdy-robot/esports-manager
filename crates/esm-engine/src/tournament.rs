@@ -97,10 +97,28 @@ impl Match {
         self.red_wins
     }
 
+    pub fn bracket(&self) -> BracketKind {
+        self.bracket
+    }
+
     pub fn set_result(&mut self, blue_wins: u32, red_wins: u32) {
         self.blue_wins = blue_wins;
         self.red_wins = red_wins;
         self.status = MatchStatus::Completed;
+    }
+
+    /// Record a single game win for the given side.
+    /// Automatically marks the match as Completed once a side reaches `wins_needed`.
+    pub fn add_game_win(&mut self, blue_won: bool) {
+        if blue_won {
+            self.blue_wins += 1;
+        } else {
+            self.red_wins += 1;
+        }
+        let needed = self.bracket.wins_needed();
+        if self.blue_wins >= needed || self.red_wins >= needed {
+            self.status = MatchStatus::Completed;
+        }
     }
 
     pub fn winner_team_idx(&self) -> Option<usize> {
@@ -271,6 +289,22 @@ impl Tournament {
             .find(|m| m.id() == match_id)
         {
             m.set_result(blue_wins, red_wins);
+        }
+    }
+
+    /// Record a single game win within a series for the given match.
+    /// Returns true if the series is now complete.
+    pub fn add_game_win(&mut self, match_id: u32, blue_won: bool) -> bool {
+        if let Some(m) = self
+            .schedule
+            .matches_mut()
+            .iter_mut()
+            .find(|m| m.id() == match_id)
+        {
+            m.add_game_win(blue_won);
+            m.status() == MatchStatus::Completed
+        } else {
+            false
         }
     }
 
