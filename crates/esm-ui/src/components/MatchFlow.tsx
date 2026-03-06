@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DraftUI } from './DraftUI';
-import { useDraft } from '@/lib/use-api';
+import { MatchSimUI } from './MatchSimUI';
+import { useDraft, useMatchSimulation } from '@/lib/use-api';
 import type { MatchMode } from './PlayMatchButton';
 
 type MatchPhase = 'pre-match' | 'draft' | 'match' | 'simulating' | 'results';
@@ -33,14 +34,14 @@ export function MatchFlow({
 }: MatchFlowProps) {
   const [phase, setPhase] = useState<MatchPhase>(() => initialPhase(mode));
   const { draftState, startDraft, hover, lock } = useDraft();
+  const { result: matchResult, simulate } = useMatchSimulation();
 
-  // For delegate mode, auto-advance from simulating to results
+  // For simulating phase, run the backend simulation then advance
   useEffect(() => {
     if (phase === 'simulating') {
-      const timer = setTimeout(() => setPhase('results'), 800);
-      return () => clearTimeout(timer);
+      simulate().then(() => setPhase('results'));
     }
-  }, [phase]);
+  }, [phase, simulate]);
 
   const handleProceedToDraft = useCallback(async () => {
     await startDraft({
@@ -62,9 +63,10 @@ export function MatchFlow({
     if (mode === 'draft-delegate') {
       setPhase('simulating');
     } else {
-      setPhase('match');
+      // For participate/spectate: run simulation, then show match replay
+      simulate().then(() => setPhase('match'));
     }
-  }, [mode]);
+  }, [mode, simulate]);
 
   const handleMatchComplete = () => {
     setPhase('results');
@@ -161,12 +163,15 @@ export function MatchFlow({
           </div>
         )}
 
-        {phase === 'match' && (
-          <MatchPanel
-            teamName={teamName}
-            opponentName={opponentName}
+        {phase === 'match' && matchResult && (
+          <MatchSimUI
+            result={matchResult}
             onComplete={handleMatchComplete}
           />
+        )}
+
+        {phase === 'match' && !matchResult && (
+          <SimulatingPanel />
         )}
 
         {phase === 'simulating' && (
@@ -224,46 +229,6 @@ function PreMatchPanel({
         }}
       >
         Proceed to Draft
-      </button>
-    </div>
-  );
-}
-
-function MatchPanel({
-  teamName,
-  opponentName,
-  onComplete,
-}: {
-  teamName: string;
-  opponentName: string;
-  onComplete: () => void;
-}) {
-  return (
-    <div
-      className="w-full max-w-4xl p-8 rounded-xl border text-center"
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--border-subtle)',
-      }}
-    >
-      <h2
-        className="text-2xl font-bold mb-2"
-        style={{ color: 'var(--text-primary)' }}
-      >
-        Live Match
-      </h2>
-      <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-        {teamName} vs {opponentName}
-      </p>
-      <button
-        onClick={onComplete}
-        className="px-6 py-2.5 rounded-md text-sm font-semibold cursor-pointer border-none transition-all"
-        style={{
-          background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))',
-          color: '#fff',
-        }}
-      >
-        End Match
       </button>
     </div>
   );
