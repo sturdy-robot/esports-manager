@@ -5,11 +5,13 @@ import { LoadGame } from '@/components/LoadGame'
 import { TeamSelection } from '@/components/TeamSelection'
 import { Settings } from '@/components/Settings'
 import { GameShell } from '@/components/GameShell'
+import { MatchFlow } from '@/components/MatchFlow'
 import { useListSaves, useDeleteSave, useLoadSave, useNewGame, useSaveGame, useAdvanceTurn } from '@/lib/use-api'
 import type { MenuTarget } from '@/components/MainMenu'
 import type { ManagerFormData } from '@/components/NewGame'
 import type { TeamOption } from '@/components/TeamSelection'
 import type { GameInfo } from '@/lib/api'
+import type { MatchMode } from '@/components/PlayMatchButton'
 
 type AppScreen =
   | 'main-menu'
@@ -18,6 +20,7 @@ type AppScreen =
   | 'load-game'
   | 'settings'
   | 'playing'
+  | 'match-flow'
 
 // Placeholder teams for development until wired to Tauri backend
 const PLACEHOLDER_TEAMS: TeamOption[] = [
@@ -35,6 +38,7 @@ function App() {
   const [managerData, setManagerData] = useState<ManagerFormData | null>(null)
   const [saveName, setSaveName] = useState<string | null>(null)
   const [appError, setAppError] = useState<string | null>(null)
+  const [matchMode, setMatchMode] = useState<MatchMode>('participate')
 
   // API hooks
   const { saves, loading: savesLoading, refresh: refreshSaves } = useListSaves()
@@ -126,6 +130,18 @@ function App() {
     refreshSaves()
   }
 
+  const handlePlayMatch = (mode: MatchMode) => {
+    setMatchMode(mode)
+    setScreen('match-flow')
+  }
+
+  const handleMatchComplete = async () => {
+    // Refresh game info after match and return to dashboard
+    const info = await advanceTurn()
+    if (info) setGameInfo(info)
+    setScreen('playing')
+  }
+
   switch (screen) {
     case 'main-menu':
       return <MainMenu onNavigate={handleMenuNavigate} />
@@ -178,8 +194,19 @@ function App() {
           phase={gameInfo?.phase}
           isMatchDay={gameInfo?.is_match_day}
           onContinue={handleContinue}
+          onPlayMatch={handlePlayMatch}
           onSave={handleSave}
           onExitToMenu={goToMenu}
+        />
+      )
+    case 'match-flow':
+      return (
+        <MatchFlow
+          mode={matchMode}
+          teamName={gameInfo?.team_name ?? 'Team'}
+          opponentName="Opponent"
+          teamSide="blue"
+          onComplete={handleMatchComplete}
         />
       )
     default:
