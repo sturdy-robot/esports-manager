@@ -8,6 +8,9 @@ use esm_core::calendar::DayPhase;
 use esm_core::game_state::GameState;
 use esm_core::turn::TurnProcessor;
 use esm_db::save_manager::{SaveEntry, SaveManager};
+use esm_engine::draft::DraftFormat;
+use esm_engine::draft_session::{DraftSession, DraftSessionState};
+use esm_engine::match_sim::TeamSide as DraftTeamSide;
 use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine};
 use esm_engine::moba_match::game_state::MatchPlayerSimulationData;
 use esm_engine::moba_match::state::TeamSide;
@@ -25,6 +28,8 @@ pub struct AppState {
     game_state: Mutex<Option<GameState>>,
     tournament: Mutex<Option<Tournament>>,
     moba_teams: Mutex<Option<Vec<MobaTeam>>>,
+    champion_names: Mutex<Vec<String>>,
+    draft_session: Mutex<Option<DraftSession>>,
 }
 
 impl AppState {
@@ -34,6 +39,8 @@ impl AppState {
             game_state: Mutex::new(None),
             tournament: Mutex::new(None),
             moba_teams: Mutex::new(None),
+            champion_names: Mutex::new(Vec::new()),
+            draft_session: Mutex::new(None),
         }
     }
 }
@@ -253,6 +260,10 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
 
     let info = game_info_from_state(&gs, &tournament);
 
+    // Store champion names from data pack
+    let champ_names: Vec<String> = pack.champions.iter().map(|c| c.name.clone()).collect();
+    *state.champion_names.lock().unwrap() = champ_names;
+
     // Store in memory
     *state.game_state.lock().unwrap() = Some(gs);
     *state.tournament.lock().unwrap() = Some(tournament);
@@ -408,12 +419,12 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
             for (match_id, blue_idx, red_idx) in &todays {
                 let blue_idx = *blue_idx;
                 let red_idx = *red_idx;
-                
+
                 if blue_idx == player_idx || red_idx == player_idx {
                     // Stop! Don't simulate this one, it's the player's match!
                     continue;
                 }
-                
+
                 if blue_idx < moba_teams.len() && red_idx < moba_teams.len() {
                     let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
                     let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
@@ -438,11 +449,21 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                     });
                 }
             }
-            
+
             // Add pre-match staff message if player has a match today
-            if let Some(player_match) = todays.iter().find(|(_, b, r)| *b == player_idx || *r == player_idx) {
-                let opponent_idx = if player_match.1 == player_idx { player_match.2 } else { player_match.1 };
-                let opponent_name = moba_teams.get(opponent_idx).map(|t| t.name().to_string()).unwrap_or_default();
+            if let Some(player_match) = todays
+                .iter()
+                .find(|(_, b, r)| *b == player_idx || *r == player_idx)
+            {
+                let opponent_idx = if player_match.1 == player_idx {
+                    player_match.2
+                } else {
+                    player_match.1
+                };
+                let opponent_name = moba_teams
+                    .get(opponent_idx)
+                    .map(|t| t.name().to_string())
+                    .unwrap_or_default();
                 let msg = esm_core::inbox::Message::new(
                     format!("Pre-match Report: vs {}", opponent_name),
                     format!("Coach:\nWe're playing against {} today. Make sure you select the best activity schedule beforehand to manage player stamina.", opponent_name),
@@ -456,7 +477,10 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
             if !todays.is_empty() && tournament.is_complete() {
                 let msg = esm_core::inbox::Message::new(
                     "Tournament Concluded".to_string(),
-                    format!("The {} has concluded! Check the final standings.", tournament.name()),
+                    format!(
+                        "The {} has concluded! Check the final standings.",
+                        tournament.name()
+                    ),
                     esm_core::inbox::MessagePriority::HardBlock,
                     esm_core::inbox::MessageCategory::News,
                     gs.calendar().days_elapsed(),
@@ -486,21 +510,21 @@ fn play_match_delegate(state: State<'_, AppState>) -> Result<GameInfo, String> {
     if let (Some(tournament), Some(moba_teams)) = (t_lock.as_mut(), m_lock.as_ref()) {
         let player_idx = gs.player_team_index();
         let day = gs.calendar().days_elapsed();
-        
-        let player_match = tournament
-            .matches_today(day)
-            .into_iter()
-            .find(|m| (m.blue_team_idx() == player_idx || m.red_team_idx() == player_idx) && m.winner_team_idx().is_none());
-            
+
+        let player_match = tournament.matches_today(day).into_iter().find(|m| {
+            (m.blue_team_idx() == player_idx || m.red_team_idx() == player_idx)
+                && m.winner_team_idx().is_none()
+        });
+
         if let Some(m) = player_match {
             let match_id = m.id();
             let blue_idx = m.blue_team_idx();
             let red_idx = m.red_team_idx();
-            
+
             let config = MobaMatchConfig::default();
             let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
             let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
-            
+
             let result = MobaMatchEngine::simulate(gs.rng_mut(), &blue_attrs, &red_attrs, &config);
 
             let (bw, rw) = match result.winner {
@@ -508,7 +532,7 @@ fn play_match_delegate(state: State<'_, AppState>) -> Result<GameInfo, String> {
                 TeamSide::Red => (0u32, 1u32),
             };
             tournament.record_result(match_id, bw, rw);
-            
+
             let is_blue = blue_idx == player_idx;
             let player_won = (is_blue && bw > 0) || (!is_blue && rw > 0);
             gs.teams_mut()[player_idx].apply_match_result(player_won);
@@ -517,19 +541,22 @@ fn play_match_delegate(state: State<'_, AppState>) -> Result<GameInfo, String> {
                 TeamSide::Blue => moba_teams[blue_idx].name().to_string(),
                 TeamSide::Red => moba_teams[red_idx].name().to_string(),
             };
-            
+
             match_results.push(MatchResultInfo {
                 blue_team: moba_teams[blue_idx].name().to_string(),
                 red_team: moba_teams[red_idx].name().to_string(),
                 winner: winner_name,
                 duration_minutes: result.duration_minutes,
             });
-            
+
             // Same logic to conclude tournament if this was the last match
             if tournament.is_complete() {
                 let msg = esm_core::inbox::Message::new(
                     "Tournament Concluded".to_string(),
-                    format!("The {} has concluded! Check the final standings.", tournament.name()),
+                    format!(
+                        "The {} has concluded! Check the final standings.",
+                        tournament.name()
+                    ),
                     esm_core::inbox::MessagePriority::HardBlock,
                     esm_core::inbox::MessageCategory::News,
                     gs.calendar().days_elapsed(),
@@ -547,11 +574,83 @@ fn play_match_delegate(state: State<'_, AppState>) -> Result<GameInfo, String> {
     Ok(info)
 }
 
+// ---------------------------------------------------------------------------
+// Draft commands
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize)]
+pub struct StartDraftParams {
+    pub player_side: String, // "blue" or "red"
+    pub format: String,      // "three_ban", "five_ban", "fearless"
+}
+
+#[tauri::command]
+fn start_draft(
+    params: StartDraftParams,
+    state: State<'_, AppState>,
+) -> Result<DraftSessionState, String> {
+    let champion_pool = state.champion_names.lock().unwrap().clone();
+    if champion_pool.is_empty() {
+        return Err("No champions loaded".to_string());
+    }
+
+    let player_side = match params.player_side.as_str() {
+        "blue" => DraftTeamSide::Blue,
+        "red" => DraftTeamSide::Red,
+        _ => return Err(format!("Invalid side: {}", params.player_side)),
+    };
+
+    let format = match params.format.as_str() {
+        "three_ban" => DraftFormat::ThreeBan,
+        "five_ban" => DraftFormat::FiveBan,
+        "fearless" => DraftFormat::Fearless,
+        _ => return Err(format!("Invalid format: {}", params.format)),
+    };
+
+    let mut session = DraftSession::new(format, player_side, champion_pool);
+    session.run_ai_turns();
+    let draft_state = session.state();
+
+    *state.draft_session.lock().unwrap() = Some(session);
+    Ok(draft_state)
+}
+
+#[tauri::command]
+fn draft_hover(champion: String, state: State<'_, AppState>) -> Result<DraftSessionState, String> {
+    let mut lock = state.draft_session.lock().unwrap();
+    let session = lock.as_mut().ok_or("No active draft session")?;
+
+    session
+        .hover(champion)
+        .map_err(|e| format!("Draft error: {:?}", e))?;
+    Ok(session.state())
+}
+
+#[tauri::command]
+fn draft_lock(state: State<'_, AppState>) -> Result<DraftSessionState, String> {
+    let mut lock = state.draft_session.lock().unwrap();
+    let session = lock.as_mut().ok_or("No active draft session")?;
+
+    session
+        .lock()
+        .map_err(|e| format!("Draft error: {:?}", e))?;
+    // After player locks, run AI turns
+    session.run_ai_turns();
+    Ok(session.state())
+}
+
+#[tauri::command]
+fn get_draft_state(state: State<'_, AppState>) -> Result<DraftSessionState, String> {
+    let lock = state.draft_session.lock().unwrap();
+    let session = lock.as_ref().ok_or("No active draft session")?;
+    Ok(session.state())
+}
+
 #[tauri::command]
 fn resolve_message(msg_id: String, state: State<'_, AppState>) -> Result<(), String> {
     let mut lock = state.game_state.lock().unwrap();
     let gs = lock.as_mut().ok_or("No active game session")?;
-    
+
     // msg_id is formatted as "msg_{index}"
     if let Some(idx_str) = msg_id.strip_prefix("msg_") {
         if let Ok(idx) = idx_str.parse::<usize>() {
@@ -559,7 +658,7 @@ fn resolve_message(msg_id: String, state: State<'_, AppState>) -> Result<(), Str
             return Ok(());
         }
     }
-    
+
     Err(format!("Invalid message ID: {msg_id}"))
 }
 
@@ -687,7 +786,7 @@ fn extract_team_attrs(moba_team: &MobaTeam) -> Vec<MatchPlayerSimulationData> {
                 a.vision_control.value(),
                 a.teamfighting.value(),
             ];
-            
+
             MatchPlayerSimulationData {
                 attributes,
                 stamina: p.state().stamina.value(),
@@ -784,6 +883,10 @@ pub fn run() {
             get_game_info,
             get_standings,
             get_schedule,
+            start_draft,
+            draft_hover,
+            draft_lock,
+            get_draft_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
