@@ -88,7 +88,7 @@ export function DraftUI({
     <div className="flex flex-col w-full flex-1 min-h-0 gap-4">
       {/* Header: team names + phase + progress */}
       <div
-        className="flex items-center justify-between px-6 py-3 rounded-xl border"
+        className="flex items-center justify-between px-6 py-3 rounded-xl border shrink-0"
         style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
       >
         <div
@@ -160,7 +160,7 @@ export function DraftUI({
 
       {/* Bans row */}
       <div
-        className="flex items-center justify-between px-6 py-2 gap-4 rounded-lg border"
+        className="flex items-center justify-between px-6 py-2 gap-4 rounded-lg border shrink-0"
         style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
       >
         <BanSlots bans={draftState.blue_bans} maxBans={5} side="blue" />
@@ -175,7 +175,7 @@ export function DraftUI({
 
       {/* Picks row */}
       <div
-        className="flex items-center justify-between px-6 py-2 gap-4 rounded-lg border"
+        className="flex items-center justify-between px-6 py-2 gap-4 rounded-lg border shrink-0"
         style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
       >
         <PickSlots picks={draftState.blue_picks} maxPicks={5} side="blue" />
@@ -231,7 +231,7 @@ export function DraftUI({
       )}
 
       {/* Lock / Complete button */}
-      <div className="flex justify-center px-4 pb-2">
+      <div className="flex justify-center px-4 pb-2 shrink-0">
         {draftState.is_complete ? (
           <button
             onClick={onComplete}

@@ -291,7 +291,7 @@ export function GameShell({
 
   return (
     <div
-      className="flex w-full min-h-screen"
+      className="flex w-full h-screen"
       style={{ backgroundColor: "var(--bg-base)" }}
     >
       <Sidebar activeItem={activePage} onNavigate={setActivePage} onExitToMenu={onExitToMenu} />

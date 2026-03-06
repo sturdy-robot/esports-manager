@@ -42,6 +42,18 @@ describe('SeriesFlow', () => {
     });
   });
 
+  it('uses w-full and h-screen on root for full-viewport layout', async () => {
+    const { container } = renderWithProviders(<SeriesFlow {...defaultProps} />);
+    await waitFor(() => {
+      expect(screen.getByText(/best of 3/i)).toBeInTheDocument();
+    });
+    // After loading, the root div (with h-screen) should appear
+    const root = container.querySelector('[data-testid="series-flow-root"]') as HTMLElement;
+    expect(root).toBeTruthy();
+    expect(root.className).toContain('w-full');
+    expect(root.className).toContain('h-screen');
+  });
+
   it('calls onComplete when series is finished and user clicks return', async () => {
     const onComplete = vi.fn();
     renderWithProviders(<SeriesFlow {...defaultProps} onComplete={onComplete} />);

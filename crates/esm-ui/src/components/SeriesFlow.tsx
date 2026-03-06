@@ -86,7 +86,7 @@ export function SeriesFlow({
   }
 
   return (
-    <div className="flex flex-col h-screen" style={{ backgroundColor: 'var(--bg-base)' }}>
+    <div data-testid="series-flow-root" className="flex flex-col w-full h-screen" style={{ backgroundColor: 'var(--bg-base)' }}>
       {/* Series banner */}
       <SeriesBanner series={series} />
 
