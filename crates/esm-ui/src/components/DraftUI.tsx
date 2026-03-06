@@ -82,7 +82,7 @@ export function DraftUI({
   const timerPct = draftState.timer_seconds > 0 ? (timeLeft / draftState.timer_seconds) * 100 : 0;
 
   return (
-    <div className="flex flex-col w-full h-full gap-4">
+    <div className="flex flex-col w-full flex-1 min-h-0 gap-4">
       {/* Header: team names + phase + progress */}
       <div className="flex items-center justify-between px-4">
         <div

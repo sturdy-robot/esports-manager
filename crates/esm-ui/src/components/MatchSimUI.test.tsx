@@ -108,4 +108,12 @@ describe('MatchSimUI', () => {
     // No commentary visible yet since events are progressively revealed
     expect(screen.queryByText(/FIRST BLOOD/)).not.toBeInTheDocument();
   });
+
+  it('uses flex-1 layout to fill available space instead of h-full', () => {
+    const { container } = renderWithProviders(<MatchSimUI {...defaultProps} />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain('flex-1');
+    expect(root.className).toContain('min-h-0');
+    expect(root.className).not.toContain('h-full');
+  });
 });

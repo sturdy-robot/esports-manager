@@ -85,7 +85,7 @@ export function MatchFlow({
 
   return (
     <div
-      className="flex flex-col h-full"
+      className="flex flex-col flex-1 min-h-0"
       style={{ backgroundColor: 'var(--bg-base)' }}
     >
       {/* Match header — replaces sidebar/topbar */}

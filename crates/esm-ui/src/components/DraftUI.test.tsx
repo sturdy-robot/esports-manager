@@ -157,4 +157,12 @@ describe('DraftUI', () => {
     renderWithProviders(<DraftUI {...defaultProps} draftState={state} />);
     expect(screen.getByText('5 / 20')).toBeInTheDocument();
   });
+
+  it('uses flex-1 layout to fill available space instead of h-full', () => {
+    const { container } = renderWithProviders(<DraftUI {...defaultProps} />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain('flex-1');
+    expect(root.className).toContain('min-h-0');
+    expect(root.className).not.toContain('h-full');
+  });
 });

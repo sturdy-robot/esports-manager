@@ -74,4 +74,12 @@ describe('MatchFlow', () => {
     renderWithProviders(<MatchFlow {...defaultProps} teamSide="blue" />);
     expect(screen.getByText(/blue side/i)).toBeInTheDocument();
   });
+
+  it('uses flex-1 layout to fill available space instead of h-full', () => {
+    const { container } = renderWithProviders(<MatchFlow {...defaultProps} />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain('flex-1');
+    expect(root.className).toContain('min-h-0');
+    expect(root.className).not.toContain('h-full');
+  });
 });

@@ -172,7 +172,7 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
   const bluePct = (blueGold / goldTotal) * 100;
 
   return (
-    <div className="flex flex-col w-full h-full gap-2 p-2">
+    <div className="flex flex-col w-full flex-1 min-h-0 gap-2 p-2">
       {/* Top bar: teams + gold + timer */}
       <div
         className="flex items-center justify-between px-4 py-3 rounded-xl border shrink-0"
