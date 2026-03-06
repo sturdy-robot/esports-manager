@@ -17,6 +17,7 @@ import { useRoster, useInbox, useStandings, useSchedule, useResolveMessage, useP
 import type { Transaction } from "@/components/Finances";
 import type { StaffMember } from "@/components/Staff";
 import type { ScoutingTarget } from "@/components/Scouting";
+import type { MatchMode } from "./PlayMatchButton";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -66,7 +67,7 @@ interface GameShellProps {
   phase?: string;
   isMatchDay?: boolean;
   onContinue?: () => void;
-  onPlayMatch?: () => void;
+  onPlayMatch?: (mode: MatchMode) => void;
   onSave?: () => void;
   onExitToMenu?: () => void;
 }
@@ -79,6 +80,7 @@ export function GameShell({
   phase = "Morning",
   isMatchDay = false,
   onContinue: onContinueProp,
+  onPlayMatch: onPlayMatchProp,
   onSave,
   onExitToMenu,
 }: GameShellProps) {
@@ -110,9 +112,11 @@ export function GameShell({
     }
   }, [onContinueProp, fetchRoster, fetchInbox, fetchStandings, fetchSchedule]);
 
-  const handlePlayMatch = useCallback(() => {
-    setActivePage("match-lobby");
-  }, []);
+  const handlePlayMatch = useCallback((mode: MatchMode) => {
+    if (onPlayMatchProp) {
+      onPlayMatchProp(mode);
+    }
+  }, [onPlayMatchProp]);
 
   const handleDelegate = useCallback(async () => {
     const info = await playMatchDelegate();
@@ -292,7 +296,7 @@ export function GameShell({
           isMatchDay={isMatchDay}
           onSave={onSave}
           onContinue={handleContinue}
-          onPlayMatch={handlePlayMatch}
+          onPlayMatch={onPlayMatchProp ? handlePlayMatch : undefined}
         />
         <main className="flex-1 overflow-y-auto p-6">
           {renderPage()}

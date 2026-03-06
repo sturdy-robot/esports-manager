@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderWithProviders } from '../test/render';
 import { screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { GameShell } from './GameShell';
 
 const mockFetch = vi.fn();
@@ -52,5 +53,19 @@ describe('GameShell', () => {
         // Standings
         fireEvent.click(screen.getByRole('button', { name: /standings/i }));
         expect(screen.getAllByText('Standings').length).toBeGreaterThan(0);
+    });
+
+    it('calls onPlayMatch with mode when PlayMatchButton is confirmed on match day', async () => {
+        const user = userEvent.setup();
+        const onPlayMatch = vi.fn();
+        renderWithProviders(
+            <GameShell {...defaultProps} isMatchDay={true} onPlayMatch={onPlayMatch} />
+        );
+
+        // TopBar should render PlayMatchButton with Participate as default
+        await user.click(screen.getByRole('button', { name: /participate/i }));
+        await user.click(screen.getByRole('button', { name: /^confirm$/i }));
+
+        expect(onPlayMatch).toHaveBeenCalledWith('participate');
     });
 });
