@@ -4,6 +4,36 @@ const STARTING_GOLD: u32 = 500;
 const BASE_BOUNTY: u32 = 300;
 const BOUNTY_PER_STREAK: u32 = 150;
 
+/// Multi-kill tiers achieved within a single fight.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MultiKill {
+    Double,
+    Triple,
+    Quadra,
+    Penta,
+}
+
+impl MultiKill {
+    pub fn from_fight_kills(kills: u32) -> Option<Self> {
+        match kills {
+            2 => Some(MultiKill::Double),
+            3 => Some(MultiKill::Triple),
+            4 => Some(MultiKill::Quadra),
+            k if k >= 5 => Some(MultiKill::Penta),
+            _ => None,
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            MultiKill::Double => "Double Kill",
+            MultiKill::Triple => "Triple Kill",
+            MultiKill::Quadra => "Quadra Kill",
+            MultiKill::Penta => "PENTA KILL",
+        }
+    }
+}
+
 /// Per-player in-match state: gold, farm, KDA, streaks, death timer.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MatchPlayerState {
@@ -16,6 +46,7 @@ pub struct MatchPlayerState {
     kill_streak: u32,
     death_streak: u32,
     death_timer: u32,
+    fight_kills: u32,
 }
 
 impl MatchPlayerState {
@@ -30,6 +61,7 @@ impl MatchPlayerState {
             kill_streak: 0,
             death_streak: 0,
             death_timer: 0,
+            fight_kills: 0,
         }
     }
 
@@ -117,5 +149,34 @@ impl MatchPlayerState {
     /// Bounty gold awarded to the killer. Increases with kill streak.
     pub fn bounty(&self) -> u32 {
         BASE_BOUNTY + self.kill_streak * BOUNTY_PER_STREAK
+    }
+
+    /// Record a kill that occurred within a single fight (teamfight / skirmish).
+    /// This increments both the regular kill stats and the per-fight kill counter.
+    pub fn record_fight_kill(&mut self, gold_reward: u32) {
+        self.record_kill(gold_reward);
+        self.fight_kills += 1;
+    }
+
+    /// Return the current multi-kill tier based on fight kills, if any.
+    pub fn current_multi_kill(&self) -> Option<MultiKill> {
+        MultiKill::from_fight_kills(self.fight_kills)
+    }
+
+    /// Reset the per-fight kill counter (called after a teamfight resolves).
+    pub fn reset_fight_kills(&mut self) {
+        self.fight_kills = 0;
+    }
+
+    /// Return the killing spree label based on consecutive kills without dying.
+    pub fn spree_label(&self) -> Option<&'static str> {
+        match self.kill_streak {
+            0..=2 => None,
+            3 => Some("Killing Spree"),
+            4 => Some("Rampage"),
+            5..=7 => Some("Unstoppable"),
+            8..=9 => Some("Godlike"),
+            _ => Some("Legendary"),
+        }
     }
 }

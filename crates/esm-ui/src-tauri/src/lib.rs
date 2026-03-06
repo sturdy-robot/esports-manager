@@ -718,6 +718,8 @@ fn event_kind_label(kind: &MatchEventKind) -> &'static str {
         MatchEventKind::BaronKill { .. } => "baron",
         MatchEventKind::InhibitorDestroyed { .. } => "inhibitor",
         MatchEventKind::NexusDestroyed { .. } => "nexus",
+        MatchEventKind::MultiKill { .. } => "multi_kill",
+        MatchEventKind::KillingSpree { .. } => "killing_spree",
     }
 }
 

@@ -1,4 +1,4 @@
-use esm_engine::moba_match::player_state::MatchPlayerState;
+use esm_engine::moba_match::player_state::{MatchPlayerState, MultiKill};
 
 // ---------------------------------------------------------------------------
 // Initial state
@@ -172,4 +172,134 @@ fn player_state_bounty_increases_with_kill_streak() {
     ps.record_kill(300);
     ps.record_kill(300);
     assert!(ps.bounty() > 300);
+}
+
+// ---------------------------------------------------------------------------
+// Multi-kill tracking
+// ---------------------------------------------------------------------------
+
+#[test]
+fn no_multi_kill_after_single_fight_kill() {
+    let mut ps = MatchPlayerState::new(0);
+    ps.record_fight_kill(300);
+    assert_eq!(ps.current_multi_kill(), None);
+}
+
+#[test]
+fn double_kill_after_two_fight_kills() {
+    let mut ps = MatchPlayerState::new(0);
+    ps.record_fight_kill(300);
+    ps.record_fight_kill(300);
+    assert_eq!(ps.current_multi_kill(), Some(MultiKill::Double));
+}
+
+#[test]
+fn triple_kill_after_three_fight_kills() {
+    let mut ps = MatchPlayerState::new(0);
+    for _ in 0..3 {
+        ps.record_fight_kill(300);
+    }
+    assert_eq!(ps.current_multi_kill(), Some(MultiKill::Triple));
+}
+
+#[test]
+fn quadra_kill_after_four_fight_kills() {
+    let mut ps = MatchPlayerState::new(0);
+    for _ in 0..4 {
+        ps.record_fight_kill(300);
+    }
+    assert_eq!(ps.current_multi_kill(), Some(MultiKill::Quadra));
+}
+
+#[test]
+fn penta_kill_after_five_fight_kills() {
+    let mut ps = MatchPlayerState::new(0);
+    for _ in 0..5 {
+        ps.record_fight_kill(300);
+    }
+    assert_eq!(ps.current_multi_kill(), Some(MultiKill::Penta));
+}
+
+#[test]
+fn penta_is_max_multi_kill() {
+    let mut ps = MatchPlayerState::new(0);
+    for _ in 0..7 {
+        ps.record_fight_kill(300);
+    }
+    assert_eq!(ps.current_multi_kill(), Some(MultiKill::Penta));
+}
+
+#[test]
+fn reset_fight_kills_clears_multi_kill() {
+    let mut ps = MatchPlayerState::new(0);
+    ps.record_fight_kill(300);
+    ps.record_fight_kill(300);
+    assert_eq!(ps.current_multi_kill(), Some(MultiKill::Double));
+    ps.reset_fight_kills();
+    assert_eq!(ps.current_multi_kill(), None);
+}
+
+#[test]
+fn fight_kill_also_increments_regular_kill_and_streak() {
+    let mut ps = MatchPlayerState::new(0);
+    ps.record_fight_kill(300);
+    assert_eq!(ps.kills(), 1);
+    assert_eq!(ps.kill_streak(), 1);
+}
+
+// ---------------------------------------------------------------------------
+// Killing spree labels
+// ---------------------------------------------------------------------------
+
+#[test]
+fn killing_spree_at_three_kills() {
+    let mut ps = MatchPlayerState::new(0);
+    for _ in 0..3 {
+        ps.record_kill(300);
+    }
+    assert_eq!(ps.spree_label(), Some("Killing Spree"));
+}
+
+#[test]
+fn rampage_at_four_kills() {
+    let mut ps = MatchPlayerState::new(0);
+    for _ in 0..4 {
+        ps.record_kill(300);
+    }
+    assert_eq!(ps.spree_label(), Some("Rampage"));
+}
+
+#[test]
+fn unstoppable_at_five_kills() {
+    let mut ps = MatchPlayerState::new(0);
+    for _ in 0..5 {
+        ps.record_kill(300);
+    }
+    assert_eq!(ps.spree_label(), Some("Unstoppable"));
+}
+
+#[test]
+fn godlike_at_eight_kills() {
+    let mut ps = MatchPlayerState::new(0);
+    for _ in 0..8 {
+        ps.record_kill(300);
+    }
+    assert_eq!(ps.spree_label(), Some("Godlike"));
+}
+
+#[test]
+fn legendary_at_ten_kills() {
+    let mut ps = MatchPlayerState::new(0);
+    for _ in 0..10 {
+        ps.record_kill(300);
+    }
+    assert_eq!(ps.spree_label(), Some("Legendary"));
+}
+
+#[test]
+fn no_spree_label_below_three() {
+    let mut ps = MatchPlayerState::new(0);
+    ps.record_kill(300);
+    ps.record_kill(300);
+    assert_eq!(ps.spree_label(), None);
 }

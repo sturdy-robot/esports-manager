@@ -61,6 +61,16 @@ pub enum MatchEventKind {
     NexusDestroyed {
         winner: TeamSide,
     },
+    MultiKill {
+        side: TeamSide,
+        player_idx: usize,
+        tier: String,
+    },
+    KillingSpree {
+        side: TeamSide,
+        player_idx: usize,
+        label: String,
+    },
 }
 
 // ---------------------------------------------------------------------------
@@ -147,6 +157,14 @@ impl Commentary {
         Self::new(format!(
             "{team_name} takes down the Rift Herald! Time to crack open a tower."
         ))
+    }
+
+    pub fn for_multi_kill(player_name: &str, tier: &str) -> Self {
+        Self::new(format!("{tier}! {player_name} is on fire!"))
+    }
+
+    pub fn for_killing_spree(player_name: &str, label: &str) -> Self {
+        Self::new(format!("{player_name} is on a {label}!"))
     }
 }
 

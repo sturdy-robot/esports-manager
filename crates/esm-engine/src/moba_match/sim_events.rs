@@ -173,12 +173,19 @@ impl SimEvent for Teamfight {
         let kills_won = rng.range_u32(1, 5);
         let kills_lost = rng.range_u32(0, 3);
         let death_timer = 15 + state.minute;
+        let players_per_side = state.players(winner_side).len();
+
+        // Reset fight kills for all participants before the fight
+        for i in 0..players_per_side {
+            state.players_mut(winner_side)[i].reset_fight_kills();
+            state.players_mut(winner_side.opposite())[i].reset_fight_kills();
+        }
 
         // Winning side gets kills on losing side
         for _ in 0..kills_won {
             if let Some(killer_idx) = state.pick_alive_player(rng, winner_side) {
                 let gold = rng.range_u32(200, 400);
-                state.players_mut(winner_side)[killer_idx].record_kill(gold);
+                state.players_mut(winner_side)[killer_idx].record_fight_kill(gold);
             }
             if let Some(victim_idx) = state.pick_alive_player(rng, winner_side.opposite()) {
                 state.players_mut(winner_side.opposite())[victim_idx].record_death(death_timer);
@@ -192,12 +199,56 @@ impl SimEvent for Teamfight {
             }
             if let Some(killer_idx) = state.pick_alive_player(rng, winner_side.opposite()) {
                 let gold = rng.range_u32(200, 400);
-                state.players_mut(winner_side.opposite())[killer_idx].record_kill(gold);
+                state.players_mut(winner_side.opposite())[killer_idx].record_fight_kill(gold);
             }
         }
 
         if !state.first_blood_claimed && (kills_won > 0 || kills_lost > 0) {
             state.first_blood_claimed = true;
+        }
+
+        // Collect multi-kill and killing spree sub-events (avoid borrow conflict)
+        let mut sub_events = Vec::new();
+        for side in [winner_side, winner_side.opposite()] {
+            for i in 0..players_per_side {
+                let player = &state.players(side)[i];
+                if let Some(mk) = player.current_multi_kill() {
+                    let tier_label = mk.label().to_string();
+                    let mut mk_event = MatchEvent::new(
+                        state.minute,
+                        state.phase(),
+                        MatchEventKind::MultiKill {
+                            side,
+                            player_idx: i,
+                            tier: tier_label.clone(),
+                        },
+                    );
+                    mk_event.set_commentary(Commentary::for_multi_kill(
+                        &format!("Player{}", i + 1),
+                        &tier_label,
+                    ));
+                    sub_events.push(mk_event);
+                }
+                if let Some(spree) = player.spree_label() {
+                    let mut sp_event = MatchEvent::new(
+                        state.minute,
+                        state.phase(),
+                        MatchEventKind::KillingSpree {
+                            side,
+                            player_idx: i,
+                            label: spree.to_string(),
+                        },
+                    );
+                    sp_event.set_commentary(Commentary::for_killing_spree(
+                        &format!("Player{}", i + 1),
+                        spree,
+                    ));
+                    sub_events.push(sp_event);
+                }
+            }
+        }
+        for ev in sub_events {
+            state.record_event(ev);
         }
 
         let (kb, kr) = match winner_side {
