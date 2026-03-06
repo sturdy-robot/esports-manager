@@ -62,6 +62,11 @@ export function SeriesFlow({
     setPhase('game');
   }, []);
 
+  // Derive real opponent name from backend series info
+  const resolvedOpponent = series
+    ? (teamSide === 'blue' ? series.red_team : series.blue_team)
+    : opponentName;
+
   if (phase === 'loading' || !series) {
     return (
       <div
@@ -91,7 +96,7 @@ export function SeriesFlow({
             key={gameKey}
             mode={mode}
             teamName={teamName}
-            opponentName={opponentName}
+            opponentName={resolvedOpponent}
             teamSide={teamSide}
             fearlessBans={fearlessBans}
             onComplete={handleGameComplete}
@@ -101,6 +106,7 @@ export function SeriesFlow({
         {phase === 'between-games' && (
           <BetweenGamesPanel
             series={series}
+            fearlessBans={fearlessBans}
             onNextGame={handleNextGame}
           />
         )}
@@ -178,9 +184,11 @@ function ScoreBox({ value, highlight }: { value: number; highlight: boolean }) {
 
 function BetweenGamesPanel({
   series,
+  fearlessBans,
   onNextGame,
 }: {
   series: SeriesInfo;
+  fearlessBans: string[];
   onNextGame: () => void;
 }) {
   return (
@@ -219,9 +227,32 @@ function BetweenGamesPanel({
           </div>
         </div>
 
-        <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
           First to {series.wins_needed} wins takes the series.
         </p>
+
+        {fearlessBans.length > 0 && (
+          <div className="mb-6">
+            <div className="text-xs font-semibold uppercase tracking-wider mb-2"
+              style={{ color: 'var(--text-muted)' }}>
+              Fearless — Unavailable Champions ({fearlessBans.length})
+            </div>
+            <div className="flex flex-wrap gap-1.5 justify-center">
+              {fearlessBans.map((champ) => (
+                <span
+                  key={champ}
+                  className="text-xs px-2 py-0.5 rounded"
+                  style={{
+                    backgroundColor: 'rgba(239,68,68,0.1)',
+                    color: 'var(--color-loss)',
+                  }}
+                >
+                  {champ}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         <button
           onClick={onNextGame}
