@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MatchFlow } from './MatchFlow';
-import { useSeriesInfo } from '@/lib/use-api';
+import { useSeriesInfo, useDraft } from '@/lib/use-api';
 import type { MatchMode } from './PlayMatchButton';
 import type { SeriesInfo } from '@/lib/api';
 
@@ -28,6 +28,8 @@ export function SeriesFlow({
   const [phase, setPhase] = useState<SeriesPhase>('loading');
   const [gameKey, setGameKey] = useState(0);
   const { series, refresh } = useSeriesInfo();
+  const { refresh: refreshDraft } = useDraft();
+  const [fearlessBans, setFearlessBans] = useState<string[]>([]);
 
   // Fetch series info on mount
   useEffect(() => {
@@ -39,14 +41,21 @@ export function SeriesFlow({
   }, [refresh]);
 
   const handleGameComplete = useCallback(async () => {
-    // After a game completes, refresh series info from backend
+    // Collect draft picks from the completed game for Fearless carry-over
+    const draftState = await refreshDraft();
+    if (draftState) {
+      const gamePicks = [...draftState.blue_picks, ...draftState.red_picks];
+      setFearlessBans((prev) => [...prev, ...gamePicks]);
+    }
+
+    // Refresh series info from backend
     const updated = await refresh();
     if (updated && updated.is_complete) {
       setPhase('series-complete');
     } else {
       setPhase('between-games');
     }
-  }, [refresh]);
+  }, [refresh, refreshDraft]);
 
   const handleNextGame = useCallback(() => {
     setGameKey((k) => k + 1);
@@ -84,6 +93,7 @@ export function SeriesFlow({
             teamName={teamName}
             opponentName={opponentName}
             teamSide={teamSide}
+            fearlessBans={fearlessBans}
             onComplete={handleGameComplete}
           />
         )}

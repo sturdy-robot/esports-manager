@@ -11,6 +11,7 @@ interface MatchFlowProps {
   teamName: string;
   opponentName: string;
   teamSide: 'blue' | 'red';
+  fearlessBans?: string[];
   onComplete: () => void;
 }
 
@@ -30,6 +31,7 @@ export function MatchFlow({
   teamName,
   opponentName,
   teamSide,
+  fearlessBans = [],
   onComplete,
 }: MatchFlowProps) {
   const [phase, setPhase] = useState<MatchPhase>(() => initialPhase(mode));
@@ -46,10 +48,11 @@ export function MatchFlow({
   const handleProceedToDraft = useCallback(async () => {
     await startDraft({
       player_side: teamSide,
-      format: 'five_ban',
+      format: fearlessBans.length > 0 ? 'fearless' : 'five_ban',
+      fearless_bans: fearlessBans,
     });
     setPhase('draft');
-  }, [startDraft, teamSide]);
+  }, [startDraft, teamSide, fearlessBans]);
 
   const handleDraftHover = useCallback(async (champion: string) => {
     await hover(champion);

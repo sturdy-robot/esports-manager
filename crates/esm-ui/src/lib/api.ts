@@ -168,6 +168,7 @@ export interface DraftSessionState {
 export interface StartDraftParams {
   player_side: "blue" | "red";
   format: "three_ban" | "five_ban" | "fearless";
+  fearless_bans?: string[];
 }
 
 export async function startDraft(params: StartDraftParams): Promise<DraftSessionState> {

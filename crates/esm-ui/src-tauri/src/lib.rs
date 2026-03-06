@@ -627,6 +627,8 @@ fn play_match_delegate(state: State<'_, AppState>) -> Result<GameInfo, String> {
 pub struct StartDraftParams {
     pub player_side: String, // "blue" or "red"
     pub format: String,      // "three_ban", "five_ban", "fearless"
+    #[serde(default)]
+    pub fearless_bans: Vec<String>, // champions picked in previous series games (Fearless mode)
 }
 
 #[tauri::command]
@@ -652,7 +654,17 @@ fn start_draft(
         _ => return Err(format!("Invalid format: {}", params.format)),
     };
 
-    let mut session = DraftSession::new(format, player_side, champion_pool);
+    // For Fearless mode, remove previously-picked champions from the pool
+    let pool = if !params.fearless_bans.is_empty() {
+        champion_pool
+            .into_iter()
+            .filter(|c| !params.fearless_bans.contains(c))
+            .collect()
+    } else {
+        champion_pool
+    };
+
+    let mut session = DraftSession::new(format, player_side, pool);
     session.run_ai_turns();
     let draft_state = session.state();
 
