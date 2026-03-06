@@ -16,11 +16,15 @@ use esm_engine::moba_match::event::MatchEventKind;
 use esm_engine::moba_match::game_state::MatchPlayerSimulationData;
 use esm_engine::moba_match::state::TeamSide;
 use esm_engine::moba_match::tactics::{Focus, MatchTactics, Playstyle};
+use esm_engine::schedule::scrim::ScrimDraftRules;
+use esm_engine::schedule::scrim_manager::ScrimManager;
+use esm_engine::schedule::{ScheduleEntry, SoloQueueFocus, TeamWeeklySchedule};
 use esm_engine::tournament::{BracketKind, Tournament, TournamentFormat};
 use esm_models::esport_type::EsportType;
 use esm_models::manager::{Manager, ManagerArchetype};
 use esm_models::moba::team::MobaTeam;
 use esm_models::player::PlayerTalk;
+use esm_models::time::TimeSlot;
 
 // ---------------------------------------------------------------------------
 // Application state
@@ -34,6 +38,8 @@ pub struct AppState {
     champion_names: Mutex<Vec<String>>,
     draft_session: Mutex<Option<DraftSession>>,
     match_tactics: Mutex<MatchTactics>,
+    team_schedules: Mutex<Vec<TeamWeeklySchedule>>,
+    scrim_manager: Mutex<ScrimManager>,
 }
 
 impl AppState {
@@ -46,6 +52,8 @@ impl AppState {
             champion_names: Mutex::new(Vec::new()),
             draft_session: Mutex::new(None),
             match_tactics: Mutex::new(MatchTactics::default()),
+            team_schedules: Mutex::new(Vec::new()),
+            scrim_manager: Mutex::new(ScrimManager::new()),
         }
     }
 }
@@ -906,6 +914,362 @@ fn get_tactics(state: State<'_, AppState>) -> TacticsInfo {
 }
 
 // ---------------------------------------------------------------------------
+// Scheduling DTOs & commands
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ScheduleSlotInfo {
+    pub time_slot: String,
+    pub entry_type: String, // "free", "scrim", "solo_queue", "rest"
+    pub scrim_id: Option<u32>,
+    pub opponent: Option<String>,
+    pub players: Option<Vec<usize>>,
+    pub focus: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DayScheduleInfo {
+    pub day_index: usize,
+    pub slots: Vec<ScheduleSlotInfo>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct WeekScheduleInfo {
+    pub days: Vec<DayScheduleInfo>,
+    pub total_scrims: usize,
+    pub occupied_slots: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ScrimInfo {
+    pub id: u32,
+    pub home_team: String,
+    pub away_team: String,
+    pub scheduled_day: u32,
+    pub time_slot: String,
+    pub game_count: u32,
+    pub draft_rules: String,
+    pub status: String,
+    pub home_wins: u32,
+    pub away_wins: u32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ScheduleScrimParams {
+    pub away_team_index: usize,
+    pub scheduled_day: u32,
+    pub time_slot: String,
+    pub game_count: u32,
+    pub draft_rules: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ScheduleSoloQueueParams {
+    pub day_index: usize,
+    pub time_slot: String,
+    pub players: Vec<usize>,
+    pub focus: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ScheduleRestParams {
+    pub day_index: usize,
+    pub time_slot: String,
+}
+
+fn parse_time_slot(s: &str) -> Result<TimeSlot, String> {
+    s.parse::<TimeSlot>()
+}
+
+fn time_slot_str(ts: TimeSlot) -> &'static str {
+    ts.as_str()
+}
+
+fn parse_solo_queue_focus(s: &str) -> Result<SoloQueueFocus, String> {
+    match s {
+        "champions" => Ok(SoloQueueFocus::Champions),
+        "tactics" => Ok(SoloQueueFocus::Tactics),
+        "mechanics" => Ok(SoloQueueFocus::Mechanics),
+        "mentality" => Ok(SoloQueueFocus::Mentality),
+        _ => Err(format!("Unknown focus: {s}")),
+    }
+}
+
+fn focus_to_str(f: SoloQueueFocus) -> &'static str {
+    match f {
+        SoloQueueFocus::Champions => "champions",
+        SoloQueueFocus::Tactics => "tactics",
+        SoloQueueFocus::Mechanics => "mechanics",
+        SoloQueueFocus::Mentality => "mentality",
+    }
+}
+
+fn parse_draft_rules(s: &str) -> Result<ScrimDraftRules, String> {
+    match s {
+        "standard" => Ok(ScrimDraftRules::Standard),
+        "fearless" => Ok(ScrimDraftRules::Fearless),
+        _ => Err(format!("Unknown draft rules: {s}")),
+    }
+}
+
+fn slot_to_info(
+    ts: TimeSlot,
+    entry: Option<&ScheduleEntry>,
+    scrim_mgr: &ScrimManager,
+) -> ScheduleSlotInfo {
+    match entry {
+        None => ScheduleSlotInfo {
+            time_slot: time_slot_str(ts).to_string(),
+            entry_type: "free".to_string(),
+            scrim_id: None,
+            opponent: None,
+            players: None,
+            focus: None,
+        },
+        Some(ScheduleEntry::Scrim { scrim_id }) => {
+            let opponent = scrim_mgr
+                .scrim_by_id(*scrim_id)
+                .map(|s| s.away_team().to_string());
+            ScheduleSlotInfo {
+                time_slot: time_slot_str(ts).to_string(),
+                entry_type: "scrim".to_string(),
+                scrim_id: Some(*scrim_id),
+                opponent,
+                players: None,
+                focus: None,
+            }
+        }
+        Some(ScheduleEntry::SoloQueue { players, focus }) => ScheduleSlotInfo {
+            time_slot: time_slot_str(ts).to_string(),
+            entry_type: "solo_queue".to_string(),
+            scrim_id: None,
+            opponent: None,
+            players: Some(players.clone()),
+            focus: Some(focus_to_str(*focus).to_string()),
+        },
+        Some(ScheduleEntry::Rest) => ScheduleSlotInfo {
+            time_slot: time_slot_str(ts).to_string(),
+            entry_type: "rest".to_string(),
+            scrim_id: None,
+            opponent: None,
+            players: None,
+            focus: None,
+        },
+    }
+}
+
+fn week_schedule_to_info(
+    schedule: &TeamWeeklySchedule,
+    scrim_mgr: &ScrimManager,
+) -> WeekScheduleInfo {
+    let days = (0..7)
+        .map(|i| {
+            let day = schedule.day(i);
+            let slots = TimeSlot::ALL
+                .iter()
+                .map(|&ts| slot_to_info(ts, day.get(ts), scrim_mgr))
+                .collect();
+            DayScheduleInfo {
+                day_index: i,
+                slots,
+            }
+        })
+        .collect();
+    WeekScheduleInfo {
+        days,
+        total_scrims: schedule.total_scrims(),
+        occupied_slots: schedule.occupied_slots(),
+    }
+}
+
+#[tauri::command]
+fn get_team_schedule(state: State<'_, AppState>) -> Result<WeekScheduleInfo, String> {
+    let gs = state.game_state.lock().unwrap();
+    let gs = gs.as_ref().ok_or("No active game session")?;
+    let schedules = state.team_schedules.lock().unwrap();
+    let scrim_mgr = state.scrim_manager.lock().unwrap();
+    let idx = gs.player_team_index();
+    if idx >= schedules.len() {
+        return Err("Schedule not initialized".to_string());
+    }
+    Ok(week_schedule_to_info(&schedules[idx], &scrim_mgr))
+}
+
+#[tauri::command]
+fn schedule_scrim(
+    state: State<'_, AppState>,
+    params: ScheduleScrimParams,
+) -> Result<ScrimInfo, String> {
+    let gs = state.game_state.lock().unwrap();
+    let gs = gs.as_ref().ok_or("No active game session")?;
+    let mut schedules = state.team_schedules.lock().unwrap();
+    let mut scrim_mgr = state.scrim_manager.lock().unwrap();
+
+    let home_idx = gs.player_team_index();
+    let away_idx = params.away_team_index;
+    let home_name = gs.teams()[home_idx].name().to_string();
+    let away_name = gs.teams()[away_idx].name().to_string();
+    let time_slot = parse_time_slot(&params.time_slot)?;
+    let draft_rules = parse_draft_rules(&params.draft_rules)?;
+    let current_day = gs.calendar().days_elapsed();
+
+    let scrim_id = scrim_mgr
+        .schedule_scrim(
+            &mut schedules,
+            home_idx,
+            away_idx,
+            &home_name,
+            &away_name,
+            params.scheduled_day,
+            time_slot,
+            params.game_count,
+            draft_rules,
+            current_day,
+        )
+        .map_err(|e| format!("Schedule error: {:?}", e))?;
+
+    let scrim = scrim_mgr.scrim_by_id(scrim_id).unwrap();
+    Ok(ScrimInfo {
+        id: scrim.id(),
+        home_team: scrim.home_team().to_string(),
+        away_team: scrim.away_team().to_string(),
+        scheduled_day: scrim.scheduled_day(),
+        time_slot: time_slot_str(scrim.time_slot()).to_string(),
+        game_count: scrim.game_count(),
+        draft_rules: format!("{:?}", scrim.draft_rules()),
+        status: format!("{:?}", scrim.status()),
+        home_wins: scrim.home_wins(),
+        away_wins: scrim.away_wins(),
+    })
+}
+
+#[tauri::command]
+fn cancel_scrim(state: State<'_, AppState>, scrim_id: u32) -> Result<String, String> {
+    let gs = state.game_state.lock().unwrap();
+    let gs = gs.as_ref().ok_or("No active game session")?;
+    let mut schedules = state.team_schedules.lock().unwrap();
+    let mut scrim_mgr = state.scrim_manager.lock().unwrap();
+
+    let scrim = scrim_mgr.scrim_by_id(scrim_id).ok_or("Scrim not found")?;
+    let home_idx = gs
+        .teams()
+        .iter()
+        .position(|t| t.name() == scrim.home_team())
+        .ok_or("Home team not found")?;
+    let away_idx = gs
+        .teams()
+        .iter()
+        .position(|t| t.name() == scrim.away_team())
+        .ok_or("Away team not found")?;
+    let current_day = gs.calendar().days_elapsed();
+
+    scrim_mgr
+        .cancel_scrim(scrim_id, &mut schedules, home_idx, away_idx, current_day)
+        .map_err(|e| format!("Cancel error: {:?}", e))?;
+
+    Ok("Scrim cancelled".to_string())
+}
+
+#[tauri::command]
+fn schedule_solo_queue(
+    state: State<'_, AppState>,
+    params: ScheduleSoloQueueParams,
+) -> Result<WeekScheduleInfo, String> {
+    let gs = state.game_state.lock().unwrap();
+    let gs = gs.as_ref().ok_or("No active game session")?;
+    let mut schedules = state.team_schedules.lock().unwrap();
+    let scrim_mgr = state.scrim_manager.lock().unwrap();
+
+    let idx = gs.player_team_index();
+    let time_slot = parse_time_slot(&params.time_slot)?;
+    let focus = parse_solo_queue_focus(&params.focus)?;
+
+    if !schedules[idx].day(params.day_index).is_free(time_slot) {
+        return Err("Slot is already occupied".to_string());
+    }
+
+    schedules[idx].day_mut(params.day_index).set(
+        time_slot,
+        ScheduleEntry::SoloQueue {
+            players: params.players,
+            focus,
+        },
+    );
+
+    Ok(week_schedule_to_info(&schedules[idx], &scrim_mgr))
+}
+
+#[tauri::command]
+fn schedule_rest(
+    state: State<'_, AppState>,
+    params: ScheduleRestParams,
+) -> Result<WeekScheduleInfo, String> {
+    let gs = state.game_state.lock().unwrap();
+    let gs = gs.as_ref().ok_or("No active game session")?;
+    let mut schedules = state.team_schedules.lock().unwrap();
+    let scrim_mgr = state.scrim_manager.lock().unwrap();
+
+    let idx = gs.player_team_index();
+    let time_slot = parse_time_slot(&params.time_slot)?;
+
+    if !schedules[idx].day(params.day_index).is_free(time_slot) {
+        return Err("Slot is already occupied".to_string());
+    }
+
+    schedules[idx]
+        .day_mut(params.day_index)
+        .set(time_slot, ScheduleEntry::Rest);
+
+    Ok(week_schedule_to_info(&schedules[idx], &scrim_mgr))
+}
+
+#[tauri::command]
+fn clear_schedule_slot(
+    state: State<'_, AppState>,
+    day_index: usize,
+    time_slot: String,
+) -> Result<WeekScheduleInfo, String> {
+    let gs = state.game_state.lock().unwrap();
+    let gs = gs.as_ref().ok_or("No active game session")?;
+    let mut schedules = state.team_schedules.lock().unwrap();
+    let scrim_mgr = state.scrim_manager.lock().unwrap();
+
+    let idx = gs.player_team_index();
+    let ts = parse_time_slot(&time_slot)?;
+
+    schedules[idx].day_mut(day_index).clear(ts);
+
+    Ok(week_schedule_to_info(&schedules[idx], &scrim_mgr))
+}
+
+#[tauri::command]
+fn get_scrims_list(state: State<'_, AppState>) -> Result<Vec<ScrimInfo>, String> {
+    let gs = state.game_state.lock().unwrap();
+    let gs = gs.as_ref().ok_or("No active game session")?;
+    let scrim_mgr = state.scrim_manager.lock().unwrap();
+    let team_name = gs.player_team().name();
+
+    let scrims: Vec<ScrimInfo> = scrim_mgr
+        .scrims_for_team(team_name)
+        .iter()
+        .map(|s| ScrimInfo {
+            id: s.id(),
+            home_team: s.home_team().to_string(),
+            away_team: s.away_team().to_string(),
+            scheduled_day: s.scheduled_day(),
+            time_slot: time_slot_str(s.time_slot()).to_string(),
+            game_count: s.game_count(),
+            draft_rules: format!("{:?}", s.draft_rules()),
+            status: format!("{:?}", s.status()),
+            home_wins: s.home_wins(),
+            away_wins: s.away_wins(),
+        })
+        .collect();
+
+    Ok(scrims)
+}
+
+// ---------------------------------------------------------------------------
 // Match simulation command
 // ---------------------------------------------------------------------------
 
@@ -1366,6 +1730,13 @@ pub fn run() {
             get_tactics,
             get_roster_state,
             apply_player_talk,
+            get_team_schedule,
+            schedule_scrim,
+            cancel_scrim,
+            schedule_solo_queue,
+            schedule_rest,
+            clear_schedule_slot,
+            get_scrims_list,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
