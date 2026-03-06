@@ -150,6 +150,13 @@ export async function playMatchDelegate(): Promise<GameInfo> {
 export type DraftPhase = "Ban" | "Pick";
 export type DraftTeamSide = "Blue" | "Red";
 
+export interface ChampionDraftInfo {
+  name: string;
+  class: string;
+  scaling: string;
+  tags: string[];
+}
+
 export interface DraftSessionState {
   current_step: number;
   total_steps: number;
@@ -163,6 +170,7 @@ export interface DraftSessionState {
   is_complete: boolean;
   is_player_turn: boolean;
   available_champions: string[];
+  champion_details: Record<string, ChampionDraftInfo>;
   timer_seconds: number;
 }
 

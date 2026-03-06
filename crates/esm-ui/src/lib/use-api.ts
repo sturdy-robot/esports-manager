@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult, SeriesInfo, TacticsInfo, PlaystyleType, FocusType, PlayerStateInfo, TalkType, WeekScheduleInfo, ScrimInfo, ScheduleScrimParams, ScheduleSoloQueueParams, ScheduleRestParams, TimeSlotType, ScheduleSlotInfo } from "./api";
+import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult, SeriesInfo, TacticsInfo, PlaystyleType, FocusType, PlayerStateInfo, TalkType, WeekScheduleInfo, ScrimInfo, ScheduleScrimParams, ScheduleSoloQueueParams, ScheduleRestParams, TimeSlotType, ScheduleSlotInfo, ChampionDraftInfo } from "./api";
 
 // ---------------------------------------------------------------------------
 // Detect whether we're running inside Tauri or in a browser (dev/test)
@@ -287,6 +287,29 @@ const MOCK_CHAMPIONS = [
   "Ezreal", "Aphelios", "Thresh", "Nautilus", "Lulu",
 ];
 
+const MOCK_CHAMPION_DETAILS: Record<string, ChampionDraftInfo> = {
+  Orianna:      { name: 'Orianna',      class: 'Mage',     scaling: 'Mid',   tags: ['Poke', 'Waveclear', 'Peel'] },
+  Azir:         { name: 'Azir',         class: 'Mage',     scaling: 'Late',  tags: ['Poke', 'Waveclear', 'Engage'] },
+  Ahri:         { name: 'Ahri',         class: 'Mage',     scaling: 'Mid',   tags: ['Burst', 'Poke'] },
+  Syndra:       { name: 'Syndra',       class: 'Mage',     scaling: 'Mid',   tags: ['Burst', 'Poke'] },
+  Zed:          { name: 'Zed',          class: 'Assassin', scaling: 'Mid',   tags: ['Burst', 'Splitpush'] },
+  Malphite:     { name: 'Malphite',     class: 'Tank',     scaling: 'Mid',   tags: ['Engage', 'Knockup'] },
+  Ornn:         { name: 'Ornn',         class: 'Tank',     scaling: 'Late',  tags: ['Engage', 'Knockup', 'Peel'] },
+  Gnar:         { name: 'Gnar',         class: 'Fighter',  scaling: 'Mid',   tags: ['Engage', 'Knockup', 'Splitpush'] },
+  Fiora:        { name: 'Fiora',        class: 'Fighter',  scaling: 'Late',  tags: ['Splitpush', 'Sustain'] },
+  Jayce:        { name: 'Jayce',        class: 'Fighter',  scaling: 'Early', tags: ['Poke', 'Burst'] },
+  'Lee Sin':    { name: 'Lee Sin',      class: 'Fighter',  scaling: 'Early', tags: ['Engage', 'Burst'] },
+  Viego:        { name: 'Viego',        class: 'Assassin', scaling: 'Mid',   tags: ['Sustain', 'Burst'] },
+  'Jarvan IV':  { name: 'Jarvan IV',    class: 'Fighter',  scaling: 'Early', tags: ['Engage', 'Knockup'] },
+  Jinx:         { name: 'Jinx',         class: 'Marksman', scaling: 'Late',  tags: ['Waveclear', 'Burst'] },
+  "Kai'Sa":     { name: "Kai'Sa",       class: 'Marksman', scaling: 'Mid',   tags: ['Burst', 'Engage'] },
+  Ezreal:       { name: 'Ezreal',       class: 'Marksman', scaling: 'Mid',   tags: ['Poke', 'Burst'] },
+  Aphelios:     { name: 'Aphelios',     class: 'Marksman', scaling: 'Late',  tags: ['Burst', 'Waveclear'] },
+  Thresh:       { name: 'Thresh',       class: 'Support',  scaling: 'Early', tags: ['Engage', 'Peel'] },
+  Nautilus:     { name: 'Nautilus',     class: 'Support',  scaling: 'Early', tags: ['Engage', 'Knockup'] },
+  Lulu:         { name: 'Lulu',         class: 'Support',  scaling: 'Mid',   tags: ['Peel', 'Sustain'] },
+};
+
 const mockSeriesBlueWins = 0;
 const mockSeriesRedWins = 0;
 
@@ -387,6 +410,7 @@ function MOCK_DRAFT_STATE(): DraftSessionState {
     is_complete: false,
     is_player_turn: true,
     available_champions: [...MOCK_CHAMPIONS],
+    champion_details: { ...MOCK_CHAMPION_DETAILS },
     timer_seconds: 30,
   };
 }

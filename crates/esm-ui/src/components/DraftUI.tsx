@@ -26,6 +26,27 @@ function useDraftTimer(totalSeconds: number, step: number, active: boolean) {
   return timeLeft;
 }
 
+function classColor(cls: string): string {
+  switch (cls) {
+    case 'Tank': return '#3B82F6';
+    case 'Fighter': return '#F59E0B';
+    case 'Assassin': return '#EF4444';
+    case 'Mage': return '#8B5CF6';
+    case 'Marksman': return '#06B6D4';
+    case 'Support': return '#22C55E';
+    default: return 'var(--text-muted)';
+  }
+}
+
+function scalingColor(scaling: string): string {
+  switch (scaling) {
+    case 'Early': return '#22C55E';
+    case 'Mid': return '#F59E0B';
+    case 'Late': return '#EF4444';
+    default: return 'var(--text-muted)';
+  }
+}
+
 interface DraftUIProps {
   draftState: DraftSessionState;
   playerSide: 'blue' | 'red';
@@ -200,6 +221,7 @@ export function DraftUI({
           <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
             {draftState.available_champions.map((champ) => {
               const isHovered = draftState.active_hover === champ;
+              const info = draftState.champion_details?.[champ];
               return (
                 <button
                   key={champ}
@@ -207,7 +229,7 @@ export function DraftUI({
                   data-hovered={isHovered ? 'true' : 'false'}
                   disabled={!draftState.is_player_turn}
                   onClick={() => onHover(champ)}
-                  className="flex flex-col items-center justify-center p-2 rounded-lg text-xs font-semibold transition-all duration-150 border"
+                  className="flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg text-xs font-semibold transition-all duration-150 border glow-hover"
                   style={{
                     backgroundColor: isHovered
                       ? 'rgba(6,182,212,0.15)'
@@ -222,7 +244,23 @@ export function DraftUI({
                     cursor: draftState.is_player_turn ? 'pointer' : 'not-allowed',
                   }}
                 >
-                  {champ}
+                  <span className="font-bold text-xs leading-tight">{champ}</span>
+                  {info && (
+                    <span
+                      className="text-[0.6rem] font-mono leading-tight"
+                      style={{ color: classColor(info.class) }}
+                    >
+                      {info.class}
+                    </span>
+                  )}
+                  {info && (
+                    <span
+                      className="text-[0.55rem] font-mono leading-tight"
+                      style={{ color: scalingColor(info.scaling) }}
+                    >
+                      {info.scaling}
+                    </span>
+                  )}
                 </button>
               );
             })}

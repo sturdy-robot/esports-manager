@@ -12,6 +12,29 @@ const SAMPLE_CHAMPIONS = [
   'Ezreal', 'Aphelios', 'Thresh', 'Nautilus', 'Lulu',
 ];
 
+const SAMPLE_CHAMPION_DETAILS: Record<string, { name: string; class: string; scaling: string; tags: string[] }> = {
+  Orianna:  { name: 'Orianna',  class: 'Mage',     scaling: 'Mid',   tags: ['Poke', 'Waveclear'] },
+  Azir:     { name: 'Azir',     class: 'Mage',     scaling: 'Late',  tags: ['Poke'] },
+  Ahri:     { name: 'Ahri',     class: 'Mage',     scaling: 'Mid',   tags: ['Burst'] },
+  Syndra:   { name: 'Syndra',   class: 'Mage',     scaling: 'Mid',   tags: ['Burst'] },
+  Zed:      { name: 'Zed',      class: 'Assassin', scaling: 'Mid',   tags: ['Burst'] },
+  Malphite: { name: 'Malphite', class: 'Tank',     scaling: 'Mid',   tags: ['Engage'] },
+  Ornn:     { name: 'Ornn',     class: 'Tank',     scaling: 'Late',  tags: ['Engage'] },
+  Gnar:     { name: 'Gnar',     class: 'Fighter',  scaling: 'Mid',   tags: ['Engage'] },
+  Fiora:    { name: 'Fiora',    class: 'Fighter',  scaling: 'Late',  tags: ['Splitpush'] },
+  Jayce:    { name: 'Jayce',    class: 'Fighter',  scaling: 'Early', tags: ['Poke'] },
+  'Lee Sin':   { name: 'Lee Sin',   class: 'Fighter',  scaling: 'Early', tags: ['Engage'] },
+  Viego:    { name: 'Viego',    class: 'Assassin', scaling: 'Mid',   tags: ['Sustain'] },
+  'Jarvan IV': { name: 'Jarvan IV', class: 'Fighter',  scaling: 'Early', tags: ['Engage'] },
+  Jinx:     { name: 'Jinx',     class: 'Marksman', scaling: 'Late',  tags: ['Waveclear'] },
+  "Kai'Sa": { name: "Kai'Sa",   class: 'Marksman', scaling: 'Mid',   tags: ['Burst'] },
+  Ezreal:   { name: 'Ezreal',   class: 'Marksman', scaling: 'Mid',   tags: ['Poke'] },
+  Aphelios: { name: 'Aphelios', class: 'Marksman', scaling: 'Late',  tags: ['Burst'] },
+  Thresh:   { name: 'Thresh',   class: 'Support',  scaling: 'Early', tags: ['Engage'] },
+  Nautilus: { name: 'Nautilus', class: 'Support',  scaling: 'Early', tags: ['Engage'] },
+  Lulu:     { name: 'Lulu',     class: 'Support',  scaling: 'Mid',   tags: ['Peel'] },
+};
+
 function makeDraftState(overrides: Partial<DraftSessionState> = {}): DraftSessionState {
   return {
     current_step: 0,
@@ -26,6 +49,8 @@ function makeDraftState(overrides: Partial<DraftSessionState> = {}): DraftSessio
     is_complete: false,
     is_player_turn: true,
     available_champions: [...SAMPLE_CHAMPIONS],
+    champion_details: { ...SAMPLE_CHAMPION_DETAILS },
+    timer_seconds: 30,
     ...overrides,
   };
 }
@@ -182,5 +207,23 @@ describe('DraftUI', () => {
     expect(redTeam.getAttribute('data-active')).toBe('true');
     const blueTeam = screen.getByTestId('team-header-blue');
     expect(blueTeam.getAttribute('data-active')).toBe('false');
+  });
+
+  it('shows champion class badge on champion buttons', () => {
+    renderWithProviders(<DraftUI {...defaultProps} />);
+    // Orianna is a Mage — check that the Mage badge is present inside her button
+    const oriannaBtn = screen.getByRole('button', { name: /orianna/i });
+    expect(oriannaBtn.textContent).toContain('Mage');
+    // Zed is an Assassin
+    const zedBtn = screen.getByRole('button', { name: /zed/i });
+    expect(zedBtn.textContent).toContain('Assassin');
+  });
+
+  it('shows champion scaling info on champion buttons', () => {
+    renderWithProviders(<DraftUI {...defaultProps} />);
+    const azirBtn = screen.getByRole('button', { name: /azir/i });
+    expect(azirBtn.textContent).toContain('Late');
+    const jayceBtn = screen.getByRole('button', { name: /jayce/i });
+    expect(jayceBtn.textContent).toContain('Early');
   });
 });
