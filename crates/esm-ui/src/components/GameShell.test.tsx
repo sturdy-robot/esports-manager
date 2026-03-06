@@ -7,6 +7,22 @@ import { GameShell } from './GameShell';
 const mockFetch = vi.fn();
 
 // Mock the API hooks
+const MOCK_WEEK_SCHEDULE = {
+    days: Array.from({ length: 7 }, (_, i) => ({
+        day_index: i,
+        slots: ['Morning', 'Afternoon', 'Evening'].map((ts) => ({
+            time_slot: ts,
+            entry_type: 'free',
+            scrim_id: null,
+            opponent: null,
+            players: null,
+            focus: null,
+        })),
+    })),
+    total_scrims: 0,
+    occupied_slots: 0,
+};
+
 vi.mock('../lib/use-api', async () => {
     const actual = await vi.importActual('../lib/use-api');
     return {
@@ -17,6 +33,16 @@ vi.mock('../lib/use-api', async () => {
         useSchedule: vi.fn(() => ({ schedule: [], fetchSchedule: mockFetch })),
         useResolveMessage: vi.fn(() => ({ resolve: mockFetch })),
         usePlayMatchDelegate: vi.fn(() => ({ playMatchDelegate: mockFetch, playing: false })),
+        useTeamSchedule: vi.fn(() => ({
+            weekSchedule: MOCK_WEEK_SCHEDULE,
+            scrims: [],
+            refresh: mockFetch,
+            scheduleScrim: mockFetch,
+            cancelScrim: mockFetch,
+            scheduleSoloQueue: mockFetch,
+            scheduleRest: mockFetch,
+            clearSlot: mockFetch,
+        })),
     };
 });
 
@@ -53,6 +79,13 @@ describe('GameShell', () => {
         // Standings
         fireEvent.click(screen.getByRole('button', { name: /standings/i }));
         expect(screen.getAllByText('Standings').length).toBeGreaterThan(0);
+    });
+
+    it('renders weekly schedule content when navigating to schedule page', () => {
+        renderWithProviders(<GameShell {...defaultProps} />);
+        fireEvent.click(screen.getByRole('button', { name: /schedule/i }));
+        expect(screen.getByRole('heading', { name: /weekly schedule/i })).toBeInTheDocument();
+        expect(screen.queryByText(/loading schedule/i)).not.toBeInTheDocument();
     });
 
     it('calls onPlayMatch with mode when PlayMatchButton is confirmed on match day', async () => {
