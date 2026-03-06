@@ -3,11 +3,33 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
+use esm_models::time::TimeSlot;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum DayPhase {
     Morning,
     Afternoon,
     Evening,
+}
+
+impl From<DayPhase> for TimeSlot {
+    fn from(phase: DayPhase) -> Self {
+        match phase {
+            DayPhase::Morning => TimeSlot::Morning,
+            DayPhase::Afternoon => TimeSlot::Afternoon,
+            DayPhase::Evening => TimeSlot::Evening,
+        }
+    }
+}
+
+impl From<TimeSlot> for DayPhase {
+    fn from(slot: TimeSlot) -> Self {
+        match slot {
+            TimeSlot::Morning => DayPhase::Morning,
+            TimeSlot::Afternoon => DayPhase::Afternoon,
+            TimeSlot::Evening => DayPhase::Evening,
+        }
+    }
 }
 
 impl DayPhase {

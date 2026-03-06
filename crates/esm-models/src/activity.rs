@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::time::TimeSlot;
+
 // ---------------------------------------------------------------------------
 // Activity types (DESIGN.md §6)
 // ---------------------------------------------------------------------------
@@ -47,10 +49,10 @@ impl Activity {
 }
 
 // ---------------------------------------------------------------------------
-// Daily Schedule (4 time slots per DESIGN.md §6)
+// Daily Schedule (3 time slots: Morning / Afternoon / Evening)
 // ---------------------------------------------------------------------------
 
-const SLOTS_PER_DAY: usize = 4;
+const SLOTS_PER_DAY: usize = 3;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DailySchedule {
@@ -68,19 +70,16 @@ impl DailySchedule {
         &self.slots
     }
 
-    /// Set an activity in the given slot. Returns `false` if index is out of bounds.
-    pub fn set_slot(&mut self, index: usize, activity: Activity) -> bool {
-        if index >= SLOTS_PER_DAY {
-            return false;
-        }
-        self.slots[index] = Some(activity);
-        true
+    pub fn get(&self, slot: TimeSlot) -> Option<Activity> {
+        self.slots[slot.index()]
     }
 
-    pub fn clear_slot(&mut self, index: usize) {
-        if index < SLOTS_PER_DAY {
-            self.slots[index] = None;
-        }
+    pub fn set(&mut self, slot: TimeSlot, activity: Activity) {
+        self.slots[slot.index()] = Some(activity);
+    }
+
+    pub fn clear(&mut self, slot: TimeSlot) {
+        self.slots[slot.index()] = None;
     }
 }
 

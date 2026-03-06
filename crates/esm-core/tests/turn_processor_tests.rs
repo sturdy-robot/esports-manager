@@ -8,6 +8,7 @@ use esm_models::player::{
     TechnicalAttributes,
 };
 use esm_models::team::Team;
+use esm_models::time::TimeSlot;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -231,34 +232,33 @@ fn end_day_resolves_unresponded_actionable_messages_as_default() {
 #[test]
 fn end_day_processes_daily_schedules() {
     let mut gs = make_game_state();
-    
+
     // Set a heavy scrim schedule for the first player (causes large stamina loss)
     use esm_models::activity::{Activity, DailySchedule};
     let mut heavy_schedule = DailySchedule::new();
-    heavy_schedule.set_slot(0, Activity::ScrimBlock);
-    heavy_schedule.set_slot(1, Activity::ScrimBlock);
-    heavy_schedule.set_slot(2, Activity::ScrimBlock);
-    heavy_schedule.set_slot(3, Activity::ScrimBlock);
-    
+    heavy_schedule.set(TimeSlot::Morning, Activity::ScrimBlock);
+    heavy_schedule.set(TimeSlot::Afternoon, Activity::ScrimBlock);
+    heavy_schedule.set(TimeSlot::Evening, Activity::ScrimBlock);
+
     // Set a rest schedule for the second player
     let mut rest_schedule = DailySchedule::new();
-    rest_schedule.set_slot(0, Activity::RestDay);
-    
+    rest_schedule.set(TimeSlot::Morning, Activity::RestDay);
+
     gs.teams_mut()[0].roster_mut()[0].state_mut().stamina = BoundedAttribute::new(100);
     *gs.teams_mut()[0].roster_mut()[0].schedule_mut() = heavy_schedule;
-    
+
     gs.teams_mut()[0].roster_mut()[1].state_mut().stamina = BoundedAttribute::new(50);
     *gs.teams_mut()[0].roster_mut()[1].schedule_mut() = rest_schedule;
-    
+
     let _ = TurnProcessor::end_day(&mut gs);
-    
+
     let p1_stamina = gs.teams()[0].roster()[0].state().stamina.value();
     let p2_stamina = gs.teams()[0].roster()[1].state().stamina.value();
-    
-    // P1 started at 100, Base recovery +5, Scrims cost 18 each (4*18=72), Net change: -67
-    // Final stamina expected: 100 - 67 = 33
-    assert_eq!(p1_stamina, 33, "Heavy schedule should deplete stamina");
-    
+
+    // P1 started at 100, Base recovery +5, Scrims cost 18 each (3*18=54), Net change: -49
+    // Final stamina expected: 100 - 49 = 51
+    assert_eq!(p1_stamina, 51, "Heavy schedule should deplete stamina");
+
     // P2 started at 50, Base recovery +5, Rest Day gives +30, Net change: +35
     // Final stamina expected: 50 + 35 = 85
     assert_eq!(p2_stamina, 85, "Rest schedule should restore stamina");

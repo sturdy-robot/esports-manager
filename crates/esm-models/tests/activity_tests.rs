@@ -1,4 +1,5 @@
 use esm_models::activity::{Activity, ActivityScheduler, DailySchedule};
+use esm_models::time::TimeSlot;
 
 // ---------------------------------------------------------------------------
 // Activity enum & effects
@@ -56,56 +57,60 @@ fn rest_day_has_no_attribute_growth() {
 }
 
 // ---------------------------------------------------------------------------
-// DailySchedule
+// DailySchedule — 3 slots keyed by TimeSlot
 // ---------------------------------------------------------------------------
 
 #[test]
-fn daily_schedule_has_four_slots() {
+fn daily_schedule_has_three_slots() {
     let schedule = DailySchedule::new();
-    assert_eq!(schedule.slots().len(), 4);
+    assert_eq!(schedule.slots().len(), 3);
 }
 
 #[test]
 fn daily_schedule_starts_empty() {
     let schedule = DailySchedule::new();
-    for slot in schedule.slots() {
-        assert!(slot.is_none());
+    for slot in TimeSlot::ALL {
+        assert!(schedule.get(slot).is_none());
     }
 }
 
 #[test]
-fn daily_schedule_set_slot() {
+fn daily_schedule_set_and_get_by_time_slot() {
     let mut schedule = DailySchedule::new();
-    assert!(schedule.set_slot(0, Activity::ScrimBlock));
-    assert_eq!(schedule.slots()[0], Some(Activity::ScrimBlock));
+    schedule.set(TimeSlot::Morning, Activity::ScrimBlock);
+    assert_eq!(schedule.get(TimeSlot::Morning), Some(Activity::ScrimBlock));
+    assert_eq!(schedule.get(TimeSlot::Afternoon), None);
 }
 
 #[test]
-fn daily_schedule_set_slot_out_of_bounds_returns_false() {
+fn daily_schedule_clear_by_time_slot() {
     let mut schedule = DailySchedule::new();
-    assert!(!schedule.set_slot(4, Activity::ScrimBlock));
+    schedule.set(TimeSlot::Evening, Activity::SoloQueue);
+    schedule.clear(TimeSlot::Evening);
+    assert!(schedule.get(TimeSlot::Evening).is_none());
 }
 
 #[test]
-fn daily_schedule_clear_slot() {
+fn daily_schedule_fill_all_three_slots() {
     let mut schedule = DailySchedule::new();
-    schedule.set_slot(0, Activity::ScrimBlock);
-    schedule.clear_slot(0);
-    assert!(schedule.slots()[0].is_none());
+    schedule.set(TimeSlot::Morning, Activity::ScrimBlock);
+    schedule.set(TimeSlot::Afternoon, Activity::SoloQueue);
+    schedule.set(TimeSlot::Evening, Activity::RestDay);
+
+    assert_eq!(schedule.get(TimeSlot::Morning), Some(Activity::ScrimBlock));
+    assert_eq!(schedule.get(TimeSlot::Afternoon), Some(Activity::SoloQueue));
+    assert_eq!(schedule.get(TimeSlot::Evening), Some(Activity::RestDay));
 }
 
 #[test]
-fn daily_schedule_fill_all_slots() {
+fn daily_schedule_slots_returns_all_three() {
     let mut schedule = DailySchedule::new();
-    schedule.set_slot(0, Activity::ScrimBlock);
-    schedule.set_slot(1, Activity::ScrimBlock);
-    schedule.set_slot(2, Activity::SoloQueue);
-    schedule.set_slot(3, Activity::RestDay);
-
-    assert_eq!(schedule.slots()[0], Some(Activity::ScrimBlock));
-    assert_eq!(schedule.slots()[1], Some(Activity::ScrimBlock));
-    assert_eq!(schedule.slots()[2], Some(Activity::SoloQueue));
-    assert_eq!(schedule.slots()[3], Some(Activity::RestDay));
+    schedule.set(TimeSlot::Morning, Activity::ScrimBlock);
+    let slots = schedule.slots();
+    assert_eq!(slots.len(), 3);
+    assert_eq!(slots[0], Some(Activity::ScrimBlock));
+    assert_eq!(slots[1], None);
+    assert_eq!(slots[2], None);
 }
 
 // ---------------------------------------------------------------------------
@@ -115,8 +120,8 @@ fn daily_schedule_fill_all_slots() {
 #[test]
 fn scheduler_computes_total_stamina_cost() {
     let mut schedule = DailySchedule::new();
-    schedule.set_slot(0, Activity::ScrimBlock);
-    schedule.set_slot(1, Activity::SoloQueue);
+    schedule.set(TimeSlot::Morning, Activity::ScrimBlock);
+    schedule.set(TimeSlot::Afternoon, Activity::SoloQueue);
 
     let total = ActivityScheduler::compute_daily_effect(&schedule);
     let expected_min = 15 + 5; // min scrim + min solo
@@ -136,7 +141,7 @@ fn scheduler_empty_schedule_has_zero_effect() {
 #[test]
 fn scheduler_rest_day_only_gives_recovery() {
     let mut schedule = DailySchedule::new();
-    schedule.set_slot(0, Activity::RestDay);
+    schedule.set(TimeSlot::Morning, Activity::RestDay);
 
     let total = ActivityScheduler::compute_daily_effect(&schedule);
     assert_eq!(total.stamina_cost, 0);
@@ -147,8 +152,8 @@ fn scheduler_rest_day_only_gives_recovery() {
 #[test]
 fn scheduler_mixed_schedule_accumulates() {
     let mut schedule = DailySchedule::new();
-    schedule.set_slot(0, Activity::ScrimBlock);
-    schedule.set_slot(1, Activity::RestDay);
+    schedule.set(TimeSlot::Morning, Activity::ScrimBlock);
+    schedule.set(TimeSlot::Afternoon, Activity::RestDay);
 
     let total = ActivityScheduler::compute_daily_effect(&schedule);
     // Should have both cost from scrim and recovery from rest
