@@ -63,6 +63,7 @@ interface GameShellProps {
   year?: number;
   month?: number;
   day?: number;
+  dayOfWeek?: string;
   phase?: string;
   isMatchDay?: boolean;
   onContinue?: () => void;
@@ -76,6 +77,7 @@ export function GameShell({
   year = 2025,
   month = 1,
   day = 1,
+  dayOfWeek = "Wed",
   phase = "Morning",
   isMatchDay = false,
   onContinue: onContinueProp,
@@ -323,6 +325,7 @@ export function GameShell({
           year={year}
           month={month}
           day={day}
+          dayOfWeek={dayOfWeek}
           phase={phase}
           isMatchDay={isMatchDay}
           onSave={onSave}

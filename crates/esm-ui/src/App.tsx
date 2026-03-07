@@ -191,6 +191,7 @@ function App() {
           year={gameInfo?.year}
           month={gameInfo?.month}
           day={gameInfo?.day}
+          dayOfWeek={gameInfo?.day_of_week}
           phase={gameInfo?.phase}
           isMatchDay={gameInfo?.is_match_day}
           onContinue={handleContinue}

@@ -13,6 +13,7 @@ interface TopBarProps {
   year?: number
   month?: number
   day?: number
+  dayOfWeek?: string
   phase?: string
   teamName?: string
   isMatchDay?: boolean
@@ -27,6 +28,7 @@ export function TopBar({
   year = 2025,
   month = 1,
   day = 1,
+  dayOfWeek = 'Wed',
   phase = 'Morning',
   teamName,
   isMatchDay = false,
@@ -80,7 +82,7 @@ export function TopBar({
             style={{ backgroundColor: 'var(--color-accent-cyan)' }}
           />
           <span className="font-mono">
-            {monthLabel} {day}, {year}
+            {dayOfWeek}, {monthLabel} {day}, {year}
           </span>
           <span style={{ color: 'var(--text-muted)' }}>·</span>
           <span>{phase}</span>

@@ -19,6 +19,7 @@ export interface GameInfo {
   year: number;
   month: number;
   day: number;
+  day_of_week: string;
   phase: string;
   manager_nickname: string;
   team_name: string;

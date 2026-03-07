@@ -30,6 +30,7 @@ const MOCK_GAME_INFO: GameInfo = {
   year: 2025,
   month: 1,
   day: 1,
+  day_of_week: "Wed",
   phase: "Morning",
   manager_nickname: "kkOma",
   team_name: "T1",

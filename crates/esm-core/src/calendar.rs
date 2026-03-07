@@ -128,6 +128,25 @@ impl Calendar {
         self.days_elapsed > 0 && self.days_elapsed % 7 == 0
     }
 
+    /// Returns the day of the week as 0=Sunday, 1=Monday, ..., 6=Saturday.
+    /// Uses Tomohiko Sakamoto's algorithm.
+    pub fn day_of_week(&self) -> u32 {
+        let mut y = self.year as i32;
+        let m = self.month as i32;
+        let d = self.day as i32;
+        const T: [i32; 12] = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+        if m < 3 {
+            y -= 1;
+        }
+        ((y + y / 4 - y / 100 + y / 400 + T[(m - 1) as usize] + d) % 7) as u32
+    }
+
+    /// Returns the short name of the current day of the week.
+    pub fn day_of_week_name(&self) -> &'static str {
+        const NAMES: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        NAMES[self.day_of_week() as usize]
+    }
+
     fn increment_day(&mut self) {
         self.days_elapsed += 1;
         let max_day = days_in_month(self.year, self.month);
