@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
@@ -9,13 +10,14 @@ use esm_core::game_state::GameState;
 use esm_core::turn::TurnProcessor;
 use esm_db::save_manager::{SaveEntry, SaveManager};
 use esm_engine::draft::DraftFormat;
-use esm_engine::draft_session::{DraftSession, DraftSessionState};
+use esm_engine::draft_session::{build_champion_evals, DraftSession, DraftSessionState};
 use esm_engine::match_sim::TeamSide as DraftTeamSide;
 use esm_engine::moba_match::engine::{MobaMatchConfig, MobaMatchEngine, MobaMatchResult};
 use esm_engine::moba_match::event::MatchEventKind;
 use esm_engine::moba_match::game_state::MatchPlayerSimulationData;
 use esm_engine::moba_match::state::TeamSide;
 use esm_engine::moba_match::tactics::{Focus, MatchTactics, Playstyle};
+use esm_engine::patch::Patch;
 use esm_engine::schedule::scrim::ScrimDraftRules;
 use esm_engine::schedule::scrim_manager::ScrimManager;
 use esm_engine::schedule::{ScheduleEntry, SoloQueueFocus, TeamWeeklySchedule};
@@ -40,6 +42,7 @@ pub struct AppState {
     match_tactics: Mutex<MatchTactics>,
     team_schedules: Mutex<Vec<TeamWeeklySchedule>>,
     scrim_manager: Mutex<ScrimManager>,
+    current_patch: Mutex<Patch>,
 }
 
 impl AppState {
@@ -54,6 +57,7 @@ impl AppState {
             match_tactics: Mutex::new(MatchTactics::default()),
             team_schedules: Mutex::new(Vec::new()),
             scrim_manager: Mutex::new(ScrimManager::new()),
+            current_patch: Mutex::new(Patch::new("1.0".to_string(), Vec::new())),
         }
     }
 }
@@ -722,7 +726,7 @@ fn start_draft(
     };
 
     // For Fearless mode, remove previously-picked champions from the pool
-    let pool = if !params.fearless_bans.is_empty() {
+    let pool: Vec<String> = if !params.fearless_bans.is_empty() {
         champion_pool
             .into_iter()
             .filter(|c| !params.fearless_bans.contains(c))
@@ -731,7 +735,21 @@ fn start_draft(
         champion_pool
     };
 
-    let mut session = DraftSession::new(format, player_side, pool);
+    // Build AI champion evaluations from current patch meta tiers.
+    // Mastery map is empty for now (defaults to Bronze); will be populated
+    // once champion pool mastery is wired into the game flow.
+    let patch = state.current_patch.lock().unwrap();
+    let mastery_map: HashMap<String, esm_models::champion::MasteryLevel> = HashMap::new();
+    let evals = build_champion_evals(&pool, &patch, &mastery_map);
+    drop(patch);
+
+    // Use the game's RNG for AI draft randomization
+    let gs_lock = state.game_state.lock().unwrap();
+    let rng_seed = gs_lock.as_ref().map(|gs| gs.rng().state()).unwrap_or(42);
+    drop(gs_lock);
+    let rng = esm_core::rng::GameRng::from_seed(rng_seed);
+
+    let mut session = DraftSession::with_evals(format, player_side, pool, evals, rng);
     session.run_ai_turns();
     let draft_state = session.state();
 

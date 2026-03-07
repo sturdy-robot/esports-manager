@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::draft::{Draft, DraftAction, DraftError, DraftFormat, DraftPhase};
 use crate::match_sim::TeamSide;
+use crate::patch::Patch;
 use esm_ai::draft_ai::{ChampionEval, DraftAi};
 use esm_core::rng::GameRng;
 use esm_models::champion::MasteryLevel;
@@ -48,6 +51,35 @@ fn default_champion_evals(champions: &[String]) -> Vec<ChampionEval> {
             player_mastery: MasteryLevel::Gold,
             composition_synergy: 0.0,
             counter_matchup: 0.0,
+        })
+        .collect()
+}
+
+/// Build ChampionEval entries using real patch data and player mastery info.
+///
+/// `patch` provides the meta tier (S/A/B/C/D) → meta_strength multiplier.
+/// `mastery_map` maps champion name → best MasteryLevel among the AI team's
+/// players for that champion. Champions not in the map default to Bronze.
+pub fn build_champion_evals(
+    champions: &[String],
+    patch: &Patch,
+    mastery_map: &HashMap<String, MasteryLevel>,
+) -> Vec<ChampionEval> {
+    champions
+        .iter()
+        .map(|name| {
+            let meta_strength = patch.tier_for_or_default(name).multiplier();
+            let player_mastery = mastery_map
+                .get(name)
+                .copied()
+                .unwrap_or(MasteryLevel::Bronze);
+            ChampionEval {
+                champion_name: name.clone(),
+                meta_strength,
+                player_mastery,
+                composition_synergy: 0.0,
+                counter_matchup: 0.0,
+            }
         })
         .collect()
 }
