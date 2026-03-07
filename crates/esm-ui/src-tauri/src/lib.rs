@@ -20,6 +20,7 @@ use esm_engine::moba_match::game_state::MatchPlayerSimulationData;
 use esm_engine::moba_match::state::TeamSide;
 use esm_engine::moba_match::tactics::{Focus, MatchTactics, Playstyle};
 use esm_engine::patch::Patch;
+use esm_engine::schedule::processor::ScheduleProcessor;
 use esm_engine::schedule::scrim::ScrimDraftRules;
 use esm_engine::schedule::scrim_manager::ScrimManager;
 use esm_engine::schedule::{ScheduleEntry, SoloQueueFocus, TeamWeeklySchedule};
@@ -524,6 +525,18 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
 
     // If currently Evening, advancing will trigger end-of-day via TurnProcessor
     if gs.calendar().phase() == DayPhase::Evening {
+        // Apply team schedule effects (scrims/solo-queue/rest) to player rosters
+        {
+            let schedules = state.team_schedules.lock().unwrap();
+            let day_in_week = (gs.calendar().days_elapsed() % 7) as usize;
+            for (team_idx, team) in gs.teams_mut().iter_mut().enumerate() {
+                if let Some(sched) = schedules.get(team_idx) {
+                    let today = sched.day(day_in_week);
+                    ScheduleProcessor::apply_daily_effects(today, team.roster_mut());
+                }
+            }
+        }
+
         TurnProcessor::end_day(gs).map_err(|e| match e {
             esm_core::turn::TurnError::BlockingMessages => {
                 "Cannot advance: there are unresolved urgent messages in your inbox.".to_string()
