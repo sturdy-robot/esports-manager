@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Lock, CheckCircle, Clock, Shield, Swords, Search, X } from 'lucide-react';
+import { Lock, CheckCircle, Clock, Shield, Swords, Search, X, ArrowLeftRight } from 'lucide-react';
 import type { DraftSessionState, DraftPlayerInfo, ChampionClass, ChampionScaling } from '@/lib/api';
 
 /**
@@ -95,6 +95,7 @@ interface DraftUIProps {
   onHover: (champion: string) => void;
   onLock: () => void;
   onComplete: () => void;
+  onSwap?: (a: number, b: number) => Promise<void>;
 }
 
 export function DraftUI({
@@ -105,6 +106,7 @@ export function DraftUI({
   onHover,
   onLock,
   onComplete,
+  onSwap,
 }: DraftUIProps) {
   const blueName = draftState.blue_team_name || (playerSide === 'blue' ? teamName : opponentName);
   const redName = draftState.red_team_name || (playerSide === 'red' ? teamName : opponentName);
@@ -147,6 +149,22 @@ export function DraftUI({
   const [searchText, setSearchText] = useState('');
   const [classFilter, setClassFilter] = useState<ChampionClass | null>(null);
   const [tooltipChamp, setTooltipChamp] = useState<string | null>(null);
+  const [swapSelected, setSwapSelected] = useState<number | null>(null);
+  const [swapping, setSwapping] = useState(false);
+
+  const handleSwapSlotClick = useCallback(async (idx: number) => {
+    if (!onSwap || swapping) return;
+    if (swapSelected === null) {
+      setSwapSelected(idx);
+    } else if (swapSelected === idx) {
+      setSwapSelected(null);
+    } else {
+      setSwapping(true);
+      await onSwap(swapSelected, idx);
+      setSwapSelected(null);
+      setSwapping(false);
+    }
+  }, [onSwap, swapSelected, swapping]);
 
   const filteredChampions = useMemo(() => {
     return draftState.available_champions.filter((champ) => {
@@ -228,6 +246,94 @@ export function DraftUI({
             )}
           </div>
         </div>
+
+        {/* Swap panel (shown when draft is complete) */}
+        {draftState.is_complete && onSwap && (
+          <div
+            className="flex flex-col flex-1 rounded-xl border overflow-hidden"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-subtle)',
+            }}
+          >
+            <div
+              className="flex items-center justify-center gap-2 px-3 py-2 border-b shrink-0"
+              style={{ borderColor: 'var(--border-subtle)' }}
+            >
+              <ArrowLeftRight size={14} style={{ color: 'var(--color-accent-cyan)' }} />
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                Champion Swap
+              </span>
+              <span className="text-[0.6rem]" style={{ color: 'var(--text-muted)' }}>
+                — Click two slots to swap champions
+              </span>
+            </div>
+            <div className="flex-1 flex flex-col justify-center gap-1.5 p-4">
+              {(() => {
+                const players = playerSide === 'blue' ? draftState.blue_players : draftState.red_players;
+                const picks = playerSide === 'blue' ? draftState.blue_picks : draftState.red_picks;
+                const accent = playerSide === 'blue' ? '#3B82F6' : '#EF4444';
+                const bgTint = playerSide === 'blue' ? 'rgba(59,130,246,' : 'rgba(239,68,68,';
+                return Array.from({ length: 5 }, (_, i) => {
+                  const player = players[i] ?? null;
+                  const champ = picks[i] ?? null;
+                  const champInfo = champ ? draftState.champion_details?.[champ] : null;
+                  const isSelected = swapSelected === i;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handleSwapSlotClick(i)}
+                      disabled={!champ || swapping}
+                      className="flex items-center gap-3 px-4 py-2.5 rounded-lg border transition-all duration-150"
+                      style={{
+                        borderColor: isSelected ? accent : 'var(--border-subtle)',
+                        backgroundColor: isSelected ? `${bgTint}0.15)` : 'var(--bg-elevated)',
+                        cursor: champ ? 'pointer' : 'default',
+                        boxShadow: isSelected ? `0 0 8px ${bgTint}0.3)` : 'none',
+                      }}
+                    >
+                      <div
+                        className="w-10 h-6 rounded text-[0.65rem] font-mono font-bold flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${bgTint}0.12)`, color: accent }}
+                      >
+                        {player ? (ROLE_SHORT[player.role] ?? player.role.slice(0, 3).toUpperCase()) : `P${i + 1}`}
+                      </div>
+                      <span
+                        className="text-sm font-semibold flex-1 text-left truncate"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        {player?.nickname ?? `Player ${i + 1}`}
+                      </span>
+                      {champ && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold" style={{ color: accent }}>
+                            {champ}
+                          </span>
+                          {champInfo && (
+                            <span
+                              className="text-[0.6rem] font-mono"
+                              style={{ color: classColor(champInfo.class as ChampionClass) }}
+                            >
+                              {champInfo.class}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {isSelected && (
+                        <ArrowLeftRight size={14} style={{ color: accent, flexShrink: 0 }} />
+                      )}
+                    </button>
+                  );
+                });
+              })()}
+              {swapSelected !== null && (
+                <p className="text-xs font-mono text-center animate-pulse mt-1" style={{ color: playerSide === 'blue' ? '#3B82F6' : '#EF4444' }}>
+                  Select another player to swap with
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Champion grid with filters */}
         {!draftState.is_complete && (
@@ -390,14 +496,16 @@ export function DraftUI({
           {draftState.is_complete ? (
             <button
               onClick={onComplete}
+              disabled={swapping}
               className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
               style={{
                 background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
                 boxShadow: '0 0 16px rgba(6,182,212,0.3)',
+                opacity: swapping ? 0.5 : 1,
               }}
             >
               <CheckCircle size={18} />
-              Continue
+              {onSwap ? 'Confirm Lineup' : 'Continue'}
             </button>
           ) : draftState.active_hover ? (
             <button
