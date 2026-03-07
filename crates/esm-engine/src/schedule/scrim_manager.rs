@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::scrim::{Scrim, ScrimDraftRules, ScrimStatus};
 use super::validation::{ScheduleError, ScheduleValidator};
-use super::{ScrimId, ScheduleEntry, TeamWeeklySchedule};
+use super::{ScheduleEntry, ScrimId, TeamWeeklySchedule};
 
 // ---------------------------------------------------------------------------
 // Errors
@@ -130,6 +130,16 @@ impl ScrimManager {
             .set(time_slot, entry);
 
         Ok(id)
+    }
+
+    /// Return IDs and game counts of all scrims scheduled for the given day
+    /// that are still in `Scheduled` status.
+    pub fn pending_scrims_for_day(&self, day: u32) -> Vec<(ScrimId, u32)> {
+        self.scrims
+            .iter()
+            .filter(|s| s.scheduled_day() == day && s.status() == ScrimStatus::Scheduled)
+            .map(|s| (s.id(), s.game_count()))
+            .collect()
     }
 
     /// Cancel a scheduled (not yet played) scrim and free both teams' slots.

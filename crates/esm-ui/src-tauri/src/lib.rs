@@ -537,6 +537,49 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
             }
         }
 
+        // Resolve scrims scheduled for today
+        if let Some(moba_teams) = m_lock.as_ref() {
+            let today = gs.calendar().days_elapsed();
+            let mut scrim_mgr = state.scrim_manager.lock().unwrap();
+            let pending = scrim_mgr.pending_scrims_for_day(today);
+            let config = MobaMatchConfig::default();
+
+            for (scrim_id, game_count) in pending {
+                // Look up team indices from names
+                let scrim = scrim_mgr.scrim_by_id(scrim_id).unwrap();
+                let home_name = scrim.home_team().to_string();
+                let away_name = scrim.away_team().to_string();
+
+                let home_idx = moba_teams.iter().position(|t| t.name() == home_name);
+                let away_idx = moba_teams.iter().position(|t| t.name() == away_name);
+
+                if let (Some(hi), Some(ai)) = (home_idx, away_idx) {
+                    let home_attrs = extract_team_attrs(&moba_teams[hi]);
+                    let away_attrs = extract_team_attrs(&moba_teams[ai]);
+
+                    let mut hw = 0u32;
+                    let mut aw = 0u32;
+                    for _ in 0..game_count {
+                        let result = MobaMatchEngine::simulate(
+                            gs.rng_mut(),
+                            &home_attrs,
+                            &away_attrs,
+                            &config,
+                        );
+                        match result.winner {
+                            TeamSide::Blue => hw += 1,
+                            TeamSide::Red => aw += 1,
+                        }
+                    }
+
+                    scrim_mgr
+                        .scrim_by_id_mut(scrim_id)
+                        .unwrap()
+                        .complete(hw, aw);
+                }
+            }
+        }
+
         TurnProcessor::end_day(gs).map_err(|e| match e {
             esm_core::turn::TurnError::BlockingMessages => {
                 "Cannot advance: there are unresolved urgent messages in your inbox.".to_string()
