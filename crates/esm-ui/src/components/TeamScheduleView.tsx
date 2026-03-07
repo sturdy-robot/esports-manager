@@ -68,12 +68,14 @@ function SlotCell({
   timeSlot,
   onAdd,
   onClear,
+  scrimResult,
 }: {
   slot: ScheduleSlotInfo;
   dayIndex: number;
   timeSlot: TimeSlotType;
   onAdd: (dayIndex: number, timeSlot: TimeSlotType) => void;
   onClear: (dayIndex: number, timeSlot: TimeSlotType) => void;
+  scrimResult?: { homeWins: number; awayWins: number; completed: boolean };
 }) {
   if (slot.entry_type === "free") {
     return (
@@ -130,8 +132,15 @@ function SlotCell({
         : "Rest";
 
   const detail =
-    slot.entry_type === "solo_queue" && slot.players
-      ? `${slot.players.length} player${slot.players.length !== 1 ? "s" : ""}`
+    slot.entry_type === "scrim" && scrimResult?.completed
+      ? null
+      : slot.entry_type === "solo_queue" && slot.players
+        ? `${slot.players.length} player${slot.players.length !== 1 ? "s" : ""}`
+        : null;
+
+  const scrimScore =
+    slot.entry_type === "scrim" && scrimResult?.completed
+      ? scrimResult
       : null;
 
   return (
@@ -168,6 +177,18 @@ function SlotCell({
           style={{ color: "var(--text-muted)" }}
         >
           {detail}
+        </span>
+      )}
+      {scrimScore && (
+        <span
+          className="text-[10px] font-mono font-bold mt-0.5"
+          style={{
+            color: scrimScore.homeWins > scrimScore.awayWins
+              ? "var(--color-win)"
+              : "var(--color-loss)",
+          }}
+        >
+          {scrimScore.homeWins}–{scrimScore.awayWins}
         </span>
       )}
     </div>
@@ -737,6 +758,12 @@ export function TeamScheduleView({
             {schedule.days.map((day) => {
               const slot = day.slots.find((s) => s.time_slot === ts);
               if (!slot) return <div key={day.day_index} className="p-1.5" />;
+              const matchedScrim = slot.scrim_id != null
+                ? scrims.find((s) => s.id === slot.scrim_id)
+                : undefined;
+              const scrimResult = matchedScrim
+                ? { homeWins: matchedScrim.home_wins, awayWins: matchedScrim.away_wins, completed: matchedScrim.status === "Completed" }
+                : undefined;
               return (
                 <div key={day.day_index} className="p-1.5">
                   <SlotCell
@@ -745,6 +772,7 @@ export function TeamScheduleView({
                     timeSlot={ts}
                     onAdd={(d, t) => setAddingSlot({ dayIndex: d, timeSlot: t })}
                     onClear={handleClearSlot}
+                    scrimResult={scrimResult}
                   />
                 </div>
               );
@@ -825,6 +853,21 @@ export function TeamScheduleView({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {s.status === "Completed" && (
+                    <span
+                      className="text-xs font-mono font-bold px-2 py-0.5 rounded"
+                      style={{
+                        backgroundColor: s.home_wins > s.away_wins
+                          ? "rgba(34, 197, 94, 0.15)"
+                          : "rgba(239, 68, 68, 0.15)",
+                        color: s.home_wins > s.away_wins
+                          ? "var(--color-win)"
+                          : "var(--color-loss)",
+                      }}
+                    >
+                      {s.home_wins}–{s.away_wins}
+                    </span>
+                  )}
                   <span
                     className="text-xs font-mono px-2 py-0.5 rounded"
                     style={{

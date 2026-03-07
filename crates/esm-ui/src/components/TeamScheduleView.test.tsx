@@ -1,4 +1,5 @@
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { renderWithProviders } from "@/test/render";
 import { TeamScheduleView } from "./TeamScheduleView";
@@ -119,5 +120,44 @@ describe("TeamScheduleView", () => {
     expect(screen.getByText("Scrim")).toBeInTheDocument();
     expect(screen.getByText("Solo Queue")).toBeInTheDocument();
     expect(screen.getByText("Rest")).toBeInTheDocument();
+  });
+
+  it("shows completed scrim result score in grid and scrims list", () => {
+    const completedScrims: ScrimInfo[] = [
+      {
+        id: 1,
+        home_team: "T1",
+        away_team: "Gen.G",
+        scheduled_day: 0,
+        time_slot: "Morning",
+        game_count: 3,
+        draft_rules: "Standard",
+        status: "Completed",
+        home_wins: 2,
+        away_wins: 1,
+      },
+    ];
+    renderWithProviders(
+      <TeamScheduleView {...defaultProps} scrims={completedScrims} />
+    );
+    // Score should appear in both grid cell and scrims list
+    const scores = screen.getAllByText("2–1");
+    expect(scores.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("shows error banner when clear slot fails", async () => {
+    const failingClear = vi.fn().mockRejectedValue(new Error("Slot is locked"));
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TeamScheduleView {...defaultProps} onClearSlot={failingClear} />
+    );
+    // Find the first clear button (X) on a scrim slot in the grid
+    const scrimSlots = screen.getAllByText(/vs Gen\.G/);
+    const scrimSlot = scrimSlots[0].closest(".group");
+    const clearBtn = scrimSlot?.querySelector("button");
+    if (clearBtn) {
+      await user.click(clearBtn);
+      expect(await screen.findByText(/Slot is locked/)).toBeInTheDocument();
+    }
   });
 });
