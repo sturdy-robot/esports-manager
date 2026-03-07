@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::draft::{Draft, DraftAction, DraftError, DraftFormat, DraftPhase};
-use crate::draft_ai::AutoDraftAI;
 use crate::match_sim::TeamSide;
+use esm_ai::draft_ai::{ChampionEval, DraftAi};
+use esm_core::rng::GameRng;
+use esm_models::champion::MasteryLevel;
 
 // ---------------------------------------------------------------------------
 // DraftSession — orchestrates a draft with AI opponent support
@@ -31,17 +33,52 @@ pub struct DraftSession {
     draft: Draft,
     player_team: TeamSide,
     champion_pool: Vec<String>,
-    ai: AutoDraftAI,
+    champion_evals: Vec<ChampionEval>,
+    rng: GameRng,
     timer_seconds: u32,
+}
+
+/// Build default (uniform) ChampionEval entries for each champion name.
+fn default_champion_evals(champions: &[String]) -> Vec<ChampionEval> {
+    champions
+        .iter()
+        .map(|name| ChampionEval {
+            champion_name: name.clone(),
+            meta_strength: 1.0,
+            player_mastery: MasteryLevel::Gold,
+            composition_synergy: 0.0,
+            counter_matchup: 0.0,
+        })
+        .collect()
 }
 
 impl DraftSession {
     pub fn new(format: DraftFormat, player_team: TeamSide, champion_pool: Vec<String>) -> Self {
+        let evals = default_champion_evals(&champion_pool);
         Self {
             draft: Draft::new(format),
             player_team,
             champion_pool,
-            ai: AutoDraftAI::new(),
+            champion_evals: evals,
+            rng: GameRng::from_seed(42),
+            timer_seconds: DEFAULT_TIMER_SECONDS,
+        }
+    }
+
+    /// Create a session with custom RNG seed and champion evaluations.
+    pub fn with_evals(
+        format: DraftFormat,
+        player_team: TeamSide,
+        champion_pool: Vec<String>,
+        champion_evals: Vec<ChampionEval>,
+        rng: GameRng,
+    ) -> Self {
+        Self {
+            draft: Draft::new(format),
+            player_team,
+            champion_pool,
+            champion_evals,
+            rng,
             timer_seconds: DEFAULT_TIMER_SECONDS,
         }
     }
@@ -108,15 +145,7 @@ impl DraftSession {
             return false; // Player's turn, not AI
         }
 
-        let action = self
-            .ai
-            .decide_action(&self.draft, slot.team, &self.champion_pool);
-        if let Some(a) = action {
-            let _ = self.draft.apply_action(a);
-            true
-        } else {
-            false
-        }
+        self.ai_pick()
     }
 
     /// Run all consecutive AI turns until it's the player's turn or draft is complete
@@ -133,19 +162,27 @@ impl DraftSession {
         if self.draft.is_complete() {
             return false;
         }
-        let slot = match self.draft.current_slot() {
-            Some(s) => *s,
-            None => return false,
-        };
-        let action = self
-            .ai
-            .decide_action(&self.draft, slot.team, &self.champion_pool);
-        if let Some(a) = action {
-            let _ = self.draft.apply_action(a);
-            true
-        } else {
-            false
+        if self.draft.current_slot().is_none() {
+            return false;
         }
+        self.ai_pick()
+    }
+
+    /// Internal: use DraftAi to select a champion and apply SelectChampion.
+    fn ai_pick(&mut self) -> bool {
+        let selected = self.draft.all_selected();
+        let candidates: Vec<ChampionEval> = self
+            .champion_evals
+            .iter()
+            .filter(|e| !selected.contains(&e.champion_name))
+            .cloned()
+            .collect();
+        if candidates.is_empty() {
+            return false;
+        }
+        let chosen = DraftAi::select_champion(&mut self.rng, &candidates);
+        let _ = self.draft.apply_action(DraftAction::SelectChampion(chosen));
+        true
     }
 
     pub fn is_complete(&self) -> bool {
