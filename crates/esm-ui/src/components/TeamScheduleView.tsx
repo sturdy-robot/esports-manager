@@ -43,6 +43,7 @@ interface TeamScheduleViewProps {
   onClearSlot: (dayIndex: number, timeSlot: TimeSlotType) => Promise<void>;
   onCancelScrim: (scrimId: number) => Promise<void>;
   teamNames: string[];
+  playerTeamName?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -206,6 +207,7 @@ function AddSlotModal({
   timeSlot,
   rosterNames,
   teamNames,
+  playerTeamName,
   onClose,
   onScheduleScrim,
   onScheduleSoloQueue,
@@ -215,6 +217,7 @@ function AddSlotModal({
   timeSlot: TimeSlotType;
   rosterNames: string[];
   teamNames: string[];
+  playerTeamName?: string;
   onClose: () => void;
   onScheduleScrim: (
     awayTeamIndex: number,
@@ -228,7 +231,10 @@ function AddSlotModal({
   onScheduleRest: () => Promise<void>;
 }) {
   const [mode, setMode] = useState<AddMode | null>(null);
-  const [awayTeamIdx, setAwayTeamIdx] = useState(0);
+  const [awayTeamIdx, setAwayTeamIdx] = useState(() => {
+    const firstOpponent = teamNames.findIndex((n) => n !== playerTeamName);
+    return firstOpponent >= 0 ? firstOpponent : 0;
+  });
   const [gameCount, setGameCount] = useState(3);
   const [draftRules, setDraftRules] = useState<DraftRulesType>("standard");
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
@@ -415,11 +421,14 @@ function AddSlotModal({
                     border: "1px solid var(--border-subtle)",
                   }}
                 >
-                  {teamNames.map((name, i) => (
-                    <option key={i} value={i}>
-                      {name}
-                    </option>
-                  ))}
+                  {teamNames.map((name, i) => {
+                    if (playerTeamName && name === playerTeamName) return null;
+                    return (
+                      <option key={i} value={i}>
+                        {name}
+                      </option>
+                    );
+                  })}
                 </select>
                 <ChevronDown
                   size={14}
@@ -610,6 +619,7 @@ export function TeamScheduleView({
   onClearSlot,
   onCancelScrim,
   teamNames,
+  playerTeamName,
 }: TeamScheduleViewProps) {
   const [addingSlot, setAddingSlot] = useState<{
     dayIndex: number;
@@ -919,6 +929,7 @@ export function TeamScheduleView({
           timeSlot={addingSlot.timeSlot}
           rosterNames={rosterNames}
           teamNames={teamNames}
+          playerTeamName={playerTeamName}
           onClose={() => setAddingSlot(null)}
           onScheduleScrim={(awayIdx, gc, dr) =>
             onScheduleScrim(

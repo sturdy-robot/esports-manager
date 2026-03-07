@@ -206,6 +206,7 @@ export function GameShell({
             scrims={scrims}
             rosterNames={rosterPlayers.map((p) => p.nickname)}
             teamNames={standings.map((s) => s.team_name)}
+            playerTeamName={teamName}
             onScheduleScrim={async (dayIndex, timeSlot, awayTeamIndex, gameCount, draftRules) => {
               await scheduleScrim({ away_team_index: awayTeamIndex, scheduled_day: dayIndex, time_slot: timeSlot, game_count: gameCount, draft_rules: draftRules });
             }}

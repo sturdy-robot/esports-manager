@@ -1354,6 +1354,9 @@ fn schedule_scrim(
 
     let home_idx = gs.player_team_index();
     let away_idx = params.away_team_index;
+    if home_idx == away_idx {
+        return Err("Cannot schedule a scrim against your own team".to_string());
+    }
     let home_name = gs.teams()[home_idx].name().to_string();
     let away_name = gs.teams()[away_idx].name().to_string();
     let time_slot = parse_time_slot(&params.time_slot)?;
