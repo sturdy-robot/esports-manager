@@ -28,6 +28,8 @@ fn make_session_row() -> SessionRow {
         teams_json: "[]".to_string(),
         tournament_json: "".to_string(),
         moba_teams_json: "[]".to_string(),
+        schedules_json: "[]".to_string(),
+        scrims_json: "{\"scrims\":[],\"next_id\":1}".to_string(),
     }
 }
 

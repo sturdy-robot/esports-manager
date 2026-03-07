@@ -352,8 +352,8 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
 
 #[tauri::command]
 fn load_save(name: String, state: State<'_, AppState>) -> Result<GameInfo, String> {
-    let (gs, tournament_json, moba_teams_json) =
-        SaveManager::load_save_full(&state.saves_dir, &name)
+    let (gs, tournament_json, moba_teams_json, schedules_json, scrims_json) =
+        SaveManager::load_save_all(&state.saves_dir, &name)
             .map_err(|e| format!("Failed to load save: {e}"))?;
 
     let tournament: Option<Tournament> = if tournament_json.is_empty() {
@@ -369,10 +369,17 @@ fn load_save(name: String, state: State<'_, AppState>) -> Result<GameInfo, Strin
         serde_json::from_str(&moba_teams_json).ok()
     };
 
-    // Initialize team schedules (one per team)
+    // Restore team schedules from save, or initialize fresh if missing/corrupt
     let team_count = gs.teams().len();
-    *state.team_schedules.lock().unwrap() = init_team_schedules(team_count);
-    *state.scrim_manager.lock().unwrap() = ScrimManager::new();
+    let schedules: Vec<TeamWeeklySchedule> = serde_json::from_str(&schedules_json)
+        .ok()
+        .filter(|v: &Vec<TeamWeeklySchedule>| v.len() == team_count)
+        .unwrap_or_else(|| init_team_schedules(team_count));
+    *state.team_schedules.lock().unwrap() = schedules;
+
+    let scrim_mgr: ScrimManager =
+        serde_json::from_str(&scrims_json).unwrap_or_else(|_| ScrimManager::new());
+    *state.scrim_manager.lock().unwrap() = scrim_mgr;
 
     let info = game_info_from_state(&gs, tournament.as_ref().unwrap_or(&empty_tournament()));
     *state.game_state.lock().unwrap() = Some(gs);
@@ -406,12 +413,21 @@ fn save_game(name: String, state: State<'_, AppState>) -> Result<(), String> {
         .map(|m| serde_json::to_string(m).unwrap_or_else(|_| "[]".to_string()))
         .unwrap_or_else(|| "[]".to_string());
 
-    SaveManager::create_save_full(
+    let s_lock = state.team_schedules.lock().unwrap();
+    let schedules_json = serde_json::to_string(&*s_lock).unwrap_or_else(|_| "[]".to_string());
+
+    let sm_lock = state.scrim_manager.lock().unwrap();
+    let scrims_json = serde_json::to_string(&*sm_lock)
+        .unwrap_or_else(|_| "{\"scrims\":[],\"next_id\":1}".to_string());
+
+    SaveManager::create_save_all(
         &state.saves_dir,
         &name,
         gs,
         &tournament_json,
         &moba_teams_json,
+        &schedules_json,
+        &scrims_json,
     )
     .map_err(|e| format!("Failed to save game: {e}"))?;
     Ok(())

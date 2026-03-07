@@ -60,6 +60,27 @@ impl SaveManager {
         tournament_json: &str,
         moba_teams_json: &str,
     ) -> io::Result<()> {
+        Self::create_save_all(
+            dir,
+            name,
+            state,
+            tournament_json,
+            moba_teams_json,
+            "[]",
+            "{\"scrims\":[],\"next_id\":1}",
+        )
+    }
+
+    /// Create (or overwrite) a save file with all ancillary data.
+    pub fn create_save_all(
+        dir: &Path,
+        name: &str,
+        state: &GameState,
+        tournament_json: &str,
+        moba_teams_json: &str,
+        schedules_json: &str,
+        scrims_json: &str,
+    ) -> io::Result<()> {
         fs::create_dir_all(dir)?;
 
         let db_path = dir.join(format!("{name}.db"));
@@ -75,9 +96,17 @@ impl SaveManager {
             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Non-UTF-8 path"))?;
         let db = Database::open(db_path_str)
             .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to open DB: {e}")))?;
-        GameSession::save_full(db.conn(), state, tournament_json, moba_teams_json).map_err(
-            |e| io::Error::new(io::ErrorKind::Other, format!("Failed to save session: {e}")),
-        )?;
+        GameSession::save_all(
+            db.conn(),
+            state,
+            tournament_json,
+            moba_teams_json,
+            schedules_json,
+            scrims_json,
+        )
+        .map_err(|e| {
+            io::Error::new(io::ErrorKind::Other, format!("Failed to save session: {e}"))
+        })?;
 
         // Force WAL checkpoint so all data is in the main file
         let _ = db.conn().execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
@@ -110,6 +139,14 @@ impl SaveManager {
 
     /// Load GameState + tournament JSON + moba teams JSON from a save file.
     pub fn load_save_full(dir: &Path, name: &str) -> io::Result<(GameState, String, String)> {
+        Self::load_save_all(dir, name).map(|(gs, t, m, _, _)| (gs, t, m))
+    }
+
+    /// Load GameState + all ancillary JSON from a save file.
+    pub fn load_save_all(
+        dir: &Path,
+        name: &str,
+    ) -> io::Result<(GameState, String, String, String, String)> {
         let entries = Self::read_index(dir)?;
         let entry = entries.iter().find(|e| e.name == name).ok_or_else(|| {
             io::Error::new(
@@ -138,18 +175,25 @@ impl SaveManager {
         let db = Database::open(db_path_str)
             .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to open DB: {e}")))?;
 
-        let (state, tournament_json, moba_teams_json) = GameSession::load_full(db.conn())
-            .map_err(|e| {
-                io::Error::new(io::ErrorKind::Other, format!("Failed to load session: {e}"))
-            })?
-            .ok_or_else(|| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!("Save '{name}' DB has no session data"),
-                )
-            })?;
+        let (state, tournament_json, moba_teams_json, schedules_json, scrims_json) =
+            GameSession::load_all(db.conn())
+                .map_err(|e| {
+                    io::Error::new(io::ErrorKind::Other, format!("Failed to load session: {e}"))
+                })?
+                .ok_or_else(|| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!("Save '{name}' DB has no session data"),
+                    )
+                })?;
 
-        Ok((state, tournament_json, moba_teams_json))
+        Ok((
+            state,
+            tournament_json,
+            moba_teams_json,
+            schedules_json,
+            scrims_json,
+        ))
     }
 
     /// Delete a save file and remove it from the index.

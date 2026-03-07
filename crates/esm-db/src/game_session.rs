@@ -26,12 +26,31 @@ impl GameSession {
         Self::save_full(conn, state, "", "[]")
     }
 
-    /// Persist `GameState` plus tournament and moba teams JSON blobs.
+    /// Persist `GameState` plus tournament, moba teams, schedules, and scrims JSON blobs.
     pub fn save_full(
         conn: &Connection,
         state: &GameState,
         tournament_json: &str,
         moba_teams_json: &str,
+    ) -> SqlResult<()> {
+        Self::save_all(
+            conn,
+            state,
+            tournament_json,
+            moba_teams_json,
+            "[]",
+            "{\"scrims\":[],\"next_id\":1}",
+        )
+    }
+
+    /// Persist `GameState` plus all ancillary JSON blobs.
+    pub fn save_all(
+        conn: &Connection,
+        state: &GameState,
+        tournament_json: &str,
+        moba_teams_json: &str,
+        schedules_json: &str,
+        scrims_json: &str,
     ) -> SqlResult<()> {
         let teams_json =
             serde_json::to_string(state.teams()).expect("teams serialization cannot fail");
@@ -58,6 +77,8 @@ impl GameSession {
             teams_json,
             tournament_json: tournament_json.to_string(),
             moba_teams_json: moba_teams_json.to_string(),
+            schedules_json: schedules_json.to_string(),
+            scrims_json: scrims_json.to_string(),
         };
 
         SessionRow::upsert(conn, &row)?;
@@ -93,6 +114,14 @@ impl GameSession {
     /// Load `GameState` plus tournament and moba teams JSON blobs.
     /// Returns `(GameState, tournament_json, moba_teams_json)`.
     pub fn load_full(conn: &Connection) -> SqlResult<Option<(GameState, String, String)>> {
+        Ok(Self::load_all(conn)?.map(|(gs, t, m, _, _)| (gs, t, m)))
+    }
+
+    /// Load `GameState` plus all ancillary JSON blobs.
+    /// Returns `(GameState, tournament_json, moba_teams_json, schedules_json, scrims_json)`.
+    pub fn load_all(
+        conn: &Connection,
+    ) -> SqlResult<Option<(GameState, String, String, String, String)>> {
         let session = match SessionRow::get(conn)? {
             Some(s) => s,
             None => return Ok(None),
@@ -100,6 +129,8 @@ impl GameSession {
 
         let tournament_json = session.tournament_json.clone();
         let moba_teams_json = session.moba_teams_json.clone();
+        let schedules_json = session.schedules_json.clone();
+        let scrims_json = session.scrims_json.clone();
 
         // Reconstruct teams from JSON
         let teams: Vec<Team> =
@@ -167,6 +198,12 @@ impl GameSession {
             state.inbox_mut().push(msg);
         }
 
-        Ok(Some((state, tournament_json, moba_teams_json)))
+        Ok(Some((
+            state,
+            tournament_json,
+            moba_teams_json,
+            schedules_json,
+            scrims_json,
+        )))
     }
 }

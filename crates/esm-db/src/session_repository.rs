@@ -29,6 +29,8 @@ pub struct SessionRow {
     pub teams_json: String,
     pub tournament_json: String,
     pub moba_teams_json: String,
+    pub schedules_json: String,
+    pub scrims_json: String,
 }
 
 impl SessionRow {
@@ -56,6 +58,8 @@ impl SessionRow {
             teams_json: row.get("teams_json")?,
             tournament_json: row.get("tournament_json")?,
             moba_teams_json: row.get("moba_teams_json")?,
+            schedules_json: row.get("schedules_json").unwrap_or_default(),
+            scrims_json: row.get("scrims_json").unwrap_or_default(),
         })
     }
 
@@ -67,8 +71,8 @@ impl SessionRow {
               calendar_year, calendar_month, calendar_day, calendar_phase, calendar_days_elapsed,
               player_team_name, player_team_index, manager_nickname, manager_first_name, manager_last_name,
               manager_nationality, manager_archetype, manager_reputation, teams_json,
-              tournament_json, moba_teams_json, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, datetime('now'))",
+              tournament_json, moba_teams_json, schedules_json, scrims_json, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, datetime('now'))",
             params![
                 s.id,
                 s.game_version,
@@ -91,6 +95,8 @@ impl SessionRow {
                 s.teams_json,
                 s.tournament_json,
                 s.moba_teams_json,
+                s.schedules_json,
+                s.scrims_json,
             ],
         )?;
         Ok(())
