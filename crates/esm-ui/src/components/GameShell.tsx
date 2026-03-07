@@ -12,7 +12,6 @@ import { Scouting } from "@/components/Scouting";
 import { Results } from "@/components/Results";
 import { TournamentEnd } from "@/components/TournamentEnd";
 import { MatchLobby } from "@/components/MatchLobby";
-import { DraftUI } from "@/components/DraftUI";
 import { useRoster, useInbox, useStandings, useSchedule, useResolveMessage, usePlayMatchDelegate, useTeamSchedule } from "@/lib/use-api";
 import type { Transaction } from "@/components/Finances";
 import type { StaffMember } from "@/components/Staff";
@@ -289,7 +288,13 @@ export function GameShell({
         );
       }
       case "draft":
-        return <DraftUI />;
+        return (
+          <div className="flex items-center justify-center h-64">
+            <span className="text-lg" style={{ color: "var(--text-muted)" }}>
+              Draft is available during match day — use Play Match.
+            </span>
+          </div>
+        );
       default:
         return (
           <div className="flex items-center justify-center h-64">
