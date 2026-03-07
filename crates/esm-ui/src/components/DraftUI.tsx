@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Lock, CheckCircle, Clock, Shield, Swords } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Lock, CheckCircle, Clock, Shield, Swords, Search, X } from 'lucide-react';
 import type { DraftSessionState, DraftPlayerInfo, ChampionClass, ChampionScaling } from '@/lib/api';
 
 /**
@@ -47,6 +47,8 @@ function scalingColor(scaling: ChampionScaling): string {
 const ROLE_SHORT: Record<string, string> = {
   Top: 'TOP', Jungle: 'JNG', Mid: 'MID', Bot: 'BOT', Support: 'SUP',
 };
+
+const ALL_CLASSES: ChampionClass[] = ['Tank', 'Fighter', 'Assassin', 'Mage', 'Marksman', 'Support'];
 
 function metaTierColor(tier: string): string {
   switch (tier) {
@@ -114,6 +116,23 @@ export function DraftUI({
 
   const isBlueActive = draftState.current_team === 'Blue';
   const isRedActive = draftState.current_team === 'Red';
+
+  // ---- Champion grid filters ----
+  const [searchText, setSearchText] = useState('');
+  const [classFilter, setClassFilter] = useState<ChampionClass | null>(null);
+
+  const filteredChampions = useMemo(() => {
+    return draftState.available_champions.filter((champ) => {
+      if (searchText && !champ.toLowerCase().includes(searchText.toLowerCase())) {
+        return false;
+      }
+      if (classFilter) {
+        const info = draftState.champion_details?.[champ];
+        if (info && info.class !== classFilter) return false;
+      }
+      return true;
+    });
+  }, [draftState.available_champions, draftState.champion_details, searchText, classFilter]);
 
   return (
     <div className="flex w-full flex-1 min-h-0 gap-3">
@@ -183,74 +202,144 @@ export function DraftUI({
           </div>
         </div>
 
-        {/* Champion grid */}
+        {/* Champion grid with filters */}
         {!draftState.is_complete && (
           <div
-            className="flex-1 rounded-xl border p-3 overflow-y-auto"
+            className="flex flex-col flex-1 rounded-xl border overflow-hidden"
             style={{
               backgroundColor: 'var(--bg-surface)',
               borderColor: 'var(--border-subtle)',
             }}
           >
-            <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
-              {draftState.available_champions.map((champ) => {
-                const isHovered = draftState.active_hover === champ;
-                const info = draftState.champion_details?.[champ];
-                return (
-                  <button
-                    key={champ}
-                    aria-label={champ}
-                    data-hovered={isHovered ? 'true' : 'false'}
-                    disabled={!draftState.is_player_turn}
-                    onClick={() => onHover(champ)}
-                    className="flex flex-col items-center justify-center gap-0.5 p-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border"
-                    style={{
-                      backgroundColor: isHovered
-                        ? 'rgba(6,182,212,0.15)'
-                        : 'var(--bg-elevated)',
-                      borderColor: isHovered
-                        ? 'var(--color-accent-cyan)'
-                        : 'var(--border-subtle)',
-                      color: isHovered
-                        ? 'var(--color-accent-cyan)'
-                        : 'var(--text-primary)',
-                      opacity: draftState.is_player_turn ? 1 : 0.5,
-                      cursor: draftState.is_player_turn ? 'pointer' : 'not-allowed',
-                      boxShadow: isHovered ? '0 0 8px rgba(6,182,212,0.25)' : 'none',
-                    }}
-                  >
-                    <span className="font-bold text-[0.65rem] leading-tight truncate w-full text-center">
-                      {champ}
-                    </span>
-                    {info && (
-                      <>
-                        <span
-                          className="text-[0.55rem] font-mono leading-tight"
-                          style={{ color: classColor(info.class) }}
-                        >
-                          {info.class}
-                        </span>
-                        <div className="flex gap-1 items-center">
-                          <span
-                            className="text-[0.5rem] font-mono leading-tight"
-                            style={{ color: scalingColor(info.scaling) }}
-                          >
-                            {info.scaling}
-                          </span>
-                          {info.meta_tier && info.meta_tier !== 'B' && (
-                            <span
-                              className="text-[0.5rem] font-mono font-bold leading-tight"
-                              style={{ color: metaTierColor(info.meta_tier) }}
-                            >
-                              {info.meta_tier}
-                            </span>
-                          )}
-                        </div>
-                      </>
-                    )}
+            {/* Filter bar */}
+            <div
+              className="flex items-center gap-2 px-3 py-2 border-b shrink-0"
+              style={{ borderColor: 'var(--border-subtle)' }}
+            >
+              {/* Search input */}
+              <div
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg border flex-1 max-w-48"
+                style={{
+                  backgroundColor: 'var(--bg-elevated)',
+                  borderColor: searchText ? 'var(--color-accent-cyan)' : 'var(--border-subtle)',
+                }}
+              >
+                <Search size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="bg-transparent text-xs outline-none flex-1 min-w-0"
+                  style={{ color: 'var(--text-primary)' }}
+                />
+                {searchText && (
+                  <button onClick={() => setSearchText('')} className="shrink-0">
+                    <X size={10} style={{ color: 'var(--text-muted)' }} />
                   </button>
-                );
-              })}
+                )}
+              </div>
+
+              {/* Class filter pills */}
+              <div className="flex gap-1">
+                {ALL_CLASSES.map((cls) => {
+                  const isActive = classFilter === cls;
+                  return (
+                    <button
+                      key={cls}
+                      onClick={() => setClassFilter(isActive ? null : cls)}
+                      className="px-2 py-0.5 rounded text-[0.6rem] font-mono font-bold transition-all duration-150 border"
+                      style={{
+                        backgroundColor: isActive ? 'rgba(6,182,212,0.15)' : 'transparent',
+                        borderColor: isActive ? classColor(cls) : 'var(--border-subtle)',
+                        color: isActive ? classColor(cls) : 'var(--text-muted)',
+                      }}
+                    >
+                      {cls}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Result count */}
+              <span
+                className="text-[0.6rem] font-mono ml-auto shrink-0"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                {filteredChampions.length}/{draftState.available_champions.length}
+              </span>
+            </div>
+
+            {/* Grid */}
+            <div className="flex-1 p-3 overflow-y-auto">
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
+                {filteredChampions.map((champ) => {
+                  const isHovered = draftState.active_hover === champ;
+                  const info = draftState.champion_details?.[champ];
+                  return (
+                    <button
+                      key={champ}
+                      aria-label={champ}
+                      data-hovered={isHovered ? 'true' : 'false'}
+                      disabled={!draftState.is_player_turn}
+                      onClick={() => onHover(champ)}
+                      className="flex flex-col items-center justify-center gap-0.5 p-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border"
+                      style={{
+                        backgroundColor: isHovered
+                          ? 'rgba(6,182,212,0.15)'
+                          : 'var(--bg-elevated)',
+                        borderColor: isHovered
+                          ? 'var(--color-accent-cyan)'
+                          : 'var(--border-subtle)',
+                        color: isHovered
+                          ? 'var(--color-accent-cyan)'
+                          : 'var(--text-primary)',
+                        opacity: draftState.is_player_turn ? 1 : 0.5,
+                        cursor: draftState.is_player_turn ? 'pointer' : 'not-allowed',
+                        boxShadow: isHovered ? '0 0 8px rgba(6,182,212,0.25)' : 'none',
+                      }}
+                    >
+                      <span className="font-bold text-[0.65rem] leading-tight truncate w-full text-center">
+                        {champ}
+                      </span>
+                      {info && (
+                        <>
+                          <span
+                            className="text-[0.55rem] font-mono leading-tight"
+                            style={{ color: classColor(info.class) }}
+                          >
+                            {info.class}
+                          </span>
+                          <div className="flex gap-1 items-center">
+                            <span
+                              className="text-[0.5rem] font-mono leading-tight"
+                              style={{ color: scalingColor(info.scaling) }}
+                            >
+                              {info.scaling}
+                            </span>
+                            {info.meta_tier && info.meta_tier !== 'B' && (
+                              <span
+                                className="text-[0.5rem] font-mono font-bold leading-tight"
+                                style={{ color: metaTierColor(info.meta_tier) }}
+                              >
+                                {info.meta_tier}
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
+                {filteredChampions.length === 0 && (
+                  <div
+                    className="col-span-full text-center py-8 text-sm"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    No champions match filters
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
