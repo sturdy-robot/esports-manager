@@ -148,7 +148,6 @@ export function DraftUI({
   // ---- Champion grid filters ----
   const [searchText, setSearchText] = useState('');
   const [classFilter, setClassFilter] = useState<ChampionClass | null>(null);
-  const [tooltipChamp, setTooltipChamp] = useState<string | null>(null);
   const [swapSelected, setSwapSelected] = useState<number | null>(null);
   const [swapping, setSwapping] = useState(false);
 
@@ -405,10 +404,6 @@ export function DraftUI({
 
             {/* Grid */}
             <div className="flex-1 p-3 overflow-y-auto relative">
-              {/* Tooltip */}
-              {tooltipChamp && draftState.champion_details?.[tooltipChamp] && (
-                <ChampionTooltip info={draftState.champion_details[tooltipChamp]} />
-              )}
               <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
                 {filteredChampions.map((champ) => {
                   const isHovered = draftState.active_hover === champ;
@@ -420,8 +415,6 @@ export function DraftUI({
                       data-hovered={isHovered ? 'true' : 'false'}
                       disabled={!draftState.is_player_turn}
                       onClick={() => onHover(champ)}
-                      onMouseEnter={() => setTooltipChamp(champ)}
-                      onMouseLeave={() => setTooltipChamp(null)}
                       className="flex flex-col items-center justify-center gap-0.5 p-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border"
                       style={{
                         backgroundColor: isHovered
@@ -512,12 +505,16 @@ export function DraftUI({
               onClick={onLock}
               className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
               style={{
-                background: 'linear-gradient(135deg, #10B981, #06B6D4)',
-                boxShadow: '0 0 16px rgba(6,182,212,0.3)',
+                background: draftState.current_phase === 'Ban'
+                  ? '#EF4444'
+                  : '#06B6D4',
+                boxShadow: draftState.current_phase === 'Ban'
+                  ? '0 0 16px rgba(239,68,68,0.3)'
+                  : '0 0 16px rgba(6,182,212,0.3)',
               }}
             >
-              <Lock size={18} />
-              Lock In
+              {draftState.current_phase === 'Ban' ? <Shield size={18} /> : <Lock size={18} />}
+              {draftState.current_phase === 'Ban' ? 'Ban' : 'Pick'}
             </button>
           ) : (
             <div
@@ -695,111 +692,3 @@ function TeamPanel({
   );
 }
 
-function ChampionTooltip({ info }: { info: import('@/lib/api').ChampionDraftInfo }) {
-  return (
-    <div
-      className="absolute top-2 right-2 z-10 pointer-events-none rounded-lg border p-3 shadow-lg"
-      style={{
-        backgroundColor: 'var(--bg-elevated)',
-        borderColor: 'var(--border-subtle)',
-        minWidth: '180px',
-      }}
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <span
-          className="text-sm font-bold"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          {info.name}
-        </span>
-        {info.meta_tier && (
-          <span
-            className="text-[0.6rem] font-bold px-1.5 py-0.5 rounded"
-            style={{
-              color: metaTierColor(info.meta_tier),
-              backgroundColor: 'rgba(255,255,255,0.05)',
-              border: `1px solid ${metaTierColor(info.meta_tier)}`,
-            }}
-          >
-            {info.meta_tier}-Tier
-          </span>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center gap-2">
-          <span
-            className="text-[0.6rem] uppercase"
-            style={{ color: 'var(--text-muted)', width: '48px' }}
-          >
-            Class
-          </span>
-          <span
-            className="text-xs font-semibold"
-            style={{ color: classColor(info.class as ChampionClass) }}
-          >
-            {info.class}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span
-            className="text-[0.6rem] uppercase"
-            style={{ color: 'var(--text-muted)', width: '48px' }}
-          >
-            Scale
-          </span>
-          <span
-            className="text-xs font-semibold"
-            style={{ color: scalingColor(info.scaling as ChampionScaling) }}
-          >
-            {info.scaling} Game
-          </span>
-        </div>
-
-        {info.best_mastery && (
-          <div className="flex items-center gap-2">
-            <span
-              className="text-[0.6rem] uppercase"
-              style={{ color: 'var(--text-muted)', width: '48px' }}
-            >
-              Mstr
-            </span>
-            <span
-              className="text-xs font-semibold tabular-nums"
-              style={{ color: masteryColor(info.best_mastery) }}
-            >
-              {info.best_mastery}
-            </span>
-          </div>
-        )}
-
-        {info.tags.length > 0 && (
-          <div className="flex items-start gap-2">
-            <span
-              className="text-[0.6rem] uppercase shrink-0 mt-0.5"
-              style={{ color: 'var(--text-muted)', width: '48px' }}
-            >
-              Tags
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {info.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-[0.55rem] px-1.5 py-0.5 rounded"
-                  style={{
-                    backgroundColor: 'rgba(6,182,212,0.08)',
-                    color: 'var(--color-accent-cyan)',
-                    border: '1px solid rgba(6,182,212,0.2)',
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
