@@ -275,4 +275,22 @@ impl Draft {
     pub fn format(&self) -> DraftFormat {
         self.format
     }
+
+    /// Swap two picks on the blue side. Returns Err if indices are out of bounds.
+    pub fn swap_blue_picks(&mut self, a: usize, b: usize) -> Result<(), DraftError> {
+        if a >= self.blue_picks.len() || b >= self.blue_picks.len() {
+            return Err(DraftError::DraftComplete); // reuse: invalid swap indices
+        }
+        self.blue_picks.swap(a, b);
+        Ok(())
+    }
+
+    /// Swap two picks on the red side. Returns Err if indices are out of bounds.
+    pub fn swap_red_picks(&mut self, a: usize, b: usize) -> Result<(), DraftError> {
+        if a >= self.red_picks.len() || b >= self.red_picks.len() {
+            return Err(DraftError::DraftComplete); // reuse: invalid swap indices
+        }
+        self.red_picks.swap(a, b);
+        Ok(())
+    }
 }

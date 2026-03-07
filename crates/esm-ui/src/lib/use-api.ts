@@ -66,6 +66,7 @@ interface ApiAdapter {
   draftLock(): Promise<DraftSessionState>;
   getDraftState(): Promise<DraftSessionState>;
   autoDraftComplete(): Promise<DraftSessionState>;
+  draftSwapPicks(a: number, b: number): Promise<DraftSessionState>;
   simulateMatch(): Promise<SimulateMatchResult>;
   getSeriesInfo(): Promise<SeriesInfo>;
   setTactics(playstyle: PlaystyleType, focus: FocusType): Promise<TacticsInfo>;
@@ -103,6 +104,7 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     draftLock: api.draftLock,
     getDraftState: api.getDraftState,
     autoDraftComplete: api.autoDraftComplete,
+    draftSwapPicks: api.draftSwapPicks,
     simulateMatch: api.simulateMatch,
     getSeriesInfo: api.getSeriesInfo,
     setTactics: api.setTactics,
@@ -222,6 +224,11 @@ const mockAdapter: ApiAdapter = {
   async autoDraftComplete() {
     await delay(300);
     return { ...MOCK_DRAFT_STATE(), is_complete: true };
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async draftSwapPicks(_a: number, _b: number) {
+    await delay(100);
+    return MOCK_DRAFT_STATE();
   },
   async simulateMatch() {
     await delay(300);
@@ -840,7 +847,21 @@ export function useDraft() {
     }
   }, []);
 
-  return { draftState, startDraft, hover, lock, refresh, autoDraftComplete, loading, error };
+  const swapPicks = useCallback(async (a: number, b: number): Promise<DraftSessionState | null> => {
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      const state = await adapter.draftSwapPicks(a, b);
+      setDraftState(state);
+      return state;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+      return null;
+    }
+  }, []);
+
+  return { draftState, startDraft, hover, lock, refresh, autoDraftComplete, swapPicks, loading, error };
 }
 
 export function useMatchSimulation() {

@@ -289,6 +289,17 @@ impl DraftSession {
         self.draft.is_complete()
     }
 
+    /// Swap two picks on the player's team. Only valid after draft is complete.
+    pub fn swap_picks(&mut self, a: usize, b: usize) -> Result<(), DraftError> {
+        if !self.draft.is_complete() {
+            return Err(DraftError::DraftComplete);
+        }
+        match self.player_team {
+            TeamSide::Blue => self.draft.swap_blue_picks(a, b),
+            TeamSide::Red => self.draft.swap_red_picks(a, b),
+        }
+    }
+
     pub fn draft(&self) -> &Draft {
         &self.draft
     }

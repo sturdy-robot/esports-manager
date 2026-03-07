@@ -215,6 +215,10 @@ export async function autoDraftComplete(): Promise<DraftSessionState> {
   return invoke<DraftSessionState>("auto_draft_complete");
 }
 
+export async function draftSwapPicks(a: number, b: number): Promise<DraftSessionState> {
+  return invoke<DraftSessionState>("draft_swap_picks", { a, b });
+}
+
 // ---------------------------------------------------------------------------
 // Match Simulation API
 // ---------------------------------------------------------------------------

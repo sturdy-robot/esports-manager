@@ -858,6 +858,20 @@ fn auto_draft_complete(state: State<'_, AppState>) -> Result<DraftSessionState, 
     Ok(session.state())
 }
 
+#[tauri::command]
+fn draft_swap_picks(
+    a: usize,
+    b: usize,
+    state: State<'_, AppState>,
+) -> Result<DraftSessionState, String> {
+    let mut lock = state.draft_session.lock().unwrap();
+    let session = lock.as_mut().ok_or("No active draft session")?;
+    session
+        .swap_picks(a, b)
+        .map_err(|e| format!("Swap error: {:?}", e))?;
+    Ok(session.state())
+}
+
 // ---------------------------------------------------------------------------
 // Player Talk commands (between-match motivational system)
 // ---------------------------------------------------------------------------
@@ -1856,6 +1870,7 @@ pub fn run() {
             clear_schedule_slot,
             get_scrims_list,
             auto_draft_complete,
+            draft_swap_picks,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
