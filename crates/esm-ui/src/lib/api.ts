@@ -160,6 +160,7 @@ export interface ChampionDraftInfo {
   scaling: ChampionScaling;
   tags: string[];
   meta_tier: string;
+  best_mastery?: string;
 }
 
 export interface DraftPlayerInfo {

@@ -50,6 +50,32 @@ const ROLE_SHORT: Record<string, string> = {
 
 const ALL_CLASSES: ChampionClass[] = ['Tank', 'Fighter', 'Assassin', 'Mage', 'Marksman', 'Support'];
 
+function masteryColor(mastery: string): string {
+  switch (mastery) {
+    case 'Challenger': return '#F59E0B';
+    case 'Master':     return '#A855F7';
+    case 'Diamond':    return '#06B6D4';
+    case 'Platinum':   return '#22D3EE';
+    case 'Gold':       return '#EAB308';
+    case 'Silver':     return '#94A3B8';
+    case 'Bronze':     return 'var(--text-muted)';
+    default:           return 'var(--text-muted)';
+  }
+}
+
+function masteryShort(mastery: string): string {
+  switch (mastery) {
+    case 'Challenger': return 'CHL';
+    case 'Master':     return 'MAS';
+    case 'Diamond':    return 'DIA';
+    case 'Platinum':   return 'PLT';
+    case 'Gold':       return 'GLD';
+    case 'Silver':     return 'SLV';
+    case 'Bronze':     return 'BRZ';
+    default:           return mastery.slice(0, 3).toUpperCase();
+  }
+}
+
 function metaTierColor(tier: string): string {
   switch (tier) {
     case 'S': return '#F59E0B';
@@ -324,12 +350,20 @@ export function DraftUI({
                             >
                               {info.scaling}
                             </span>
-                            {info.meta_tier && info.meta_tier !== 'B' && (
+                            {info.meta_tier && (
                               <span
                                 className="text-[0.5rem] font-mono font-bold leading-tight"
                                 style={{ color: metaTierColor(info.meta_tier) }}
                               >
                                 {info.meta_tier}
+                              </span>
+                            )}
+                            {info.best_mastery && info.best_mastery !== 'Bronze' && (
+                              <span
+                                className="text-[0.5rem] font-mono leading-tight"
+                                style={{ color: masteryColor(info.best_mastery) }}
+                              >
+                                {masteryShort(info.best_mastery)}
                               </span>
                             )}
                           </div>
@@ -614,6 +648,23 @@ function ChampionTooltip({ info }: { info: import('@/lib/api').ChampionDraftInfo
             {info.scaling} Game
           </span>
         </div>
+
+        {info.best_mastery && (
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[0.6rem] font-mono uppercase"
+              style={{ color: 'var(--text-muted)', width: '48px' }}
+            >
+              Mstr
+            </span>
+            <span
+              className="text-xs font-semibold"
+              style={{ color: masteryColor(info.best_mastery) }}
+            >
+              {info.best_mastery}
+            </span>
+          </div>
+        )}
 
         {info.tags.length > 0 && (
           <div className="flex items-start gap-2">

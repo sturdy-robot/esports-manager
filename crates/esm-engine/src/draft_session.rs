@@ -21,6 +21,10 @@ pub struct ChampionDraftInfo {
     pub scaling: String,
     pub tags: Vec<String>,
     pub meta_tier: String,
+    /// Best mastery level any player on the drafting team has for this champion.
+    /// Format: "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Challenger"
+    #[serde(default)]
+    pub best_mastery: Option<String>,
 }
 
 /// Player metadata exposed to the draft UI.

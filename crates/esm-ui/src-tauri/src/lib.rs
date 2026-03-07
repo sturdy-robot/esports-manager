@@ -368,6 +368,7 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
                     scaling: c.scaling.clone(),
                     tags: c.tags.clone(),
                     meta_tier: "B".to_string(),
+                    best_mastery: None,
                 },
             )
         })
