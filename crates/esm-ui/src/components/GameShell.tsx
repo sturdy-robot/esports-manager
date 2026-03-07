@@ -172,7 +172,12 @@ export function GameShell({
 
   const renderPage = () => {
     switch (activePage) {
-      case "dashboard":
+      case "dashboard": {
+        const nextMatch = schedule.find(
+          (m) => (m.blue_team === teamName || m.red_team === teamName) && m.winner === null
+        );
+        const currentDayIndex = day % 7;
+        const todaySlots = weekSchedule?.days[currentDayIndex]?.slots;
         return (
           <Dashboard
             inboxCount={inboxMapped.length}
@@ -180,9 +185,19 @@ export function GameShell({
             rosterPlayers={rosterPlayers.map((p) => ({
               name: p.nickname,
               role: p.role,
+              stamina: p.stamina,
+              morale: p.morale,
             }))}
+            nextMatch={nextMatch ? {
+              blueTeam: nextMatch.blue_team,
+              redTeam: nextMatch.red_team,
+              day: nextMatch.scheduled_day,
+              playerSide: nextMatch.blue_team === teamName ? 'blue' : 'red',
+            } : undefined}
+            todaySlots={todaySlots}
           />
         );
+      }
       case "roster":
         return <Roster players={rosterPlayers} />;
       case "schedule":

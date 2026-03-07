@@ -1,4 +1,5 @@
-import { Swords, Trophy, TrendingUp, Inbox } from 'lucide-react'
+import { Swords, Trophy, TrendingUp, Inbox, Gamepad2, Moon } from 'lucide-react'
+import type { ScheduleSlotInfo } from '@/lib/api'
 
 interface StatCardProps {
   icon: React.ReactNode
@@ -41,7 +42,11 @@ function StatCard({ icon, label, value, subtext, accentColor }: StatCardProps) {
   )
 }
 
-function UpcomingMatch() {
+interface UpcomingMatchProps {
+  nextMatch?: { blueTeam: string; redTeam: string; day: number; playerSide: 'blue' | 'red' }
+}
+
+function UpcomingMatch({ nextMatch }: UpcomingMatchProps) {
   return (
     <div
       className="p-4 rounded-lg border glow-hover"
@@ -56,109 +61,94 @@ function UpcomingMatch() {
       >
         Next Match
       </div>
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col items-center gap-1">
-          <div
-            className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold accent-gradient"
-            style={{ color: '#fff' }}
-          >
-            T1
+      {!nextMatch ? (
+        <div
+          className="text-sm text-center py-4"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          No upcoming matches
+        </div>
+      ) : (
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col items-center gap-1">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold"
+              style={
+                nextMatch.playerSide === 'blue'
+                  ? { background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))', color: '#fff' }
+                  : { backgroundColor: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }
+              }
+            >
+              {nextMatch.blueTeam.slice(0, 3).toUpperCase()}
+            </div>
+            <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+              {nextMatch.blueTeam}
+            </span>
           </div>
-          <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-            T1
-          </span>
-        </div>
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-lg font-bold" style={{ color: 'var(--text-muted)' }}>
-            VS
-          </span>
-          <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            Tomorrow · 14:00
-          </span>
-        </div>
-        <div className="flex flex-col items-center gap-1">
-          <div
-            className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold"
-            style={{
-              backgroundColor: 'var(--bg-elevated)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-subtle)',
-            }}
-          >
-            GEN
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-lg font-bold" style={{ color: 'var(--text-muted)' }}>
+              VS
+            </span>
+            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              Day {nextMatch.day}
+            </span>
           </div>
-          <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
-            Gen.G
-          </span>
+          <div className="flex flex-col items-center gap-1">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold"
+              style={
+                nextMatch.playerSide === 'red'
+                  ? { background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))', color: '#fff' }
+                  : { backgroundColor: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }
+              }
+            >
+              {nextMatch.redTeam.slice(0, 3).toUpperCase()}
+            </div>
+            <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+              {nextMatch.redTeam}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
 
-function PlayerRow({
-  name,
-  role,
-  kda,
-  winRate,
-}: {
-  name: string
-  role: string
-  kda: string
-  winRate: number
-}) {
+function MiniBar({ value, color }: { value: number; color: string }) {
+  const pct = Math.min(100, Math.max(0, value))
   return (
-    <tr
-      className="transition-colors"
-      style={{ borderBottom: '1px solid var(--border-subtle)' }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = 'var(--bg-elevated)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent'
-      }}
-    >
-      <td className="py-2 px-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-        {name}
-      </td>
-      <td className="py-2 px-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-        <span
-          className="px-2 py-0.5 rounded"
-          style={{
-            backgroundColor: 'rgba(6, 182, 212, 0.1)',
-            color: 'var(--color-accent-cyan)',
-          }}
-        >
-          {role}
-        </span>
-      </td>
-      <td
-        className="py-2 px-3 text-sm tabular-nums text-right"
-        style={{ color: 'var(--text-primary)' }}
+    <div className="flex items-center gap-1.5">
+      <div
+        className="flex-1 h-1.5 rounded-full overflow-hidden"
+        style={{ backgroundColor: 'var(--bg-elevated)' }}
       >
-        {kda}
-      </td>
-      <td className="py-2 px-3 text-sm tabular-nums text-right">
-        <span style={{ color: winRate >= 50 ? 'var(--color-win)' : 'var(--color-loss)' }}>
-          {winRate}%
-        </span>
-      </td>
-    </tr>
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
+      </div>
+      <span
+        className="text-xs font-mono tabular-nums w-6 text-right shrink-0"
+        style={{ color: 'var(--text-secondary)' }}
+      >
+        {value}
+      </span>
+    </div>
   )
 }
 
 interface RosterPreviewProps {
-  players?: { name: string; role: string }[]
+  players?: { name: string; role: string; stamina?: number; morale?: number }[]
 }
 
 function RosterPreview({ players: playersProp }: RosterPreviewProps) {
-  const players = (playersProp ?? [
+  const players = playersProp ?? [
     { name: 'Zeus', role: 'Top' },
     { name: 'Oner', role: 'Jungle' },
     { name: 'Faker', role: 'Mid' },
     { name: 'Gumayusi', role: 'Bot' },
     { name: 'Keria', role: 'Support' },
-  ]).map((p) => ({ ...p, kda: '—', winRate: 0 }))
+  ]
 
   return (
     <div
@@ -190,25 +180,134 @@ function RosterPreview({ players: playersProp }: RosterPreviewProps) {
               Role
             </th>
             <th
-              className="text-right text-xs font-semibold uppercase tracking-wider py-2 px-3"
+              className="text-left text-xs font-semibold uppercase tracking-wider py-2 px-3"
               style={{ color: 'var(--text-muted)' }}
             >
-              KDA
+              Stamina
             </th>
             <th
-              className="text-right text-xs font-semibold uppercase tracking-wider py-2 px-3"
+              className="text-left text-xs font-semibold uppercase tracking-wider py-2 px-3"
               style={{ color: 'var(--text-muted)' }}
             >
-              Win%
+              Morale
             </th>
           </tr>
         </thead>
         <tbody>
-          {players.map((p) => (
-            <PlayerRow key={p.name} {...p} />
-          ))}
+          {players.map((p) => {
+            const moraleColor =
+              (p.morale ?? 50) >= 70
+                ? 'var(--color-win)'
+                : (p.morale ?? 50) >= 40
+                  ? 'var(--color-warning)'
+                  : 'var(--color-loss)'
+            return (
+              <tr
+                key={p.name}
+                className="transition-colors"
+                style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-elevated)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+              >
+                <td className="py-2 px-3 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {p.name}
+                </td>
+                <td className="py-2 px-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  <span
+                    className="px-2 py-0.5 rounded"
+                    style={{
+                      backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                      color: 'var(--color-accent-cyan)',
+                    }}
+                  >
+                    {p.role}
+                  </span>
+                </td>
+                <td className="py-2 px-3" style={{ minWidth: '80px' }}>
+                  <MiniBar value={p.stamina ?? 0} color="var(--color-accent-cyan)" />
+                </td>
+                <td className="py-2 px-3" style={{ minWidth: '80px' }}>
+                  <MiniBar value={p.morale ?? 0} color={moraleColor} />
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+function TodaySchedule({ slots }: { slots?: ScheduleSlotInfo[] }) {
+  const defaultSlots: ScheduleSlotInfo[] = [
+    { time_slot: 'Morning', entry_type: 'free', scrim_id: null, opponent: null, players: null, focus: null },
+    { time_slot: 'Afternoon', entry_type: 'free', scrim_id: null, opponent: null, players: null, focus: null },
+    { time_slot: 'Evening', entry_type: 'free', scrim_id: null, opponent: null, players: null, focus: null },
+  ]
+  const displaySlots = slots ?? defaultSlots
+
+  return (
+    <div
+      className="p-4 rounded-lg border glow-hover"
+      style={{
+        backgroundColor: 'var(--bg-surface)',
+        borderColor: 'var(--border-subtle)',
+      }}
+    >
+      <div
+        className="text-xs font-semibold uppercase tracking-wider mb-3"
+        style={{ color: 'var(--text-muted)' }}
+      >
+        Today's Schedule
+      </div>
+      <div className="flex flex-col gap-2">
+        {displaySlots.map((slot) => {
+          const isFree = slot.entry_type === 'free'
+          const color =
+            slot.entry_type === 'scrim'
+              ? 'var(--color-accent-cyan)'
+              : slot.entry_type === 'solo_queue'
+                ? 'var(--color-accent-violet)'
+                : slot.entry_type === 'rest'
+                  ? 'var(--color-win)'
+                  : 'var(--text-muted)'
+          const icon =
+            slot.entry_type === 'scrim' ? (
+              <Swords size={12} />
+            ) : slot.entry_type === 'solo_queue' ? (
+              <Gamepad2 size={12} />
+            ) : slot.entry_type === 'rest' ? (
+              <Moon size={12} />
+            ) : null
+          const label =
+            slot.entry_type === 'scrim'
+              ? `Scrim vs ${slot.opponent ?? '?'}`
+              : slot.entry_type === 'solo_queue'
+                ? `Solo Queue${slot.focus ? ` · ${slot.focus}` : ''}`
+                : slot.entry_type === 'rest'
+                  ? 'Rest'
+                  : '—'
+
+          return (
+            <div key={slot.time_slot} className="flex items-center gap-3">
+              <span
+                className="text-xs font-medium w-20 shrink-0"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                {slot.time_slot}
+              </span>
+              {isFree ? (
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
+              ) : (
+                <div className="flex items-center gap-1.5" style={{ color }}>
+                  {icon}
+                  <span className="text-xs font-medium">{label}</span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -221,7 +320,9 @@ interface DashboardProps {
   budget?: string
   inboxCount?: number
   urgentCount?: number
-  rosterPlayers?: { name: string; role: string }[]
+  rosterPlayers?: { name: string; role: string; stamina?: number; morale?: number }[]
+  nextMatch?: { blueTeam: string; redTeam: string; day: number; playerSide: 'blue' | 'red' }
+  todaySlots?: ScheduleSlotInfo[]
 }
 
 export function Dashboard({
@@ -232,6 +333,8 @@ export function Dashboard({
   inboxCount = 3,
   urgentCount = 1,
   rosterPlayers,
+  nextMatch,
+  todaySlots,
 }: DashboardProps) {
   return (
     <div className="flex flex-col gap-6 animate-fade-in-up">
@@ -272,8 +375,9 @@ export function Dashboard({
         <div className="col-span-2">
           <RosterPreview players={rosterPlayers} />
         </div>
-        <div>
-          <UpcomingMatch />
+        <div className="flex flex-col gap-4">
+          <UpcomingMatch nextMatch={nextMatch} />
+          <TodaySchedule slots={todaySlots} />
         </div>
       </div>
     </div>

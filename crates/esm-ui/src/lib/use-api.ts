@@ -65,6 +65,7 @@ interface ApiAdapter {
   draftHover(champion: string): Promise<DraftSessionState>;
   draftLock(): Promise<DraftSessionState>;
   getDraftState(): Promise<DraftSessionState>;
+  autoDraftComplete(): Promise<DraftSessionState>;
   simulateMatch(): Promise<SimulateMatchResult>;
   getSeriesInfo(): Promise<SeriesInfo>;
   setTactics(playstyle: PlaystyleType, focus: FocusType): Promise<TacticsInfo>;
@@ -101,6 +102,7 @@ async function tauriAdapter(): Promise<ApiAdapter> {
     draftHover: api.draftHover,
     draftLock: api.draftLock,
     getDraftState: api.getDraftState,
+    autoDraftComplete: api.autoDraftComplete,
     simulateMatch: api.simulateMatch,
     getSeriesInfo: api.getSeriesInfo,
     setTactics: api.setTactics,
@@ -216,6 +218,10 @@ const mockAdapter: ApiAdapter = {
   },
   async getDraftState() {
     return MOCK_DRAFT_STATE();
+  },
+  async autoDraftComplete() {
+    await delay(300);
+    return { ...MOCK_DRAFT_STATE(), is_complete: true };
   },
   async simulateMatch() {
     await delay(300);
@@ -804,7 +810,21 @@ export function useDraft() {
     }
   }, []);
 
-  return { draftState, startDraft, hover, lock, refresh, loading, error };
+  const autoDraftComplete = useCallback(async (): Promise<DraftSessionState | null> => {
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      const state = await adapter.autoDraftComplete();
+      setDraftState(state);
+      return state;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+      return null;
+    }
+  }, []);
+
+  return { draftState, startDraft, hover, lock, refresh, autoDraftComplete, loading, error };
 }
 
 export function useMatchSimulation() {

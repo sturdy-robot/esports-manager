@@ -128,6 +128,26 @@ impl DraftSession {
         count
     }
 
+    /// Force AI to act for the current team regardless of player_team (used in spectate/auto-complete)
+    pub fn force_ai_act(&mut self) -> bool {
+        if self.draft.is_complete() {
+            return false;
+        }
+        let slot = match self.draft.current_slot() {
+            Some(s) => *s,
+            None => return false,
+        };
+        let action = self
+            .ai
+            .decide_action(&self.draft, slot.team, &self.champion_pool);
+        if let Some(a) = action {
+            let _ = self.draft.apply_action(a);
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn is_complete(&self) -> bool {
         self.draft.is_complete()
     }

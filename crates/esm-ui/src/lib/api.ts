@@ -199,6 +199,10 @@ export async function getDraftState(): Promise<DraftSessionState> {
   return invoke<DraftSessionState>("get_draft_state");
 }
 
+export async function autoDraftComplete(): Promise<DraftSessionState> {
+  return invoke<DraftSessionState>("auto_draft_complete");
+}
+
 // ---------------------------------------------------------------------------
 // Match Simulation API
 // ---------------------------------------------------------------------------

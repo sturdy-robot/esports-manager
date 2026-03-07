@@ -740,6 +740,16 @@ fn get_draft_state(state: State<'_, AppState>) -> Result<DraftSessionState, Stri
     Ok(session.state())
 }
 
+#[tauri::command]
+fn auto_draft_complete(state: State<'_, AppState>) -> Result<DraftSessionState, String> {
+    let mut ds = state.draft_session.lock().unwrap();
+    let session = ds.as_mut().ok_or("No active draft session")?;
+    while !session.is_complete() {
+        session.force_ai_act();
+    }
+    Ok(session.state())
+}
+
 // ---------------------------------------------------------------------------
 // Player Talk commands (between-match motivational system)
 // ---------------------------------------------------------------------------
@@ -1737,6 +1747,7 @@ pub fn run() {
             schedule_rest,
             clear_schedule_slot,
             get_scrims_list,
+            auto_draft_complete,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

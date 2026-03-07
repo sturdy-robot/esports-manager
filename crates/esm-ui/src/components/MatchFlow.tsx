@@ -37,7 +37,7 @@ export function MatchFlow({
   onComplete,
 }: MatchFlowProps) {
   const [phase, setPhase] = useState<MatchPhase>(() => initialPhase(mode));
-  const { draftState, startDraft, hover, lock } = useDraft();
+  const { draftState, startDraft, hover, lock, autoDraftComplete } = useDraft();
   const { result: matchResult, simulate } = useMatchSimulation();
   const { tactics, update: updateTactics } = useTactics();
 
@@ -54,8 +54,13 @@ export function MatchFlow({
       format: fearlessBans.length > 0 ? 'fearless' : 'five_ban',
       fearless_bans: fearlessBans,
     });
-    setPhase('draft');
-  }, [startDraft, teamSide, fearlessBans]);
+    if (mode === 'spectate') {
+      await autoDraftComplete();
+      setPhase('tactics');
+    } else {
+      setPhase('draft');
+    }
+  }, [startDraft, autoDraftComplete, mode, teamSide, fearlessBans]);
 
   const handleDraftHover = useCallback(async (champion: string) => {
     await hover(champion);
