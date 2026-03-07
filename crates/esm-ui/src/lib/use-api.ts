@@ -410,7 +410,7 @@ function MOCK_DRAFT_STATE(): DraftSessionState {
     is_complete: false,
     is_player_turn: true,
     available_champions: [...MOCK_CHAMPIONS],
-    champion_details: { ...MOCK_CHAMPION_DETAILS },
+    champion_details: MOCK_CHAMPION_DETAILS,
     timer_seconds: 30,
   };
 }

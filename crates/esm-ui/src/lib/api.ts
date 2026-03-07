@@ -150,10 +150,13 @@ export async function playMatchDelegate(): Promise<GameInfo> {
 export type DraftPhase = "Ban" | "Pick";
 export type DraftTeamSide = "Blue" | "Red";
 
+export type ChampionClass = "Tank" | "Fighter" | "Assassin" | "Mage" | "Marksman" | "Support";
+export type ChampionScaling = "Early" | "Mid" | "Late";
+
 export interface ChampionDraftInfo {
   name: string;
-  class: string;
-  scaling: string;
+  class: ChampionClass;
+  scaling: ChampionScaling;
   tags: string[];
 }
 

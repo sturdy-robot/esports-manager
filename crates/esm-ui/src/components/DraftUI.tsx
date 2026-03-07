@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Lock, CheckCircle, Clock } from 'lucide-react';
-import type { DraftSessionState } from '@/lib/api';
+import type { DraftSessionState, ChampionClass, ChampionScaling } from '@/lib/api';
 
 /**
  * Custom hook: countdown timer that resets when `step` changes.
@@ -26,24 +26,22 @@ function useDraftTimer(totalSeconds: number, step: number, active: boolean) {
   return timeLeft;
 }
 
-function classColor(cls: string): string {
+function classColor(cls: ChampionClass): string {
   switch (cls) {
-    case 'Tank': return '#3B82F6';
-    case 'Fighter': return '#F59E0B';
-    case 'Assassin': return '#EF4444';
-    case 'Mage': return '#8B5CF6';
-    case 'Marksman': return '#06B6D4';
-    case 'Support': return '#22C55E';
-    default: return 'var(--text-muted)';
+    case 'Tank':     return 'var(--color-info)';
+    case 'Fighter':  return 'var(--color-warning)';
+    case 'Assassin': return 'var(--color-loss)';
+    case 'Mage':     return 'var(--color-accent-violet)';
+    case 'Marksman': return 'var(--color-accent-cyan)';
+    case 'Support':  return 'var(--color-win)';
   }
 }
 
-function scalingColor(scaling: string): string {
+function scalingColor(scaling: ChampionScaling): string {
   switch (scaling) {
-    case 'Early': return '#22C55E';
-    case 'Mid': return '#F59E0B';
-    case 'Late': return '#EF4444';
-    default: return 'var(--text-muted)';
+    case 'Early': return 'var(--color-win)';
+    case 'Mid':   return 'var(--color-warning)';
+    case 'Late':  return 'var(--color-loss)';
   }
 }
 
@@ -246,20 +244,20 @@ export function DraftUI({
                 >
                   <span className="font-bold text-xs leading-tight">{champ}</span>
                   {info && (
-                    <span
-                      className="text-[0.6rem] font-mono leading-tight"
-                      style={{ color: classColor(info.class) }}
-                    >
-                      {info.class}
-                    </span>
-                  )}
-                  {info && (
-                    <span
-                      className="text-[0.55rem] font-mono leading-tight"
-                      style={{ color: scalingColor(info.scaling) }}
-                    >
-                      {info.scaling}
-                    </span>
+                    <>
+                      <span
+                        className="text-[0.6rem] font-mono leading-tight"
+                        style={{ color: classColor(info.class) }}
+                      >
+                        {info.class}
+                      </span>
+                      <span
+                        className="text-[0.55rem] font-mono leading-tight"
+                        style={{ color: scalingColor(info.scaling) }}
+                      >
+                        {info.scaling}
+                      </span>
+                    </>
                   )}
                 </button>
               );

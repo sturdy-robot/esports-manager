@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test/render';
 import { DraftUI } from './DraftUI';
-import type { DraftSessionState } from '@/lib/api';
+import type { DraftSessionState, ChampionDraftInfo } from '@/lib/api';
 
 const SAMPLE_CHAMPIONS = [
   'Orianna', 'Azir', 'Ahri', 'Syndra', 'Zed',
@@ -12,7 +12,7 @@ const SAMPLE_CHAMPIONS = [
   'Ezreal', 'Aphelios', 'Thresh', 'Nautilus', 'Lulu',
 ];
 
-const SAMPLE_CHAMPION_DETAILS: Record<string, { name: string; class: string; scaling: string; tags: string[] }> = {
+const SAMPLE_CHAMPION_DETAILS: Record<string, ChampionDraftInfo> = {
   Orianna:  { name: 'Orianna',  class: 'Mage',     scaling: 'Mid',   tags: ['Poke', 'Waveclear'] },
   Azir:     { name: 'Azir',     class: 'Mage',     scaling: 'Late',  tags: ['Poke'] },
   Ahri:     { name: 'Ahri',     class: 'Mage',     scaling: 'Mid',   tags: ['Burst'] },
