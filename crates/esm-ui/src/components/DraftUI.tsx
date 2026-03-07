@@ -111,9 +111,10 @@ export function DraftUI({
   const blueName = draftState.blue_team_name || (playerSide === 'blue' ? teamName : opponentName);
   const redName = draftState.red_team_name || (playerSide === 'red' ? teamName : opponentName);
 
+  const isBan = draftState.current_phase === 'Ban';
   const phaseLabel = draftState.is_complete
     ? 'Draft Complete'
-    : draftState.current_phase === 'Ban'
+    : isBan
       ? 'Ban Phase'
       : 'Pick Phase';
 
@@ -200,7 +201,7 @@ export function DraftUI({
         >
           <div className="text-center">
             <div className="flex items-center justify-center gap-3 mb-1">
-              {draftState.current_phase === 'Ban' ? (
+              {isBan ? (
                 <Shield size={16} style={{ color: '#EF4444' }} />
               ) : (
                 <Swords size={16} style={{ color: 'var(--color-accent-cyan)' }} />
@@ -505,16 +506,12 @@ export function DraftUI({
               onClick={onLock}
               className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
               style={{
-                background: draftState.current_phase === 'Ban'
-                  ? '#EF4444'
-                  : '#06B6D4',
-                boxShadow: draftState.current_phase === 'Ban'
-                  ? '0 0 16px rgba(239,68,68,0.3)'
-                  : '0 0 16px rgba(6,182,212,0.3)',
+                background: isBan ? '#EF4444' : '#06B6D4',
+                boxShadow: isBan ? '0 0 16px rgba(239,68,68,0.3)' : '0 0 16px rgba(6,182,212,0.3)',
               }}
             >
-              {draftState.current_phase === 'Ban' ? <Shield size={18} /> : <Lock size={18} />}
-              {draftState.current_phase === 'Ban' ? 'Ban' : 'Pick'}
+              {isBan ? <Shield size={18} /> : <Lock size={18} />}
+              {isBan ? 'Ban' : 'Pick'}
             </button>
           ) : (
             <div
