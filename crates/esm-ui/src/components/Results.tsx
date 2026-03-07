@@ -66,7 +66,7 @@ export function Results({ results }: ResultsProps) {
                     {monthLabel}
                   </span>
                   <span
-                    className="text-lg font-bold font-mono"
+                    className="text-lg font-bold tabular-nums"
                     style={{ color: "var(--text-primary)" }}
                   >
                     {r.day}
@@ -83,7 +83,7 @@ export function Results({ results }: ResultsProps) {
                   </span>
 
                   <span
-                    className="text-sm font-bold font-mono px-3 py-1 rounded"
+                    className="text-sm font-bold tabular-nums px-3 py-1 rounded"
                     style={{
                       backgroundColor: "var(--bg-elevated)",
                       color: "var(--text-primary)",
@@ -116,7 +116,7 @@ export function Results({ results }: ResultsProps) {
                     {r.playerTeamWon ? "WIN" : "LOSS"}
                   </span>
                   <span
-                    className="px-2 py-0.5 rounded text-xs font-mono"
+                    className="px-2 py-0.5 rounded text-xs tabular-nums"
                     style={{
                       backgroundColor: "var(--bg-elevated)",
                       color: "var(--text-secondary)",

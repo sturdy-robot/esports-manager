@@ -109,7 +109,7 @@ export function Standings({ entries }: StandingsProps) {
                     }}
                   >
                     <td
-                      className="text-center py-3 px-3 text-sm font-bold font-mono"
+                      className="text-center py-3 px-3 text-sm font-bold tabular-nums"
                       style={{
                         color:
                           entry.rank <= 3
@@ -126,13 +126,13 @@ export function Standings({ entries }: StandingsProps) {
                       {entry.teamName}
                     </td>
                     <td
-                      className="text-center py-3 px-3 text-sm font-mono tabular-nums"
+                      className="text-center py-3 px-3 text-sm tabular-nums"
                       style={{ color: "var(--text-primary)" }}
                     >
                       {entry.wins}-{entry.losses}
                     </td>
                     <td
-                      className="text-center py-3 px-3 text-sm font-mono tabular-nums"
+                      className="text-center py-3 px-3 text-sm tabular-nums"
                       style={{ color: diffColor }}
                     >
                       {diffStr}

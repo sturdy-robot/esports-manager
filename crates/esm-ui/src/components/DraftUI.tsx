@@ -30,7 +30,7 @@ function classColor(cls: ChampionClass): string {
     case 'Tank':     return 'var(--color-info)';
     case 'Fighter':  return 'var(--color-warning)';
     case 'Assassin': return 'var(--color-loss)';
-    case 'Mage':     return 'var(--color-accent-violet)';
+    case 'Mage':     return 'var(--color-accent-emerald)';
     case 'Marksman': return 'var(--color-accent-cyan)';
     case 'Support':  return 'var(--color-win)';
   }
@@ -213,7 +213,7 @@ export function DraftUI({
                 {phaseLabel}
               </span>
               <span
-                className="text-xs font-mono"
+                className="text-xs tabular-nums"
                 style={{ color: 'var(--text-muted)' }}
               >
                 {draftState.current_step}/{draftState.total_steps}
@@ -222,7 +222,7 @@ export function DraftUI({
             {!draftState.is_complete && (
               <div className="flex items-center justify-center gap-2">
                 <Clock size={14} style={{ color: timerColor }} />
-                <span className="text-lg font-mono font-bold" style={{ color: timerColor }}>
+                <span className="text-lg tabular-nums font-bold font-display" style={{ color: timerColor }}>
                   {timeLeft}s
                 </span>
                 <div
@@ -238,7 +238,7 @@ export function DraftUI({
             )}
             {draftState.is_complete && (
               <div
-                className="text-xs font-mono mt-1"
+                className="text-xs tabular-nums mt-1"
                 style={{ color: 'var(--text-muted)' }}
               >
                 All picks locked
@@ -293,7 +293,7 @@ export function DraftUI({
                       }}
                     >
                       <div
-                        className="w-10 h-6 rounded text-[0.65rem] font-mono font-bold flex items-center justify-center shrink-0"
+                        className="w-10 h-6 rounded text-[0.65rem] font-semibold flex items-center justify-center shrink-0"
                         style={{ backgroundColor: `${bgTint}0.12)`, color: accent }}
                       >
                         {player ? (ROLE_SHORT[player.role] ?? player.role.slice(0, 3).toUpperCase()) : `P${i + 1}`}
@@ -311,7 +311,7 @@ export function DraftUI({
                           </span>
                           {champInfo && (
                             <span
-                              className="text-[0.6rem] font-mono"
+                              className="text-[0.6rem] text-xs"
                               style={{ color: classColor(champInfo.class as ChampionClass) }}
                             >
                               {champInfo.class}
@@ -327,7 +327,7 @@ export function DraftUI({
                 });
               })()}
               {swapSelected !== null && (
-                <p className="text-xs font-mono text-center animate-pulse mt-1" style={{ color: playerSide === 'blue' ? '#3B82F6' : '#EF4444' }}>
+                <p className="text-xs text-center animate-pulse mt-1" style={{ color: playerSide === 'blue' ? '#3B82F6' : '#EF4444' }}>
                   Select another player to swap with
                 </p>
               )}
@@ -381,7 +381,7 @@ export function DraftUI({
                     <button
                       key={cls}
                       onClick={() => setClassFilter(isActive ? null : cls)}
-                      className="px-2 py-0.5 rounded text-[0.6rem] font-mono font-bold transition-all duration-150 border"
+                      className="px-2 py-0.5 rounded text-[0.6rem] font-semibold transition-all duration-150 border"
                       style={{
                         backgroundColor: isActive ? 'rgba(6,182,212,0.15)' : 'transparent',
                         borderColor: isActive ? classColor(cls) : 'var(--border-subtle)',
@@ -396,7 +396,7 @@ export function DraftUI({
 
               {/* Result count */}
               <span
-                className="text-[0.6rem] font-mono ml-auto shrink-0"
+                className="text-[0.6rem] tabular-nums ml-auto shrink-0"
                 style={{ color: 'var(--text-muted)' }}
               >
                 {filteredChampions.length}/{draftState.available_champions.length}
@@ -444,21 +444,21 @@ export function DraftUI({
                       {info && (
                         <>
                           <span
-                            className="text-[0.55rem] font-mono leading-tight"
+                            className="text-[0.55rem] leading-tight"
                             style={{ color: classColor(info.class) }}
                           >
                             {info.class}
                           </span>
                           <div className="flex gap-1 items-center">
                             <span
-                              className="text-[0.5rem] font-mono leading-tight"
+                              className="text-[0.5rem] leading-tight"
                               style={{ color: scalingColor(info.scaling) }}
                             >
                               {info.scaling}
                             </span>
                             {info.meta_tier && (
                               <span
-                                className="text-[0.5rem] font-mono font-bold leading-tight"
+                                className="text-[0.5rem] font-bold leading-tight"
                                 style={{ color: metaTierColor(info.meta_tier) }}
                               >
                                 {info.meta_tier}
@@ -466,7 +466,7 @@ export function DraftUI({
                             )}
                             {info.best_mastery && info.best_mastery !== 'Bronze' && (
                               <span
-                                className="text-[0.5rem] font-mono leading-tight"
+                                className="text-[0.5rem] leading-tight"
                                 style={{ color: masteryColor(info.best_mastery) }}
                               >
                                 {masteryShort(info.best_mastery)}
@@ -499,7 +499,7 @@ export function DraftUI({
               disabled={swapping}
               className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
               style={{
-                background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+                background: 'linear-gradient(135deg, #10B981, #06B6D4)',
                 boxShadow: '0 0 16px rgba(6,182,212,0.3)',
                 opacity: swapping ? 0.5 : 1,
               }}
@@ -512,7 +512,7 @@ export function DraftUI({
               onClick={onLock}
               className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
               style={{
-                background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+                background: 'linear-gradient(135deg, #10B981, #06B6D4)',
                 boxShadow: '0 0 16px rgba(6,182,212,0.3)',
               }}
             >
@@ -612,7 +612,7 @@ function TeamPanel({
             >
               {/* Role badge */}
               <div
-                className="w-8 h-5 rounded text-[0.6rem] font-mono font-bold flex items-center justify-center shrink-0"
+                className="w-8 h-5 rounded text-[0.6rem] font-semibold flex items-center justify-center shrink-0"
                 style={{
                   backgroundColor: `${bgTint}0.12)`,
                   color: isLocked ? accent : 'var(--text-muted)',
@@ -639,7 +639,7 @@ function TeamPanel({
                     </span>
                     {champInfo && (
                       <span
-                        className="text-[0.5rem] font-mono"
+                        className="text-[0.5rem] text-xs"
                         style={{ color: classColor(champInfo.class as ChampionClass) }}
                       >
                         {champInfo.class}
@@ -677,7 +677,7 @@ function TeamPanel({
             return (
               <div
                 key={i}
-                className="flex-1 h-5 rounded flex items-center justify-center text-[0.5rem] font-mono border"
+                className="flex-1 h-5 rounded flex items-center justify-center text-[0.5rem] border"
                 style={{
                   backgroundColor: champ ? 'rgba(239,68,68,0.1)' : 'var(--bg-elevated)',
                   borderColor: champ ? `${bgTint}0.3)` : 'var(--border-subtle)',
@@ -714,7 +714,7 @@ function ChampionTooltip({ info }: { info: import('@/lib/api').ChampionDraftInfo
         </span>
         {info.meta_tier && (
           <span
-            className="text-[0.6rem] font-mono font-bold px-1.5 py-0.5 rounded"
+            className="text-[0.6rem] font-bold px-1.5 py-0.5 rounded"
             style={{
               color: metaTierColor(info.meta_tier),
               backgroundColor: 'rgba(255,255,255,0.05)',
@@ -729,7 +729,7 @@ function ChampionTooltip({ info }: { info: import('@/lib/api').ChampionDraftInfo
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
           <span
-            className="text-[0.6rem] font-mono uppercase"
+            className="text-[0.6rem] uppercase"
             style={{ color: 'var(--text-muted)', width: '48px' }}
           >
             Class
@@ -744,7 +744,7 @@ function ChampionTooltip({ info }: { info: import('@/lib/api').ChampionDraftInfo
 
         <div className="flex items-center gap-2">
           <span
-            className="text-[0.6rem] font-mono uppercase"
+            className="text-[0.6rem] uppercase"
             style={{ color: 'var(--text-muted)', width: '48px' }}
           >
             Scale
@@ -760,13 +760,13 @@ function ChampionTooltip({ info }: { info: import('@/lib/api').ChampionDraftInfo
         {info.best_mastery && (
           <div className="flex items-center gap-2">
             <span
-              className="text-[0.6rem] font-mono uppercase"
+              className="text-[0.6rem] uppercase"
               style={{ color: 'var(--text-muted)', width: '48px' }}
             >
               Mstr
             </span>
             <span
-              className="text-xs font-semibold"
+              className="text-xs font-semibold tabular-nums"
               style={{ color: masteryColor(info.best_mastery) }}
             >
               {info.best_mastery}
@@ -777,7 +777,7 @@ function ChampionTooltip({ info }: { info: import('@/lib/api').ChampionDraftInfo
         {info.tags.length > 0 && (
           <div className="flex items-start gap-2">
             <span
-              className="text-[0.6rem] font-mono uppercase shrink-0 mt-0.5"
+              className="text-[0.6rem] uppercase shrink-0 mt-0.5"
               style={{ color: 'var(--text-muted)', width: '48px' }}
             >
               Tags
@@ -786,7 +786,7 @@ function ChampionTooltip({ info }: { info: import('@/lib/api').ChampionDraftInfo
               {info.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[0.55rem] font-mono px-1.5 py-0.5 rounded"
+                  className="text-[0.55rem] px-1.5 py-0.5 rounded"
                   style={{
                     backgroundColor: 'rgba(6,182,212,0.08)',
                     color: 'var(--color-accent-cyan)',

@@ -63,10 +63,10 @@ function eventColor(kind: string): string {
   switch (kind) {
     case 'solo_kill': return '#EF4444';
     case 'teamfight': return '#F59E0B';
-    case 'tower': return '#8B5CF6';
+    case 'tower': return '#10B981';
     case 'dragon': return '#06B6D4';
     case 'herald': return '#10B981';
-    case 'baron': return '#A855F7';
+    case 'baron': return '#06B6D4';
     case 'inhibitor': return '#EC4899';
     case 'nexus': return '#FFD700';
     case 'multi_kill': return '#FF6B6B';
@@ -139,7 +139,7 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
       >
         <TeamHeader name={result.blue_team} gold={blueGold} color="#3B82F6" />
         <div className="text-center px-4">
-          <div className="text-lg font-mono font-bold" style={{ color: 'var(--text-primary)' }}>
+          <div className="text-lg tabular-nums font-bold font-display" style={{ color: 'var(--text-primary)' }}>
             {formatMinute(currentMinute)}
           </div>
           {allDone && (
@@ -147,7 +147,7 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
               data-testid="winner-banner"
               className="text-sm font-bold uppercase tracking-wider px-3 py-1 rounded-md"
               style={{
-                background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(139,92,246,0.15))',
+                background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.15))',
                 color: 'var(--color-win)',
                 border: '1px solid rgba(34,197,94,0.3)',
                 boxShadow: '0 0 12px rgba(34,197,94,0.2)',
@@ -194,7 +194,7 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
               </button>
               <button
                 onClick={cycleSpeed}
-                className="px-2.5 py-1 rounded-md border text-xs font-mono font-bold cursor-pointer transition-all duration-150 glow-hover"
+                className="px-2.5 py-1 rounded-md border text-xs tabular-nums font-bold cursor-pointer transition-all duration-150 glow-hover"
                 style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
               >
                 {SPEEDS[speedIdx]}x
@@ -213,7 +213,7 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
               onClick={onComplete}
               className="px-5 py-1.5 rounded-md font-bold text-white text-xs flex items-center gap-1.5 transition-all duration-150"
               style={{
-                background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+                background: 'linear-gradient(135deg, #10B981, #06B6D4)',
                 boxShadow: '0 0 12px rgba(6,182,212,0.3)',
               }}
             >
@@ -287,7 +287,7 @@ function TeamHeader({ name, gold, color }: { name: string; gold: number; color: 
   return (
     <div className="text-center flex-1">
       <div className="text-sm font-bold" style={{ color }}>{name}</div>
-      <div className="text-xl font-mono font-black" style={{ color: 'var(--text-primary)' }}>
+      <div className="text-xl tabular-nums font-black font-display" style={{ color: 'var(--text-primary)' }}>
         {formatGoldFull(gold)}
       </div>
     </div>
@@ -328,27 +328,27 @@ function PlayerRow({ player, position, entry }: { player: PlayerSnapshotInfo; po
     >
       {/* Row 1: role, nickname, champion */}
       <div className="flex items-center gap-1.5">
-        <span className="w-7 font-bold font-mono shrink-0" style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>
+        <span className="w-7 font-bold shrink-0" style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>
           {position}
         </span>
         <span className="font-semibold truncate flex-1" style={{ color: 'var(--text-primary)', fontSize: '0.7rem' }}>
           {entry?.nickname ?? `P${position}`}
         </span>
         {entry?.champion && (
-          <span className="font-mono truncate" style={{ color: 'var(--color-accent-cyan)', fontSize: '0.6rem' }}>
+          <span className="truncate" style={{ color: 'var(--color-accent-cyan)', fontSize: '0.6rem' }}>
             {entry.champion}
           </span>
         )}
       </div>
       {/* Row 2: KDA, CS, gold */}
       <div className="flex items-center gap-1.5 pl-8">
-        <span className="font-mono font-bold" style={{ color: 'var(--text-primary)', fontSize: '0.65rem' }}>
+        <span className="tabular-nums font-bold" style={{ color: 'var(--text-primary)', fontSize: '0.65rem' }}>
           {player.kills}/{player.deaths}/{player.assists}
         </span>
-        <span className="font-mono" style={{ color: 'var(--text-secondary)', fontSize: '0.6rem' }}>
+        <span className="tabular-nums" style={{ color: 'var(--text-secondary)', fontSize: '0.6rem' }}>
           {player.cs}cs
         </span>
-        <span className="font-mono" style={{ color: '#F59E0B', fontSize: '0.6rem' }}>
+        <span className="tabular-nums" style={{ color: '#F59E0B', fontSize: '0.6rem' }}>
           {formatGold(player.gold)}
         </span>
       </div>
@@ -397,13 +397,13 @@ function ObjectiveChip({
       <span style={{ color: 'var(--text-muted)' }}>{icon}</span>
       <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>{label}</span>
       {blue !== undefined && red !== undefined ? (
-        <span className="font-mono font-bold" style={{ color: 'var(--text-primary)' }}>
+        <span className="tabular-nums font-bold" style={{ color: 'var(--text-primary)' }}>
           <span style={{ color: '#3B82F6' }}>{blue}</span>
           {' – '}
           <span style={{ color: '#EF4444' }}>{red}</span>
         </span>
       ) : (
-        <span className="font-mono" style={{ color: 'var(--text-muted)' }}>{status}</span>
+        <span className="tabular-nums" style={{ color: 'var(--text-muted)' }}>{status}</span>
       )}
     </div>
   );
@@ -423,10 +423,10 @@ function DraftBanner({ blueRoster, redRoster }: { blueRoster: MatchRosterEntry[]
             className="text-center px-1.5 py-0.5 rounded"
             style={{ backgroundColor: 'rgba(59,130,246,0.08)' }}
           >
-            <div className="text-[0.55rem] font-mono font-bold" style={{ color: '#3B82F6' }}>
+            <div className="text-[0.55rem] font-bold" style={{ color: '#3B82F6' }}>
               {entry.champion || '—'}
             </div>
-            <div className="text-[0.5rem] font-mono" style={{ color: 'var(--text-muted)' }}>
+            <div className="text-[0.5rem]" style={{ color: 'var(--text-muted)' }}>
               {entry.nickname}
             </div>
           </div>
@@ -449,10 +449,10 @@ function DraftBanner({ blueRoster, redRoster }: { blueRoster: MatchRosterEntry[]
             className="text-center px-1.5 py-0.5 rounded"
             style={{ backgroundColor: 'rgba(239,68,68,0.08)' }}
           >
-            <div className="text-[0.55rem] font-mono font-bold" style={{ color: '#EF4444' }}>
+            <div className="text-[0.55rem] font-bold" style={{ color: '#EF4444' }}>
               {entry.champion || '—'}
             </div>
-            <div className="text-[0.5rem] font-mono" style={{ color: 'var(--text-muted)' }}>
+            <div className="text-[0.5rem]" style={{ color: 'var(--text-muted)' }}>
               {entry.nickname}
             </div>
           </div>
@@ -469,7 +469,7 @@ const PLAYSTYLE_OPTIONS: { value: PlaystyleType; label: string; color: string }[
 ];
 
 const FOCUS_OPTIONS: { value: FocusType; label: string; color: string }[] = [
-  { value: 'teamfight',  label: 'TF',  color: '#8B5CF6' },
+  { value: 'teamfight',  label: 'TF',  color: '#10B981' },
   { value: 'splitpush',  label: 'SP',  color: '#F59E0B' },
   { value: 'objective',  label: 'OBJ', color: '#06B6D4' },
 ];
@@ -478,12 +478,12 @@ function InlineTactics({ tactics, onChange }: { tactics: TacticsInfo; onChange: 
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-1">
-        <span className="text-[0.55rem] font-mono uppercase" style={{ color: 'var(--text-muted)' }}>Style</span>
+        <span className="text-[0.55rem] uppercase" style={{ color: 'var(--text-muted)' }}>Style</span>
         {PLAYSTYLE_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             onClick={() => onChange(opt.value, tactics.focus)}
-            className="px-1.5 py-0.5 rounded text-[0.6rem] font-mono font-bold cursor-pointer border transition-all duration-150"
+            className="px-1.5 py-0.5 rounded text-[0.6rem] font-bold cursor-pointer border transition-all duration-150"
             style={{
               backgroundColor: tactics.playstyle === opt.value ? `${opt.color}20` : 'transparent',
               borderColor: tactics.playstyle === opt.value ? opt.color : 'transparent',
@@ -495,12 +495,12 @@ function InlineTactics({ tactics, onChange }: { tactics: TacticsInfo; onChange: 
         ))}
       </div>
       <div className="flex items-center gap-1">
-        <span className="text-[0.55rem] font-mono uppercase" style={{ color: 'var(--text-muted)' }}>Focus</span>
+        <span className="text-[0.55rem] uppercase" style={{ color: 'var(--text-muted)' }}>Focus</span>
         {FOCUS_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             onClick={() => onChange(tactics.playstyle, opt.value)}
-            className="px-1.5 py-0.5 rounded text-[0.6rem] font-mono font-bold cursor-pointer border transition-all duration-150"
+            className="px-1.5 py-0.5 rounded text-[0.6rem] font-bold cursor-pointer border transition-all duration-150"
             style={{
               backgroundColor: tactics.focus === opt.value ? `${opt.color}20` : 'transparent',
               borderColor: tactics.focus === opt.value ? opt.color : 'transparent',
@@ -528,7 +528,7 @@ function EventRow({ event, isNew }: { event: MatchEventInfo; isNew: boolean }) {
       }}
     >
       <div
-        className="w-10 text-right text-xs font-mono font-bold shrink-0 pt-0.5"
+        className="w-10 text-right text-xs tabular-nums font-bold shrink-0 pt-0.5"
         style={{ color: 'var(--text-muted)' }}
       >
         {formatMinute(event.minute)}

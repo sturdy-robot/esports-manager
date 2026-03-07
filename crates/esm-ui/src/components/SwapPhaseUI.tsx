@@ -11,7 +11,7 @@ function classColor(cls: ChampionClass): string {
     case 'Tank':     return 'var(--color-info)';
     case 'Fighter':  return 'var(--color-warning)';
     case 'Assassin': return 'var(--color-loss)';
-    case 'Mage':     return 'var(--color-accent-violet)';
+    case 'Mage':     return 'var(--color-accent-emerald)';
     case 'Marksman': return 'var(--color-accent-cyan)';
     case 'Support':  return 'var(--color-win)';
   }
@@ -120,7 +120,7 @@ export function SwapPhaseUI({
             >
               {/* Role badge */}
               <div
-                className="w-10 h-6 rounded text-[0.65rem] font-mono font-bold flex items-center justify-center shrink-0"
+                className="w-10 h-6 rounded text-[0.65rem] font-semibold flex items-center justify-center shrink-0"
                 style={{
                   backgroundColor: `${bgTint}0.12)`,
                   color: accent,
@@ -150,7 +150,7 @@ export function SwapPhaseUI({
                   </span>
                   {info && (
                     <span
-                      className="text-[0.6rem] font-mono"
+                      className="text-[0.6rem] text-xs"
                       style={{ color: classColor(info.class as ChampionClass) }}
                     >
                       {info.class}
@@ -173,7 +173,7 @@ export function SwapPhaseUI({
 
       {selected !== null && (
         <p
-          className="text-xs font-mono animate-pulse"
+          className="text-xs animate-pulse"
           style={{ color: accent }}
         >
           Select another player to swap with
@@ -185,7 +185,7 @@ export function SwapPhaseUI({
         disabled={swapping}
         className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
         style={{
-          background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+          background: 'linear-gradient(135deg, #10B981, #06B6D4)',
           boxShadow: '0 0 16px rgba(6,182,212,0.3)',
           opacity: swapping ? 0.5 : 1,
         }}

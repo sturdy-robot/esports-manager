@@ -76,7 +76,7 @@ export function SeriesFlow({
       >
         <div
           className="w-16 h-16 mx-auto mb-4 rounded-full animate-pulse"
-          style={{ background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))' }}
+          style={{ background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-emerald))' }}
         />
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           Loading series...
@@ -156,7 +156,7 @@ function SeriesBanner({ series }: { series: SeriesInfo }) {
         </span>
       </div>
 
-      <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded"
+      <span className="text-xs tabular-nums font-semibold px-2 py-0.5 rounded"
         style={{
           backgroundColor: 'rgba(6,182,212,0.1)',
           color: 'var(--color-accent-cyan)',
@@ -170,7 +170,7 @@ function SeriesBanner({ series }: { series: SeriesInfo }) {
 function ScoreBox({ value, highlight }: { value: number; highlight: boolean }) {
   return (
     <span
-      className="w-7 h-7 flex items-center justify-center rounded font-mono font-black text-sm"
+      className="w-7 h-7 flex items-center justify-center rounded tabular-nums font-black text-sm"
       style={{
         backgroundColor: highlight
           ? 'var(--color-win)'
@@ -223,7 +223,7 @@ function BetweenGamesPanel({
             <div className="text-sm font-bold mb-1" style={{ color: '#3B82F6' }}>
               {series.blue_team}
             </div>
-            <div className="text-3xl font-mono font-black" style={{ color: 'var(--text-primary)' }}>
+            <div className="text-3xl font-display tabular-nums font-black" style={{ color: 'var(--text-primary)' }}>
               {series.blue_wins}
             </div>
           </div>
@@ -232,7 +232,7 @@ function BetweenGamesPanel({
             <div className="text-sm font-bold mb-1" style={{ color: '#EF4444' }}>
               {series.red_team}
             </div>
-            <div className="text-3xl font-mono font-black" style={{ color: 'var(--text-primary)' }}>
+            <div className="text-3xl font-display tabular-nums font-black" style={{ color: 'var(--text-primary)' }}>
               {series.red_wins}
             </div>
           </div>
@@ -269,7 +269,7 @@ function BetweenGamesPanel({
           onClick={() => setStep('talks')}
           className="px-8 py-3 rounded-lg font-bold text-white"
           style={{
-            background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+            background: 'linear-gradient(135deg, #10B981, #06B6D4)',
           }}
         >
           Talk to Players
@@ -319,7 +319,7 @@ function SeriesCompletePanel({
             <div className="text-sm font-bold mb-1" style={{ color: '#3B82F6' }}>
               {series.blue_team}
             </div>
-            <div className="text-3xl font-mono font-black" style={{ color: 'var(--text-primary)' }}>
+            <div className="text-3xl font-display tabular-nums font-black" style={{ color: 'var(--text-primary)' }}>
               {series.blue_wins}
             </div>
           </div>
@@ -328,7 +328,7 @@ function SeriesCompletePanel({
             <div className="text-sm font-bold mb-1" style={{ color: '#EF4444' }}>
               {series.red_team}
             </div>
-            <div className="text-3xl font-mono font-black" style={{ color: 'var(--text-primary)' }}>
+            <div className="text-3xl font-display tabular-nums font-black" style={{ color: 'var(--text-primary)' }}>
               {series.red_wins}
             </div>
           </div>
@@ -338,7 +338,7 @@ function SeriesCompletePanel({
           onClick={onExit}
           className="px-8 py-3 rounded-lg font-bold text-white"
           style={{
-            background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+            background: 'linear-gradient(135deg, #10B981, #06B6D4)',
           }}
         >
           Return to Dashboard

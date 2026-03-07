@@ -173,7 +173,7 @@ export function MatchFlow({
               <div className="text-center">
                 <div
                   className="w-16 h-16 mx-auto mb-4 rounded-full animate-pulse"
-                  style={{ background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))' }}
+                  style={{ background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-emerald))' }}
                 />
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                   Loading draft...
@@ -256,7 +256,7 @@ function PreMatchPanel({
       }}
     >
       <h2
-        className="text-2xl font-bold mb-2"
+        className="text-2xl font-bold mb-2 font-display"
         style={{ color: 'var(--text-primary)' }}
       >
         Pre-Match
@@ -268,7 +268,7 @@ function PreMatchPanel({
         onClick={onProceed}
         className="px-6 py-2.5 rounded-md text-sm font-semibold cursor-pointer border-none transition-all"
         style={{
-          background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))',
+          background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-emerald))',
           color: '#fff',
         }}
       >
@@ -283,10 +283,10 @@ function SimulatingPanel() {
     <div className="text-center">
       <div
         className="w-16 h-16 mx-auto mb-4 rounded-full animate-pulse"
-        style={{ background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))' }}
+        style={{ background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-emerald))' }}
       />
       <h2
-        className="text-xl font-bold mb-2"
+        className="text-xl font-bold mb-2 font-display"
         style={{ color: 'var(--text-primary)' }}
       >
         Simulating...
@@ -316,7 +316,7 @@ function ResultsPanel({
       }}
     >
       <h2
-        className="text-2xl font-bold mb-2"
+        className="text-2xl font-bold mb-2 font-display"
         style={{ color: 'var(--text-primary)' }}
       >
         Match Results
@@ -328,7 +328,7 @@ function ResultsPanel({
         onClick={onExit}
         className="px-6 py-2.5 rounded-md text-sm font-semibold cursor-pointer border-none transition-all"
         style={{
-          background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))',
+          background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-emerald))',
           color: '#fff',
         }}
       >

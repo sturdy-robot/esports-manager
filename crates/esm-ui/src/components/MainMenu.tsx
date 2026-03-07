@@ -82,7 +82,7 @@ export function MainMenu({ onNavigate }: MainMenuProps) {
 
       {/* Logo + Title */}
       <div className="flex flex-col items-center gap-2 mb-12">
-        <h1 className="text-4xl font-bold tracking-tight accent-gradient-text">
+        <h1 className="text-4xl font-bold tracking-tight accent-gradient-text font-display">
           eSports Manager
         </h1>
         <p

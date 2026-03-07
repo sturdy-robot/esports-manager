@@ -36,7 +36,7 @@ function AttributeCell({ value }: { value: number }) {
 
   return (
     <td
-      className="py-3 px-3 text-sm font-mono tabular-nums text-center"
+      className="py-3 px-3 text-sm tabular-nums text-center"
       style={{ color }}
     >
       {value}
@@ -67,7 +67,7 @@ function StatBar({ value, label }: { value: number; label: string }) {
           />
         </div>
         <span
-          className="text-xs font-mono tabular-nums w-6 text-right"
+          className="text-xs tabular-nums w-6 text-right"
           style={{ color: "var(--text-secondary)" }}
         >
           {value}

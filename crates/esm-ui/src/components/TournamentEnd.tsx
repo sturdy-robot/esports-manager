@@ -68,7 +68,7 @@ export function TournamentEnd({ seasonName, standings, teamName, onFinish }: Tou
                                         {s.rank}. {s.team_name}
                                     </span>
                                 </div>
-                                <div className="font-mono text-sm" style={{ color: "var(--text-secondary)" }}>
+                                <div className="tabular-nums text-sm" style={{ color: "var(--text-secondary)" }}>
                                     {s.wins}W - {s.losses}L
                                 </div>
                             </div>

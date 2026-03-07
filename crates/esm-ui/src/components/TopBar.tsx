@@ -50,7 +50,7 @@ export function TopBar({
     >
       {/* Left: title + team badge */}
       <div className="flex items-center gap-3">
-        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="text-xl font-bold font-display" style={{ color: 'var(--text-primary)' }}>
           {title}
         </h1>
         {teamName && (
@@ -81,7 +81,7 @@ export function TopBar({
             className="inline-block w-2 h-2 rounded-full animate-live"
             style={{ backgroundColor: 'var(--color-accent-cyan)' }}
           />
-          <span className="font-mono">
+          <span className="tabular-nums">
             {dayOfWeek}, {monthLabel} {day}, {year}
           </span>
           <span style={{ color: 'var(--text-muted)' }}>·</span>
@@ -145,7 +145,7 @@ export function TopBar({
             style={{
               background: continueDisabled
                 ? 'var(--bg-elevated)'
-                : 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))',
+                : 'linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))',
               color: continueDisabled ? 'var(--text-muted)' : '#fff',
               cursor: continueDisabled ? 'not-allowed' : 'pointer',
             }}

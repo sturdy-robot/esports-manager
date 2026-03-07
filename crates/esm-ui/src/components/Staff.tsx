@@ -85,7 +85,7 @@ export function Staff({ members }: StaffProps) {
                     Skill
                   </span>
                   <span
-                    className="text-lg font-bold font-mono"
+                    className="text-lg font-bold tabular-nums font-display"
                     style={{ color: skillColor }}
                   >
                     {m.skill}

@@ -106,14 +106,14 @@ function SlotCell({
     slot.entry_type === "scrim"
       ? "rgba(6, 182, 212, 0.12)"
       : slot.entry_type === "solo_queue"
-        ? "rgba(139, 92, 246, 0.12)"
+        ? "rgba(16, 185, 129, 0.12)"
         : "rgba(34, 197, 94, 0.12)";
 
   const borderColor =
     slot.entry_type === "scrim"
       ? "var(--color-accent-cyan)"
       : slot.entry_type === "solo_queue"
-        ? "var(--color-accent-violet)"
+        ? "var(--color-accent-emerald)"
         : "var(--color-win)";
 
   const icon =
@@ -182,7 +182,7 @@ function SlotCell({
       )}
       {scrimScore && (
         <span
-          className="text-[10px] font-mono font-bold mt-0.5"
+          className="text-[10px] tabular-nums font-bold mt-0.5"
           style={{
             color: scrimScore.homeWins > scrimScore.awayWins
               ? "var(--color-win)"
@@ -352,7 +352,7 @@ function AddSlotModal({
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor =
-                  "var(--color-accent-violet)";
+                  "var(--color-accent-emerald)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = "var(--border-subtle)";
@@ -360,7 +360,7 @@ function AddSlotModal({
             >
               <Gamepad2
                 size={18}
-                style={{ color: "var(--color-accent-violet)" }}
+                style={{ color: "var(--color-accent-emerald)" }}
               />
               <div className="text-left">
                 <div className="text-sm font-semibold">Solo Queue</div>
@@ -450,7 +450,7 @@ function AddSlotModal({
                     <button
                       key={n}
                       onClick={() => setGameCount(n)}
-                      className="flex-1 py-1.5 rounded text-xs font-mono font-bold cursor-pointer border-none transition-colors"
+                      className="flex-1 py-1.5 rounded text-xs tabular-nums font-bold cursor-pointer border-none transition-colors"
                       style={{
                         backgroundColor:
                           gameCount === n
@@ -481,7 +481,7 @@ function AddSlotModal({
                       style={{
                         backgroundColor:
                           draftRules === r
-                            ? "var(--color-accent-violet)"
+                            ? "var(--color-accent-emerald)"
                             : "var(--bg-elevated)",
                         color:
                           draftRules === r ? "#fff" : "var(--text-secondary)",
@@ -499,7 +499,7 @@ function AddSlotModal({
               className="w-full py-2 rounded-lg text-sm font-bold cursor-pointer border-none transition-colors"
               style={{
                 background:
-                  "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))",
+                  "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))",
                 color: "#fff",
                 opacity: submitting ? 0.6 : 1,
               }}
@@ -526,7 +526,7 @@ function AddSlotModal({
                     className="px-2.5 py-1 rounded text-xs font-semibold cursor-pointer border-none transition-colors"
                     style={{
                       backgroundColor: selectedPlayers.includes(i)
-                        ? "var(--color-accent-violet)"
+                        ? "var(--color-accent-emerald)"
                         : "var(--bg-elevated)",
                       color: selectedPlayers.includes(i)
                         ? "#fff"
@@ -554,7 +554,7 @@ function AddSlotModal({
                     style={{
                       backgroundColor:
                         focus === f
-                          ? "var(--color-accent-violet)"
+                          ? "var(--color-accent-emerald)"
                           : "var(--bg-elevated)",
                       color: focus === f ? "#fff" : "var(--text-secondary)",
                     }}
@@ -570,7 +570,7 @@ function AddSlotModal({
               className="w-full py-2 rounded-lg text-sm font-bold cursor-pointer border-none transition-colors"
               style={{
                 background:
-                  "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))",
+                  "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))",
                 color: "#fff",
                 opacity: submitting || selectedPlayers.length === 0 ? 0.6 : 1,
               }}
@@ -591,7 +591,7 @@ function AddSlotModal({
               className="w-full py-2 rounded-lg text-sm font-bold cursor-pointer border-none transition-colors"
               style={{
                 background:
-                  "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))",
+                  "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))",
                 color: "#fff",
                 opacity: submitting ? 0.6 : 1,
               }}
@@ -692,7 +692,7 @@ export function TeamScheduleView({
           <div className="flex items-center gap-1.5">
             <Swords size={14} style={{ color: "var(--color-accent-cyan)" }} />
             <span
-              className="text-sm font-mono font-bold"
+              className="text-sm tabular-nums font-bold"
               style={{ color: "var(--text-primary)" }}
             >
               {schedule.total_scrims}
@@ -707,7 +707,7 @@ export function TeamScheduleView({
           <div className="flex items-center gap-1.5">
             <Calendar size={14} style={{ color: "var(--text-muted)" }} />
             <span
-              className="text-sm font-mono font-bold"
+              className="text-sm tabular-nums font-bold"
               style={{ color: "var(--text-primary)" }}
             >
               {schedule.occupied_slots}
@@ -805,7 +805,7 @@ export function TeamScheduleView({
         <div className="flex items-center gap-1.5">
           <div
             className="w-3 h-3 rounded-sm"
-            style={{ backgroundColor: "rgba(139, 92, 246, 0.3)" }}
+            style={{ backgroundColor: "rgba(16, 185, 129, 0.3)" }}
           />
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             Solo Queue
@@ -865,7 +865,7 @@ export function TeamScheduleView({
                 <div className="flex items-center gap-2">
                   {s.status === "Completed" && (
                     <span
-                      className="text-xs font-mono font-bold px-2 py-0.5 rounded"
+                      className="text-xs tabular-nums font-bold px-2 py-0.5 rounded"
                       style={{
                         backgroundColor: s.home_wins > s.away_wins
                           ? "rgba(34, 197, 94, 0.15)"
@@ -879,7 +879,7 @@ export function TeamScheduleView({
                     </span>
                   )}
                   <span
-                    className="text-xs font-mono px-2 py-0.5 rounded"
+                    className="text-xs tabular-nums px-2 py-0.5 rounded"
                     style={{
                       backgroundColor:
                         s.status === "Scheduled"

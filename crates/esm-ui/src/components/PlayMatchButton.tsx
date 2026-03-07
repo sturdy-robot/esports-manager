@@ -163,7 +163,7 @@ export function PlayMatchButton({ onConfirm }: PlayMatchButtonProps) {
                 onClick={handleConfirm}
                 className="px-4 py-2 rounded-md text-sm font-semibold cursor-pointer border-none transition-all"
                 style={{
-                  background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))',
+                  background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-emerald))',
                   color: '#fff',
                 }}
               >

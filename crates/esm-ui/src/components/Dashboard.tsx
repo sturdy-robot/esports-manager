@@ -28,7 +28,7 @@ function StatCard({ icon, label, value, subtext, accentColor }: StatCardProps) {
         <span style={{ color: accentColor || 'var(--text-muted)' }}>{icon}</span>
       </div>
       <span
-        className="text-2xl font-bold tracking-tight"
+        className="text-2xl font-bold tracking-tight font-display tabular-nums"
         style={{ color: 'var(--text-primary)' }}
       >
         {value}
@@ -75,7 +75,7 @@ function UpcomingMatch({ nextMatch }: UpcomingMatchProps) {
               className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold"
               style={
                 nextMatch.playerSide === 'blue'
-                  ? { background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))', color: '#fff' }
+                  ? { background: 'linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))', color: '#fff' }
                   : { backgroundColor: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }
               }
             >
@@ -98,7 +98,7 @@ function UpcomingMatch({ nextMatch }: UpcomingMatchProps) {
               className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold"
               style={
                 nextMatch.playerSide === 'red'
-                  ? { background: 'linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))', color: '#fff' }
+                  ? { background: 'linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))', color: '#fff' }
                   : { backgroundColor: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }
               }
             >
@@ -128,7 +128,7 @@ function MiniBar({ value, color }: { value: number; color: string }) {
         />
       </div>
       <span
-        className="text-xs font-mono tabular-nums w-6 text-right shrink-0"
+        className="text-xs tabular-nums w-6 text-right shrink-0"
         style={{ color: 'var(--text-secondary)' }}
       >
         {value}
@@ -267,7 +267,7 @@ function TodaySchedule({ slots }: { slots?: ScheduleSlotInfo[] }) {
             slot.entry_type === 'scrim'
               ? 'var(--color-accent-cyan)'
               : slot.entry_type === 'solo_queue'
-                ? 'var(--color-accent-violet)'
+                ? 'var(--color-accent-emerald)'
                 : slot.entry_type === 'rest'
                   ? 'var(--color-win)'
                   : 'var(--text-muted)'

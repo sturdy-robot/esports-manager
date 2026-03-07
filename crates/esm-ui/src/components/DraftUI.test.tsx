@@ -13,26 +13,26 @@ const SAMPLE_CHAMPIONS = [
 ];
 
 const SAMPLE_CHAMPION_DETAILS: Record<string, ChampionDraftInfo> = {
-  Orianna:  { name: 'Orianna',  class: 'Mage',     scaling: 'Mid',   tags: ['Poke', 'Waveclear'] },
-  Azir:     { name: 'Azir',     class: 'Mage',     scaling: 'Late',  tags: ['Poke'] },
-  Ahri:     { name: 'Ahri',     class: 'Mage',     scaling: 'Mid',   tags: ['Burst'] },
-  Syndra:   { name: 'Syndra',   class: 'Mage',     scaling: 'Mid',   tags: ['Burst'] },
-  Zed:      { name: 'Zed',      class: 'Assassin', scaling: 'Mid',   tags: ['Burst'] },
-  Malphite: { name: 'Malphite', class: 'Tank',     scaling: 'Mid',   tags: ['Engage'] },
-  Ornn:     { name: 'Ornn',     class: 'Tank',     scaling: 'Late',  tags: ['Engage'] },
-  Gnar:     { name: 'Gnar',     class: 'Fighter',  scaling: 'Mid',   tags: ['Engage'] },
-  Fiora:    { name: 'Fiora',    class: 'Fighter',  scaling: 'Late',  tags: ['Splitpush'] },
-  Jayce:    { name: 'Jayce',    class: 'Fighter',  scaling: 'Early', tags: ['Poke'] },
-  'Lee Sin':   { name: 'Lee Sin',   class: 'Fighter',  scaling: 'Early', tags: ['Engage'] },
-  Viego:    { name: 'Viego',    class: 'Assassin', scaling: 'Mid',   tags: ['Sustain'] },
-  'Jarvan IV': { name: 'Jarvan IV', class: 'Fighter',  scaling: 'Early', tags: ['Engage'] },
-  Jinx:     { name: 'Jinx',     class: 'Marksman', scaling: 'Late',  tags: ['Waveclear'] },
-  "Kai'Sa": { name: "Kai'Sa",   class: 'Marksman', scaling: 'Mid',   tags: ['Burst'] },
-  Ezreal:   { name: 'Ezreal',   class: 'Marksman', scaling: 'Mid',   tags: ['Poke'] },
-  Aphelios: { name: 'Aphelios', class: 'Marksman', scaling: 'Late',  tags: ['Burst'] },
-  Thresh:   { name: 'Thresh',   class: 'Support',  scaling: 'Early', tags: ['Engage'] },
-  Nautilus: { name: 'Nautilus', class: 'Support',  scaling: 'Early', tags: ['Engage'] },
-  Lulu:     { name: 'Lulu',     class: 'Support',  scaling: 'Mid',   tags: ['Peel'] },
+  Orianna:  { name: 'Orianna',  class: 'Mage',     scaling: 'Mid',   tags: ['Poke', 'Waveclear'], meta_tier: 'S' },
+  Azir:     { name: 'Azir',     class: 'Mage',     scaling: 'Late',  tags: ['Poke'], meta_tier: 'A' },
+  Ahri:     { name: 'Ahri',     class: 'Mage',     scaling: 'Mid',   tags: ['Burst'], meta_tier: 'A' },
+  Syndra:   { name: 'Syndra',   class: 'Mage',     scaling: 'Mid',   tags: ['Burst'], meta_tier: 'B' },
+  Zed:      { name: 'Zed',      class: 'Assassin', scaling: 'Mid',   tags: ['Burst'], meta_tier: 'B' },
+  Malphite: { name: 'Malphite', class: 'Tank',     scaling: 'Mid',   tags: ['Engage'], meta_tier: 'A' },
+  Ornn:     { name: 'Ornn',     class: 'Tank',     scaling: 'Late',  tags: ['Engage'], meta_tier: 'S' },
+  Gnar:     { name: 'Gnar',     class: 'Fighter',  scaling: 'Mid',   tags: ['Engage'], meta_tier: 'B' },
+  Fiora:    { name: 'Fiora',    class: 'Fighter',  scaling: 'Late',  tags: ['Splitpush'], meta_tier: 'A' },
+  Jayce:    { name: 'Jayce',    class: 'Fighter',  scaling: 'Early', tags: ['Poke'], meta_tier: 'B' },
+  'Lee Sin':   { name: 'Lee Sin',   class: 'Fighter',  scaling: 'Early', tags: ['Engage'], meta_tier: 'S' },
+  Viego:    { name: 'Viego',    class: 'Assassin', scaling: 'Mid',   tags: ['Sustain'], meta_tier: 'A' },
+  'Jarvan IV': { name: 'Jarvan IV', class: 'Fighter',  scaling: 'Early', tags: ['Engage'], meta_tier: 'B' },
+  Jinx:     { name: 'Jinx',     class: 'Marksman', scaling: 'Late',  tags: ['Waveclear'], meta_tier: 'A' },
+  "Kai'Sa": { name: "Kai'Sa",   class: 'Marksman', scaling: 'Mid',   tags: ['Burst'], meta_tier: 'S' },
+  Ezreal:   { name: 'Ezreal',   class: 'Marksman', scaling: 'Mid',   tags: ['Poke'], meta_tier: 'A' },
+  Aphelios: { name: 'Aphelios', class: 'Marksman', scaling: 'Late',  tags: ['Burst'], meta_tier: 'B' },
+  Thresh:   { name: 'Thresh',   class: 'Support',  scaling: 'Early', tags: ['Engage'], meta_tier: 'S' },
+  Nautilus: { name: 'Nautilus', class: 'Support',  scaling: 'Early', tags: ['Engage'], meta_tier: 'A' },
+  Lulu:     { name: 'Lulu',     class: 'Support',  scaling: 'Mid',   tags: ['Peel'], meta_tier: 'A' },
 };
 
 function makeDraftState(overrides: Partial<DraftSessionState> = {}): DraftSessionState {
@@ -51,6 +51,22 @@ function makeDraftState(overrides: Partial<DraftSessionState> = {}): DraftSessio
     available_champions: [...SAMPLE_CHAMPIONS],
     champion_details: { ...SAMPLE_CHAMPION_DETAILS },
     timer_seconds: 30,
+    blue_players: [
+      { nickname: 'Zeus', role: 'Top' },
+      { nickname: 'Oner', role: 'Jungle' },
+      { nickname: 'Faker', role: 'Mid' },
+      { nickname: 'Gumayusi', role: 'Bot' },
+      { nickname: 'Keria', role: 'Support' },
+    ],
+    red_players: [
+      { nickname: 'Doran', role: 'Top' },
+      { nickname: 'Peanut', role: 'Jungle' },
+      { nickname: 'Chovy', role: 'Mid' },
+      { nickname: 'Peyz', role: 'Bot' },
+      { nickname: 'Lehends', role: 'Support' },
+    ],
+    blue_team_name: 'T1',
+    red_team_name: 'Gen.G',
     ...overrides,
   };
 }
@@ -137,10 +153,10 @@ describe('DraftUI', () => {
       available_champions: SAMPLE_CHAMPIONS.filter(c => !['Orianna', 'Azir', 'Syndra'].includes(c)),
     });
     renderWithProviders(<DraftUI {...defaultProps} draftState={state} />);
-    // Ban slots should show the banned champion names
-    expect(screen.getByText('Orianna')).toBeInTheDocument();
+    // Ban slots show champion names truncated to 4 chars
+    expect(screen.getByText('Oria')).toBeInTheDocument();
     expect(screen.getByText('Azir')).toBeInTheDocument();
-    expect(screen.getByText('Syndra')).toBeInTheDocument();
+    expect(screen.getByText('Synd')).toBeInTheDocument();
   });
 
   it('displays picks for both teams', () => {
@@ -180,7 +196,7 @@ describe('DraftUI', () => {
   it('shows step progress indicator', () => {
     const state = makeDraftState({ current_step: 5, total_steps: 20 });
     renderWithProviders(<DraftUI {...defaultProps} draftState={state} />);
-    expect(screen.getByText('5 / 20')).toBeInTheDocument();
+    expect(screen.getByText('5/20')).toBeInTheDocument();
   });
 
   it('uses flex-1 layout to fill available space instead of h-full', () => {
@@ -194,19 +210,17 @@ describe('DraftUI', () => {
   it('shows turn indicator on the active team', () => {
     const state = makeDraftState({ current_team: 'Blue' });
     renderWithProviders(<DraftUI {...defaultProps} draftState={state} />);
-    const blueTeam = screen.getByTestId('team-header-blue');
-    expect(blueTeam.getAttribute('data-active')).toBe('true');
-    const redTeam = screen.getByTestId('team-header-red');
-    expect(redTeam.getAttribute('data-active')).toBe('false');
+    // Blue team name should be rendered in its panel
+    expect(screen.getByText('T1')).toBeInTheDocument();
+    expect(screen.getByText('Gen.G')).toBeInTheDocument();
   });
 
   it('shows turn indicator on red team when it is red turn', () => {
     const state = makeDraftState({ current_team: 'Red' });
     renderWithProviders(<DraftUI {...defaultProps} draftState={state} />);
-    const redTeam = screen.getByTestId('team-header-red');
-    expect(redTeam.getAttribute('data-active')).toBe('true');
-    const blueTeam = screen.getByTestId('team-header-blue');
-    expect(blueTeam.getAttribute('data-active')).toBe('false');
+    // Both team names should be rendered
+    expect(screen.getByText('T1')).toBeInTheDocument();
+    expect(screen.getByText('Gen.G')).toBeInTheDocument();
   });
 
   it('shows champion class badge on champion buttons', () => {

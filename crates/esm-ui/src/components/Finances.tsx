@@ -48,7 +48,7 @@ function SummaryCard({
         <span style={{ color }}>{icon}</span>
       </div>
       <span
-        className="text-2xl font-bold font-mono tracking-tight"
+        className="text-2xl font-bold tabular-nums tracking-tight font-display"
         style={{ color: "var(--text-primary)" }}
       >
         {value}
@@ -165,7 +165,7 @@ export function Finances({ balance, income, expenses, transactions }: FinancesPr
                     }}
                   >
                     <td
-                      className="py-3 px-3 text-xs font-mono"
+                      className="py-3 px-3 text-xs tabular-nums"
                       style={{ color: "var(--text-muted)" }}
                     >
                       {tx.date}
@@ -188,7 +188,7 @@ export function Finances({ balance, income, expenses, transactions }: FinancesPr
                       </span>
                     </td>
                     <td
-                      className="py-3 px-3 text-sm font-mono tabular-nums text-right font-semibold"
+                      className="py-3 px-3 text-sm tabular-nums text-right font-semibold"
                       style={{ color: amountColor }}
                     >
                       {amountStr}

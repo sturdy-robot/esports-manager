@@ -57,7 +57,7 @@ const FOCUSES: OptionDef<FocusType>[] = [
     label: 'Teamfight',
     icon: <Users size={20} />,
     desc: 'Group up and force 5v5 engages.',
-    color: '#8B5CF6',
+    color: '#10B981',
   },
   {
     value: 'splitpush',
@@ -149,7 +149,7 @@ export function TacticsPanel({ tactics, onConfirm, context, compact }: TacticsPa
           onClick={handleConfirm}
           className="w-full py-2 rounded-lg text-xs font-bold text-white cursor-pointer border-none"
           style={{
-            background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+            background: 'linear-gradient(135deg, #10B981, #06B6D4)',
           }}
         >
           Confirm &amp; Continue
@@ -237,7 +237,7 @@ export function TacticsPanel({ tactics, onConfirm, context, compact }: TacticsPa
           onClick={handleConfirm}
           className="px-8 py-3 rounded-lg font-bold text-white cursor-pointer border-none transition-all"
           style={{
-            background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+            background: 'linear-gradient(135deg, #10B981, #06B6D4)',
           }}
         >
           Confirm Tactics &amp; Proceed

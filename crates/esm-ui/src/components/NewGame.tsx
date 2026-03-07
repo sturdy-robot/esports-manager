@@ -232,7 +232,7 @@ export function NewGame({ onBack, onStart }: NewGameProps) {
             className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all"
             style={{
               background: isValid
-                ? "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))"
+                ? "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))"
                 : "var(--bg-elevated)",
               color: isValid ? "#fff" : "var(--text-muted)",
               opacity: isValid ? 1 : 0.6,

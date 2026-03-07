@@ -81,7 +81,7 @@ export function Settings({ onBack }: SettingsProps) {
                 type="text"
                 value={savesFolder}
                 onChange={(e) => setSavesFolder(e.target.value)}
-                className="px-3 py-2 rounded-md text-sm border outline-none transition-colors font-mono"
+                className="px-3 py-2 rounded-md text-sm border outline-none transition-colors"
                 style={{
                   backgroundColor: "var(--bg-elevated)",
                   borderColor: "var(--border-subtle)",

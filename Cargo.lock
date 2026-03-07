@@ -881,6 +881,7 @@ dependencies = [
 name = "esm-engine"
 version = "0.1.0"
 dependencies = [
+ "esm-ai",
  "esm-core",
  "esm-models",
  "serde",

@@ -46,7 +46,7 @@ const TALKS: TalkOption[] = [
     label: 'Strategize',
     icon: <Target size={14} />,
     desc: 'Satisfaction +5, Morale +2',
-    color: '#8B5CF6',
+    color: '#10B981',
   },
   {
     value: 'rest',
@@ -112,7 +112,7 @@ export function PlayerTalksPanel({ onDone }: PlayerTalksPanelProps) {
           onClick={onDone}
           className="px-8 py-2.5 rounded-lg font-bold text-white cursor-pointer border-none"
           style={{
-            background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+            background: 'linear-gradient(135deg, #10B981, #06B6D4)',
           }}
         >
           Continue to Next Game
@@ -172,7 +172,7 @@ function PlayerCard({
       <div className="flex-1 flex gap-3 min-w-0">
         <StatBar label="STA" value={player.stamina} icon={<Zap size={10} />} color="#22C55E" />
         <StatBar label="MOR" value={player.morale} icon={<Heart size={10} />} color="#F59E0B" />
-        <StatBar label="SAT" value={player.satisfaction} icon={<TrendingUp size={10} />} color="#8B5CF6" />
+        <StatBar label="SAT" value={player.satisfaction} icon={<TrendingUp size={10} />} color="#10B981" />
       </div>
 
       {/* Talk buttons */}
@@ -217,7 +217,7 @@ function StatBar({
         <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
           {label}
         </span>
-        <span className="text-[10px] font-mono font-bold ml-auto" style={{ color: 'var(--text-primary)' }}>
+        <span className="text-[10px] tabular-nums font-bold ml-auto" style={{ color: 'var(--text-primary)' }}>
           {value}
         </span>
       </div>

@@ -40,7 +40,7 @@ function AttributeCell({ value }: { value: number }) {
 
   return (
     <td
-      className="py-3 px-3 text-sm font-mono tabular-nums text-center"
+      className="py-3 px-3 text-sm tabular-nums text-center"
       style={{ color }}
     >
       {value}
@@ -134,11 +134,11 @@ export function Scouting({ targets }: ScoutingProps) {
                     <AttributeCell value={t.mechanics} />
                     <AttributeCell value={t.vision} />
                     <AttributeCell value={t.teamfighting} />
-                    <td className="py-3 px-3 text-sm font-mono tabular-nums text-right" style={{ color: "var(--text-primary)" }}>
+                    <td className="py-3 px-3 text-sm tabular-nums text-right" style={{ color: "var(--text-primary)" }}>
                       {formatCurrency(t.estimatedValue)}
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <span className="text-sm font-mono font-semibold" style={{ color: accColor }}>
+                      <span className="text-sm tabular-nums font-semibold" style={{ color: accColor }}>
                         {t.scoutingAccuracy}%
                       </span>
                     </td>

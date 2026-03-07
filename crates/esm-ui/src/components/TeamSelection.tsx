@@ -102,7 +102,7 @@ export function TeamSelection({ teams, onSelect, onBack }: TeamSelectionProps) {
                       className="flex items-center justify-center w-12 h-12 rounded-full text-sm font-bold shrink-0"
                       style={{
                         background: isSelected
-                          ? "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))"
+                          ? "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))"
                           : "var(--bg-elevated)",
                         color: isSelected ? "#fff" : "var(--text-primary)",
                         border: isSelected
@@ -135,7 +135,7 @@ export function TeamSelection({ teams, onSelect, onBack }: TeamSelectionProps) {
                         >
                           <Star size={12} />
                           <span
-                            className="font-mono font-semibold"
+                            className="tabular-nums font-semibold"
                             style={{ color: "var(--text-primary)" }}
                           >
                             {team.reputation}
@@ -158,7 +158,7 @@ export function TeamSelection({ teams, onSelect, onBack }: TeamSelectionProps) {
               style={{
                 background:
                   selectedIndex !== null
-                    ? "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))"
+                    ? "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))"
                     : "var(--bg-elevated)",
                 color: selectedIndex !== null ? "#fff" : "var(--text-muted)",
                 opacity: selectedIndex !== null ? 1 : 0.6,

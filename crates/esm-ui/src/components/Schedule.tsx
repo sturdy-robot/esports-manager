@@ -64,7 +64,7 @@ export function Schedule({ matches }: ScheduleProps) {
                     {monthLabel}
                   </span>
                   <span
-                    className="text-lg font-bold font-mono"
+                    className="text-lg font-bold tabular-nums"
                     style={{ color: "var(--text-primary)" }}
                   >
                     {match.day}
@@ -82,7 +82,7 @@ export function Schedule({ matches }: ScheduleProps) {
 
                   {completed && match.result ? (
                     <span
-                      className="text-sm font-bold font-mono px-3 py-1 rounded"
+                      className="text-sm font-bold tabular-nums px-3 py-1 rounded"
                       style={{
                         backgroundColor: "var(--bg-elevated)",
                         color: "var(--text-primary)",
@@ -95,7 +95,7 @@ export function Schedule({ matches }: ScheduleProps) {
                       className="text-sm font-bold px-3 py-1 rounded"
                       style={{
                         background:
-                          "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))",
+                          "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))",
                         color: "#fff",
                       }}
                     >
@@ -114,7 +114,7 @@ export function Schedule({ matches }: ScheduleProps) {
                 {/* Format badge */}
                 <div className="w-16 shrink-0 flex justify-end">
                   <span
-                    className="px-2 py-0.5 rounded text-xs font-mono"
+                    className="px-2 py-0.5 rounded text-xs tabular-nums"
                     style={{
                       backgroundColor: "var(--bg-elevated)",
                       color: "var(--text-secondary)",

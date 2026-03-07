@@ -1,18 +1,19 @@
 # eSports Manager — Design Language
 
-## Identity: "Broadcast Arena"
+## Identity: "Esports Editorial"
 
-A data-rich, professional esports broadcast aesthetic with high-energy accent treatments.
-The UI feels like a production studio command center — dense, analytical, authoritative —
-but interactive elements and key moments carry the electric energy of a live arena.
+A premium sports-magazine aesthetic applied to esports management. Clean, confident,
+typographically rich. The personality comes from the contrast between a distinctive
+geometric display face and refined body text — like The Athletic meets competitive gaming.
+Data-dense screens feel curated, not cluttered; key moments carry editorial punch.
 
 ---
 
 ## Core Principles
 
 1. **Information density first** — multiple data streams visible simultaneously; no wasted space
-2. **Clarity through hierarchy** — typographic scale and spacing do the heavy lifting, not decoration
-3. **Energy on interaction** — static UI is calm and professional; hover/active/live states bring the arena glow
+2. **Typographic contrast drives hierarchy** — the interplay between display and body typefaces creates visual rhythm without decoration
+3. **Energy on interaction** — static UI is calm and editorial; hover/active/live states bring competitive intensity
 4. **Light and dark as equals** — both modes are first-class; neither is an afterthought
 
 ---
@@ -48,13 +49,14 @@ but interactive elements and key moments carry the electric energy of a live are
 ### Accent — Gradient System
 
 The signature visual element. Used on primary CTAs, active navigation items,
-live indicators, and key stat highlights.
+live indicators, and key stat highlights. The gradient runs from emerald into the
+project's trademark cyan — fresh, competitive, and instantly recognizable.
 
 | Token                | Value                               | Usage                                |
 |----------------------|-------------------------------------|--------------------------------------|
-| `--accent-gradient`  | `linear-gradient(135deg, #06B6D4, #8B5CF6)` | Primary buttons, active tab underlines, hero highlights |
-| `--accent-cyan`      | `#06B6D4`                           | Standalone accent (links, icons)     |
-| `--accent-violet`    | `#8B5CF6`                           | Secondary standalone accent          |
+| `--accent-gradient`  | `linear-gradient(135deg, #10B981, #06B6D4)` | Primary buttons, active tab underlines, hero highlights |
+| `--accent-emerald`   | `#10B981`                           | Secondary standalone accent          |
+| `--accent-cyan`      | `#06B6D4`                           | Primary standalone accent (links, icons, logo) |
 | `--accent-glow`      | `0 0 20px rgba(6, 182, 212, 0.3)`  | Box-shadow on hover/active states    |
 
 ### Semantic Colors
@@ -71,21 +73,22 @@ live indicators, and key stat highlights.
 ## Typography
 
 **Font stack:**
-- **Headings:** `Inter` (700 weight) — clean, professional sans-serif
-- **Body:** `Inter` (400/500 weight)
-- **Tabular numbers:** `JetBrains Mono` — used sparingly in table cells only (stat columns, standings). NOT for KPI display values, headings, or labels. Use `tabular-nums` font-feature on Inter for numeric alignment elsewhere.
+- **Display / Headings:** `Space Grotesk` (600/700) — geometric sans with distinctive details (asymmetric `a`, signature `g`). Gives the UI an immediately recognizable voice.
+- **Body / Data:** `DM Sans` (400/500) — modern geometric sans with a wide x-height, clean at small sizes. Excellent built-in tabular figures.
+- **Numbers:** No monospace font. All numeric data uses `DM Sans` with `font-variant-numeric: tabular-nums` for column alignment. This keeps numbers visually unified with surrounding text.
 
 ### Scale
 
-| Level     | Size   | Weight | Line Height | Usage                         |
-|-----------|--------|--------|-------------|-------------------------------|
-| `display` | 32px   | 700    | 1.2         | Page titles (Dashboard, Draft)|
-| `h1`      | 24px   | 700    | 1.3         | Section headings              |
-| `h2`      | 20px   | 600    | 1.3         | Card titles                   |
-| `h3`      | 16px   | 600    | 1.4         | Subsection headings           |
-| `body`    | 16px   | 400    | 1.5         | Default text (base size)      |
-| `small`   | 14px   | 400    | 1.5         | Labels, captions, timestamps  |
-| `caption` | 12px   | 400    | 1.4         | Fine print, badges            |
+| Level     | Size   | Font          | Weight | Line Height | Usage                         |
+|-----------|--------|---------------|--------|-------------|-------------------------------|
+| `display` | 32px   | Space Grotesk | 700    | 1.2         | Page titles (Dashboard, Draft)|
+| `h1`      | 24px   | Space Grotesk | 700    | 1.3         | Section headings              |
+| `h2`      | 20px   | Space Grotesk | 600    | 1.3         | Card titles                   |
+| `h3`      | 16px   | Space Grotesk | 600    | 1.4         | Subsection headings           |
+| `body`    | 16px   | DM Sans       | 400    | 1.5         | Default text (base size)      |
+| `small`   | 14px   | DM Sans       | 400    | 1.5         | Labels, captions, timestamps  |
+| `caption` | 12px   | DM Sans       | 400    | 1.4         | Fine print, badges            |
+| `stat`    | 28px   | Space Grotesk | 700    | 1.1         | KPI callout values (big bold numbers) |
 
 ---
 
@@ -167,14 +170,14 @@ glowing borders, gradient reveals, smooth transitions.
 - 4px height, `--r-full` radius
 - Track: `--border-subtle` background
 - Fill: `--accent-gradient`
-- Numeric value in `mono` font to the right, right-aligned
+- Numeric value in `DM Sans` tabular-nums to the right, right-aligned
 
 ### Tables
 
 - No outer border; thin `--border-subtle` row dividers
 - Header row: `--text-secondary`, `small` size, uppercase tracking
 - Alternating row backgrounds disabled — use hover highlight instead
-- Numeric columns: `mono` font, right-aligned
+- Numeric columns: `DM Sans` tabular-nums, right-aligned
 - Sortable columns: chevron icon, active sort gets `--accent-cyan` color
 
 ### Buttons
@@ -244,7 +247,7 @@ glowing borders, gradient reveals, smooth transitions.
 - **CSS framework:** TailwindCSS v4, extended with design tokens as CSS custom properties
 - **Component library:** shadcn/ui (customized to match design language)
 - **Icons:** Lucide React
-- **Fonts:** Inter + JetBrains Mono, bundled locally via `@fontsource` (no network dependency)
+- **Fonts:** Space Grotesk + DM Sans, bundled locally via `@fontsource` (no network dependency)
 - **Theme switching:** CSS custom properties toggled via `data-theme="dark|light"` on `<html>`
 - **Animations:** Tailwind `animate-*` utilities + custom keyframes for glow/pulse effects
 - **Runtime:** Offline desktop app via Tauri — no external network dependencies for UI assets

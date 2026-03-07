@@ -107,7 +107,7 @@ export function LoadGame({
                     {save.name}
                   </span>
                   <span
-                    className="text-xs font-mono"
+                    className="text-xs tabular-nums"
                     style={{ color: "var(--text-muted)" }}
                   >
                     {save.checksum.slice(0, 12)}
@@ -142,7 +142,7 @@ export function LoadGame({
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all"
                     style={{
                       background:
-                        "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet))",
+                        "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))",
                       color: "#fff",
                     }}
                   >
