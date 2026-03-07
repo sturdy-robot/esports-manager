@@ -189,7 +189,7 @@ fn teamfight_causes_kills_and_deaths() {
 
 #[test]
 fn tower_siege_enabled_when_towers_standing() {
-    let s = make_state();
+    let s = make_state_at(5);
     assert!(TowerSiege.is_enabled(&s));
 }
 
@@ -382,7 +382,7 @@ fn inhib_siege_disabled_when_no_inhibitors_vulnerable() {
 
 #[test]
 fn inhib_siege_enabled_when_inhibitor_vulnerable() {
-    let mut s = make_state();
+    let mut s = make_state_at(15);
     // Destroy all towers in top lane on blue side to make inhib vulnerable
     s.map.destroy_tower(
         TeamSide::Blue,
@@ -414,7 +414,7 @@ fn nexus_siege_disabled_when_all_inhibitors_standing() {
 
 #[test]
 fn nexus_siege_enabled_when_inhibitor_down() {
-    let mut s = make_state();
+    let mut s = make_state_at(20);
     // Open a path to nexus on blue side
     s.map.destroy_tower(
         TeamSide::Blue,

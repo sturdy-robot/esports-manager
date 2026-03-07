@@ -276,14 +276,15 @@ impl SimEvent for TowerSiege {
     }
 
     fn is_enabled(&self, state: &MatchGameState) -> bool {
-        // At least one side must have a vulnerable tower to siege
-        state.next_vulnerable_tower(TeamSide::Blue).is_some()
-            || state.next_vulnerable_tower(TeamSide::Red).is_some()
+        // Towers cannot fall before minute 5 (laning phase)
+        state.minute >= 5
+            && (state.next_vulnerable_tower(TeamSide::Blue).is_some()
+                || state.next_vulnerable_tower(TeamSide::Red).is_some())
     }
 
     fn weight(&self, state: &MatchGameState) -> f64 {
         match state.phase() {
-            MobaMatchPhase::Early => 12.0,
+            MobaMatchPhase::Early => 4.0,
             MobaMatchPhase::Mid => 20.0,
             MobaMatchPhase::Late => 15.0,
         }
@@ -485,8 +486,10 @@ impl SimEvent for InhibSiege {
     }
 
     fn is_enabled(&self, state: &MatchGameState) -> bool {
-        state.vulnerable_inhibitor_lane(TeamSide::Blue).is_some()
-            || state.vulnerable_inhibitor_lane(TeamSide::Red).is_some()
+        // Inhibitors cannot fall before minute 15 (mid game at earliest)
+        state.minute >= 15
+            && (state.vulnerable_inhibitor_lane(TeamSide::Blue).is_some()
+                || state.vulnerable_inhibitor_lane(TeamSide::Red).is_some())
     }
 
     fn weight(&self, state: &MatchGameState) -> f64 {
@@ -549,8 +552,10 @@ impl SimEvent for NexusSiege {
     }
 
     fn is_enabled(&self, state: &MatchGameState) -> bool {
-        state.map.is_nexus_vulnerable(TeamSide::Blue)
-            || state.map.is_nexus_vulnerable(TeamSide::Red)
+        // Nexus siege cannot happen before minute 20
+        state.minute >= 20
+            && (state.map.is_nexus_vulnerable(TeamSide::Blue)
+                || state.map.is_nexus_vulnerable(TeamSide::Red))
     }
 
     fn weight(&self, state: &MatchGameState) -> f64 {
