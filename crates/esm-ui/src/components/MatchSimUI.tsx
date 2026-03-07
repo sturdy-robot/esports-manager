@@ -201,6 +201,11 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
         <TeamHeader name={result.red_team} gold={redGold} color="#EF4444" />
       </div>
 
+      {/* Draft banner */}
+      {(result.blue_roster.length > 0 || result.red_roster.length > 0) && (
+        <DraftBanner blueRoster={result.blue_roster} redRoster={result.red_roster} />
+      )}
+
       {/* Gold bar */}
       <div className="h-1.5 rounded-full overflow-hidden shrink-0" style={{ backgroundColor: 'var(--bg-elevated)' }}>
         <div
@@ -452,6 +457,59 @@ function ObjectiveChip({
       ) : (
         <span className="font-mono" style={{ color: 'var(--text-muted)' }}>{status}</span>
       )}
+    </div>
+  );
+}
+
+function DraftBanner({ blueRoster, redRoster }: { blueRoster: MatchRosterEntry[]; redRoster: MatchRosterEntry[] }) {
+  return (
+    <div
+      className="flex items-center gap-2 px-3 py-1.5 rounded-lg border shrink-0"
+      style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
+    >
+      {/* Blue picks */}
+      <div className="flex gap-1.5 flex-1 justify-end">
+        {blueRoster.map((entry, i) => (
+          <div
+            key={i}
+            className="text-center px-1.5 py-0.5 rounded"
+            style={{ backgroundColor: 'rgba(59,130,246,0.08)' }}
+          >
+            <div className="text-[0.55rem] font-mono font-bold" style={{ color: '#3B82F6' }}>
+              {entry.champion || '—'}
+            </div>
+            <div className="text-[0.5rem] font-mono" style={{ color: 'var(--text-muted)' }}>
+              {entry.nickname}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* VS */}
+      <span
+        className="text-[0.6rem] font-bold uppercase tracking-widest shrink-0 px-2"
+        style={{ color: 'var(--text-muted)' }}
+      >
+        vs
+      </span>
+
+      {/* Red picks */}
+      <div className="flex gap-1.5 flex-1 justify-start">
+        {redRoster.map((entry, i) => (
+          <div
+            key={i}
+            className="text-center px-1.5 py-0.5 rounded"
+            style={{ backgroundColor: 'rgba(239,68,68,0.08)' }}
+          >
+            <div className="text-[0.55rem] font-mono font-bold" style={{ color: '#EF4444' }}>
+              {entry.champion || '—'}
+            </div>
+            <div className="text-[0.5rem] font-mono" style={{ color: 'var(--text-muted)' }}>
+              {entry.nickname}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
