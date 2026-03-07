@@ -11,6 +11,7 @@ pub enum ScheduleError {
     SlotOccupied,
     MaxScrimsPerDay,
     SameDayScheduling,
+    PastDate,
     PlayerSoloQueueLimit,
 }
 
@@ -52,12 +53,11 @@ impl ScheduleValidator {
 
     /// Ensure the scheduled day is strictly in the future relative to the
     /// current day. `scheduled_day` and `current_day` are both `days_elapsed`.
-    pub fn check_not_same_day(
-        scheduled_day: u32,
-        current_day: u32,
-    ) -> Result<(), ScheduleError> {
+    pub fn check_not_same_day(scheduled_day: u32, current_day: u32) -> Result<(), ScheduleError> {
         if scheduled_day > current_day {
             Ok(())
+        } else if scheduled_day < current_day {
+            Err(ScheduleError::PastDate)
         } else {
             Err(ScheduleError::SameDayScheduling)
         }

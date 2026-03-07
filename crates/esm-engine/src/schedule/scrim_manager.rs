@@ -12,6 +12,7 @@ use super::{ScheduleEntry, ScrimId, TeamWeeklySchedule};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScrimScheduleError {
     SameDayScheduling,
+    PastDate,
     HomeSlotOccupied,
     AwaySlotOccupied,
     MaxScrimsPerDay,
@@ -26,6 +27,7 @@ impl From<ScheduleError> for ScrimScheduleError {
             ScheduleError::SlotOccupied => ScrimScheduleError::HomeSlotOccupied,
             ScheduleError::MaxScrimsPerDay => ScrimScheduleError::MaxScrimsPerDay,
             ScheduleError::SameDayScheduling => ScrimScheduleError::SameDayScheduling,
+            ScheduleError::PastDate => ScrimScheduleError::PastDate,
             ScheduleError::PlayerSoloQueueLimit => ScrimScheduleError::HomeSlotOccupied,
         }
     }
@@ -90,8 +92,7 @@ impl ScrimManager {
         let day_index = scheduled_day as usize % 7;
 
         // Validate: must be in the future
-        ScheduleValidator::check_not_same_day(scheduled_day, current_day)
-            .map_err(|_| ScrimScheduleError::SameDayScheduling)?;
+        ScheduleValidator::check_not_same_day(scheduled_day, current_day)?;
 
         // Validate: home team slot is free
         ScheduleValidator::check_slot_free(&schedules[home_index], day_index, time_slot)

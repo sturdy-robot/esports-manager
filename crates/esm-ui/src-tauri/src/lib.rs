@@ -1376,7 +1376,26 @@ fn schedule_scrim(
             draft_rules,
             current_day,
         )
-        .map_err(|e| format!("Schedule error: {:?}", e))?;
+        .map_err(|e| {
+            use esm_engine::schedule::scrim_manager::ScrimScheduleError;
+            match e {
+                ScrimScheduleError::PastDate => "Cannot schedule a scrim in the past".to_string(),
+                ScrimScheduleError::SameDayScheduling => {
+                    "Cannot schedule a scrim for today — must be at least 1 day in advance"
+                        .to_string()
+                }
+                ScrimScheduleError::HomeSlotOccupied => {
+                    "That time slot is already occupied on your schedule".to_string()
+                }
+                ScrimScheduleError::AwaySlotOccupied => {
+                    "The opponent's schedule is full for that time slot".to_string()
+                }
+                ScrimScheduleError::MaxScrimsPerDay => {
+                    "Maximum scrims per day reached (limit: 3)".to_string()
+                }
+                _ => format!("Schedule error: {:?}", e),
+            }
+        })?;
 
     let scrim = scrim_mgr.scrim_by_id(scrim_id).unwrap();
     Ok(ScrimInfo {
