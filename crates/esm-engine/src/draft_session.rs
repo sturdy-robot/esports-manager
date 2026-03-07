@@ -13,6 +13,23 @@ use esm_models::champion::MasteryLevel;
 // DraftSession — orchestrates a draft with AI opponent support
 // ---------------------------------------------------------------------------
 
+/// Champion metadata exposed to the draft UI.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChampionDraftInfo {
+    pub name: String,
+    pub class: String,
+    pub scaling: String,
+    pub tags: Vec<String>,
+    pub meta_tier: String,
+}
+
+/// Player metadata exposed to the draft UI.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DraftPlayerInfo {
+    pub nickname: String,
+    pub role: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DraftSessionState {
     pub current_step: usize,
@@ -28,6 +45,11 @@ pub struct DraftSessionState {
     pub is_player_turn: bool,
     pub available_champions: Vec<String>,
     pub timer_seconds: u32,
+    pub champion_details: HashMap<String, ChampionDraftInfo>,
+    pub blue_players: Vec<DraftPlayerInfo>,
+    pub red_players: Vec<DraftPlayerInfo>,
+    pub blue_team_name: String,
+    pub red_team_name: String,
 }
 
 const DEFAULT_TIMER_SECONDS: u32 = 30;
@@ -39,6 +61,11 @@ pub struct DraftSession {
     champion_evals: Vec<ChampionEval>,
     rng: GameRng,
     timer_seconds: u32,
+    champion_details: HashMap<String, ChampionDraftInfo>,
+    blue_players: Vec<DraftPlayerInfo>,
+    red_players: Vec<DraftPlayerInfo>,
+    blue_team_name: String,
+    red_team_name: String,
 }
 
 /// Build default (uniform) ChampionEval entries for each champion name.
@@ -94,6 +121,11 @@ impl DraftSession {
             champion_evals: evals,
             rng: GameRng::from_seed(42),
             timer_seconds: DEFAULT_TIMER_SECONDS,
+            champion_details: HashMap::new(),
+            blue_players: Vec::new(),
+            red_players: Vec::new(),
+            blue_team_name: String::new(),
+            red_team_name: String::new(),
         }
     }
 
@@ -112,7 +144,31 @@ impl DraftSession {
             champion_evals,
             rng,
             timer_seconds: DEFAULT_TIMER_SECONDS,
+            champion_details: HashMap::new(),
+            blue_players: Vec::new(),
+            red_players: Vec::new(),
+            blue_team_name: String::new(),
+            red_team_name: String::new(),
         }
+    }
+
+    /// Set champion metadata for the draft UI.
+    pub fn set_champion_details(&mut self, details: HashMap<String, ChampionDraftInfo>) {
+        self.champion_details = details;
+    }
+
+    /// Set player info and team names for blue and red sides.
+    pub fn set_team_info(
+        &mut self,
+        blue_name: String,
+        red_name: String,
+        blue_players: Vec<DraftPlayerInfo>,
+        red_players: Vec<DraftPlayerInfo>,
+    ) {
+        self.blue_team_name = blue_name;
+        self.red_team_name = red_name;
+        self.blue_players = blue_players;
+        self.red_players = red_players;
     }
 
     pub fn set_timer_seconds(&mut self, seconds: u32) {
@@ -144,6 +200,11 @@ impl DraftSession {
             is_player_turn,
             available_champions: available,
             timer_seconds: self.timer_seconds,
+            champion_details: self.champion_details.clone(),
+            blue_players: self.blue_players.clone(),
+            red_players: self.red_players.clone(),
+            blue_team_name: self.blue_team_name.clone(),
+            red_team_name: self.red_team_name.clone(),
         }
     }
 

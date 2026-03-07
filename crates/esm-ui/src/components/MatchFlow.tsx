@@ -53,6 +53,8 @@ export function MatchFlow({
       player_side: teamSide,
       format: fearlessBans.length > 0 ? 'fearless' : 'five_ban',
       fearless_bans: fearlessBans,
+      blue_team: teamSide === 'blue' ? teamName : opponentName,
+      red_team: teamSide === 'red' ? teamName : opponentName,
     });
     if (mode === 'spectate') {
       await autoDraftComplete();
@@ -60,7 +62,7 @@ export function MatchFlow({
     } else {
       setPhase('draft');
     }
-  }, [startDraft, autoDraftComplete, mode, teamSide, fearlessBans]);
+  }, [startDraft, autoDraftComplete, mode, teamSide, teamName, opponentName, fearlessBans]);
 
   const handleDraftHover = useCallback(async (champion: string) => {
     await hover(champion);

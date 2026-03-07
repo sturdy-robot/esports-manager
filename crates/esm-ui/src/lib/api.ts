@@ -158,6 +158,12 @@ export interface ChampionDraftInfo {
   class: ChampionClass;
   scaling: ChampionScaling;
   tags: string[];
+  meta_tier: string;
+}
+
+export interface DraftPlayerInfo {
+  nickname: string;
+  role: string;
 }
 
 export interface DraftSessionState {
@@ -173,14 +179,20 @@ export interface DraftSessionState {
   is_complete: boolean;
   is_player_turn: boolean;
   available_champions: string[];
-  champion_details: Record<string, ChampionDraftInfo>;
   timer_seconds: number;
+  champion_details: Record<string, ChampionDraftInfo>;
+  blue_players: DraftPlayerInfo[];
+  red_players: DraftPlayerInfo[];
+  blue_team_name: string;
+  red_team_name: string;
 }
 
 export interface StartDraftParams {
   player_side: "blue" | "red";
   format: "three_ban" | "five_ban" | "fearless";
   fearless_bans?: string[];
+  blue_team?: string;
+  red_team?: string;
 }
 
 export async function startDraft(params: StartDraftParams): Promise<DraftSessionState> {
