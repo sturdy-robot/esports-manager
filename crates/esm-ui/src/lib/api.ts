@@ -253,6 +253,12 @@ export interface MatchEventInfo {
   snapshot: GameSnapshotInfo | null;
 }
 
+export interface MatchRosterEntry {
+  nickname: string;
+  role: string;
+  champion: string;
+}
+
 export interface SimulateMatchResult {
   winner: string;
   duration_minutes: number;
@@ -260,6 +266,8 @@ export interface SimulateMatchResult {
   red_team: string;
   blue_gold: number;
   red_gold: number;
+  blue_roster: MatchRosterEntry[];
+  red_roster: MatchRosterEntry[];
   events: MatchEventInfo[];
 }
 

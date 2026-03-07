@@ -390,6 +390,20 @@ function MOCK_MATCH_RESULT(): SimulateMatchResult {
     red_team: 'Gen.G',
     blue_gold: 58200,
     red_gold: 51800,
+    blue_roster: [
+      { nickname: 'Zeus', role: 'Top', champion: 'Gnar' },
+      { nickname: 'Oner', role: 'Jungle', champion: 'Lee Sin' },
+      { nickname: 'Faker', role: 'Mid', champion: 'Azir' },
+      { nickname: 'Gumayusi', role: 'Bot', champion: 'Jinx' },
+      { nickname: 'Keria', role: 'Support', champion: 'Thresh' },
+    ],
+    red_roster: [
+      { nickname: 'Doran', role: 'Top', champion: 'Kennen' },
+      { nickname: 'Peanut', role: 'Jungle', champion: 'Viego' },
+      { nickname: 'Chovy', role: 'Mid', champion: 'Orianna' },
+      { nickname: 'Peyz', role: 'Bot', champion: 'Zeri' },
+      { nickname: 'Lehends', role: 'Support', champion: 'Lulu' },
+    ],
     events: [
       { minute: 3, phase: 'Early', kind: 'solo_kill', commentary: 'FIRST BLOOD! Player1 takes down Player3 in the mid lane!', snapshot: null },
       { minute: 6, phase: 'Early', kind: 'dragon', commentary: 'T1 slays the dragon! That\'s dragon number 1 for them.', snapshot: null },

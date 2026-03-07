@@ -148,6 +148,13 @@ pub struct MatchEventInfo {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct MatchRosterEntry {
+    pub nickname: String,
+    pub role: String,
+    pub champion: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct SimulateMatchResultInfo {
     pub winner: String,
     pub duration_minutes: u32,
@@ -155,6 +162,8 @@ pub struct SimulateMatchResultInfo {
     pub red_team: String,
     pub blue_gold: u32,
     pub red_gold: u32,
+    pub blue_roster: Vec<MatchRosterEntry>,
+    pub red_roster: Vec<MatchRosterEntry>,
     pub events: Vec<MatchEventInfo>,
 }
 
@@ -1531,6 +1540,8 @@ fn match_result_to_info(
     result: &MobaMatchResult,
     blue_name: &str,
     red_name: &str,
+    blue_roster: Vec<MatchRosterEntry>,
+    red_roster: Vec<MatchRosterEntry>,
 ) -> SimulateMatchResultInfo {
     let events: Vec<MatchEventInfo> = result
         .events
@@ -1583,6 +1594,8 @@ fn match_result_to_info(
         red_team: red_name.to_string(),
         blue_gold: result.blue_team_gold,
         red_gold: result.red_team_gold,
+        blue_roster,
+        red_roster,
         events,
     }
 }
@@ -1663,10 +1676,25 @@ fn simulate_match(state: State<'_, AppState>) -> Result<SimulateMatchResultInfo,
                 }
             }
 
+            // Build roster entries from draft session (if available) + moba teams
+            let (blue_picks, red_picks) = {
+                let ds = state.draft_session.lock().unwrap();
+                if let Some(session) = ds.as_ref() {
+                    let st = session.state();
+                    (st.blue_picks.clone(), st.red_picks.clone())
+                } else {
+                    (Vec::new(), Vec::new())
+                }
+            };
+            let blue_roster = extract_roster_entries(&moba_teams[blue_idx], &blue_picks);
+            let red_roster = extract_roster_entries(&moba_teams[red_idx], &red_picks);
+
             let info = match_result_to_info(
                 &result,
                 moba_teams[blue_idx].name(),
                 moba_teams[red_idx].name(),
+                blue_roster,
+                red_roster,
             );
 
             return Ok(info);
@@ -1842,6 +1870,19 @@ fn game_info_from_state(gs: &GameState, tournament: &Tournament) -> GameInfo {
         is_match_day,
         match_results: Vec::new(),
     }
+}
+
+fn extract_roster_entries(moba_team: &MobaTeam, picks: &[String]) -> Vec<MatchRosterEntry> {
+    moba_team
+        .roster()
+        .iter()
+        .enumerate()
+        .map(|(i, p)| MatchRosterEntry {
+            nickname: p.nickname().to_string(),
+            role: format!("{:?}", p.roles().primary()),
+            champion: picks.get(i).cloned().unwrap_or_default(),
+        })
+        .collect()
 }
 
 fn extract_team_attrs(moba_team: &MobaTeam) -> Vec<MatchPlayerSimulationData> {

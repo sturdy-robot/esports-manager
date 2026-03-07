@@ -4,7 +4,7 @@ import {
   ChevronRight, Play, Pause, SkipForward,
 } from 'lucide-react';
 import { TacticsPanel } from './TacticsPanel';
-import type { SimulateMatchResult, MatchEventInfo, GameSnapshotInfo, PlayerSnapshotInfo, PlaystyleType, FocusType, TacticsInfo } from '@/lib/api';
+import type { SimulateMatchResult, MatchEventInfo, GameSnapshotInfo, PlayerSnapshotInfo, PlaystyleType, FocusType, TacticsInfo, MatchRosterEntry } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -214,6 +214,7 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
         {/* Blue scoreboard */}
         <TeamScoreboard
           players={snapshot?.blue_players ?? []}
+          roster={result.blue_roster}
           color="#3B82F6"
           side="blue"
         />
@@ -239,6 +240,7 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
         {/* Red scoreboard */}
         <TeamScoreboard
           players={snapshot?.red_players ?? []}
+          roster={result.red_roster}
           color="#EF4444"
           side="red"
         />
@@ -339,10 +341,10 @@ function TeamHeader({ name, gold, color }: { name: string; gold: number; color: 
   );
 }
 
-function TeamScoreboard({ players, color, side }: { players: PlayerSnapshotInfo[]; color: string; side: 'blue' | 'red' }) {
+function TeamScoreboard({ players, roster, color, side }: { players: PlayerSnapshotInfo[]; roster: MatchRosterEntry[]; color: string; side: 'blue' | 'red' }) {
   return (
     <div
-      className="w-48 rounded-xl border overflow-hidden shrink-0 flex flex-col"
+      className="w-56 rounded-xl border overflow-hidden shrink-0 flex flex-col"
       style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
     >
       <div
@@ -356,7 +358,7 @@ function TeamScoreboard({ players, color, side }: { players: PlayerSnapshotInfo[
           <div className="text-xs text-center py-4" style={{ color: 'var(--text-muted)' }}>—</div>
         ) : (
           players.map((p, i) => (
-            <PlayerRow key={i} player={p} position={POSITIONS[i] ?? '?'} />
+            <PlayerRow key={i} player={p} position={POSITIONS[i] ?? '?'} entry={roster[i]} />
           ))
         )}
       </div>
@@ -364,25 +366,39 @@ function TeamScoreboard({ players, color, side }: { players: PlayerSnapshotInfo[
   );
 }
 
-function PlayerRow({ player, position }: { player: PlayerSnapshotInfo; position: string }) {
+function PlayerRow({ player, position, entry }: { player: PlayerSnapshotInfo; position: string; entry?: MatchRosterEntry }) {
   const deadStyle = player.is_dead ? { opacity: 0.4 } : {};
   return (
     <div
-      className="flex items-center gap-1.5 px-2 py-1 text-xs border-b"
+      className="flex flex-col gap-0.5 px-2 py-1.5 text-xs border-b"
       style={{ borderColor: 'var(--border-subtle)', ...deadStyle }}
     >
-      <span className="w-7 font-bold font-mono shrink-0" style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>
-        {position}
-      </span>
-      <span className="font-mono font-bold flex-1" style={{ color: 'var(--text-primary)' }}>
-        {player.kills}/{player.deaths}/{player.assists}
-      </span>
-      <span className="font-mono" style={{ color: 'var(--text-secondary)', fontSize: '0.65rem' }}>
-        {player.cs}cs
-      </span>
-      <span className="font-mono" style={{ color: '#F59E0B', fontSize: '0.65rem' }}>
-        {formatGold(player.gold)}
-      </span>
+      {/* Row 1: role, nickname, champion */}
+      <div className="flex items-center gap-1.5">
+        <span className="w-7 font-bold font-mono shrink-0" style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>
+          {position}
+        </span>
+        <span className="font-semibold truncate flex-1" style={{ color: 'var(--text-primary)', fontSize: '0.7rem' }}>
+          {entry?.nickname ?? `P${position}`}
+        </span>
+        {entry?.champion && (
+          <span className="font-mono truncate" style={{ color: 'var(--color-accent-cyan)', fontSize: '0.6rem' }}>
+            {entry.champion}
+          </span>
+        )}
+      </div>
+      {/* Row 2: KDA, CS, gold */}
+      <div className="flex items-center gap-1.5 pl-8">
+        <span className="font-mono font-bold" style={{ color: 'var(--text-primary)', fontSize: '0.65rem' }}>
+          {player.kills}/{player.deaths}/{player.assists}
+        </span>
+        <span className="font-mono" style={{ color: 'var(--text-secondary)', fontSize: '0.6rem' }}>
+          {player.cs}cs
+        </span>
+        <span className="font-mono" style={{ color: '#F59E0B', fontSize: '0.6rem' }}>
+          {formatGold(player.gold)}
+        </span>
+      </div>
     </div>
   );
 }
