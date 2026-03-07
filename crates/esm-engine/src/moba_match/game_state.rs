@@ -46,6 +46,10 @@ pub struct MatchGameState {
     pub first_blood_claimed: bool,
     pub baron_spawn_timer: u32,
     pub dragon_timer: u32,
+    blue_names: Option<Vec<String>>,
+    red_names: Option<Vec<String>>,
+    blue_team_name: Option<String>,
+    red_team_name: Option<String>,
 }
 
 impl MatchGameState {
@@ -66,6 +70,47 @@ impl MatchGameState {
             first_blood_claimed: false,
             baron_spawn_timer: 0,
             dragon_timer: 0,
+            blue_names: None,
+            red_names: None,
+            blue_team_name: None,
+            red_team_name: None,
+        }
+    }
+
+    pub fn set_names(
+        &mut self,
+        blue_names: Vec<String>,
+        red_names: Vec<String>,
+        blue_team: String,
+        red_team: String,
+    ) {
+        self.blue_names = Some(blue_names);
+        self.red_names = Some(red_names);
+        self.blue_team_name = Some(blue_team);
+        self.red_team_name = Some(red_team);
+    }
+
+    pub fn player_name(&self, side: TeamSide, idx: usize) -> String {
+        let names = match side {
+            TeamSide::Blue => &self.blue_names,
+            TeamSide::Red => &self.red_names,
+        };
+        names
+            .as_ref()
+            .and_then(|n| n.get(idx).cloned())
+            .unwrap_or_else(|| format!("Player{}", idx + 1))
+    }
+
+    pub fn team_name(&self, side: TeamSide) -> String {
+        match side {
+            TeamSide::Blue => self
+                .blue_team_name
+                .clone()
+                .unwrap_or_else(|| "Blue".to_string()),
+            TeamSide::Red => self
+                .red_team_name
+                .clone()
+                .unwrap_or_else(|| "Red".to_string()),
         }
     }
 

@@ -1629,12 +1629,28 @@ fn simulate_match(state: State<'_, AppState>) -> Result<SimulateMatchResultInfo,
             let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
 
             let tactics = state.match_tactics.lock().unwrap().clone();
-            let result = MobaMatchEngine::simulate_with_tactics(
+
+            // Build player/team names for commentary
+            let blue_nicknames: Vec<String> = moba_teams[blue_idx]
+                .roster()
+                .iter()
+                .map(|p| p.nickname().to_string())
+                .collect();
+            let red_nicknames: Vec<String> = moba_teams[red_idx]
+                .roster()
+                .iter()
+                .map(|p| p.nickname().to_string())
+                .collect();
+            let blue_team_name = moba_teams[blue_idx].name().to_string();
+            let red_team_name = moba_teams[red_idx].name().to_string();
+
+            let result = MobaMatchEngine::simulate_with_names(
                 gs.rng_mut(),
                 &blue_attrs,
                 &red_attrs,
                 &config,
                 &tactics,
+                Some((blue_nicknames, red_nicknames, blue_team_name, red_team_name)),
             );
 
             let blue_won = matches!(result.winner, TeamSide::Blue);

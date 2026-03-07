@@ -33,17 +33,6 @@ pub trait SimEvent {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: side name for commentary
-// ---------------------------------------------------------------------------
-
-fn side_name(side: TeamSide) -> &'static str {
-    match side {
-        TeamSide::Blue => "Blue",
-        TeamSide::Red => "Red",
-    }
-}
-
-// ---------------------------------------------------------------------------
 // FarmTick — passive gold/CS accumulation, always enabled
 // ---------------------------------------------------------------------------
 
@@ -134,8 +123,8 @@ impl SimEvent for SoloKill {
                 lane,
             },
         );
-        let killer_name = format!("Player{}", killer_idx + 1);
-        let victim_name = format!("Player{}", victim_idx + 1);
+        let killer_name = state.player_name(winner_side, killer_idx);
+        let victim_name = state.player_name(loser_side, victim_idx);
         event.set_commentary(Commentary::for_solo_kill(
             &killer_name,
             &victim_name,
@@ -225,7 +214,7 @@ impl SimEvent for Teamfight {
                         },
                     );
                     mk_event.set_commentary(Commentary::for_multi_kill(
-                        &format!("Player{}", i + 1),
+                        &state.player_name(side, i),
                         &tier_label,
                     ));
                     sub_events.push(mk_event);
@@ -241,7 +230,7 @@ impl SimEvent for Teamfight {
                         },
                     );
                     sp_event.set_commentary(Commentary::for_killing_spree(
-                        &format!("Player{}", i + 1),
+                        &state.player_name(side, i),
                         spree,
                     ));
                     sub_events.push(sp_event);
@@ -267,7 +256,7 @@ impl SimEvent for Teamfight {
             },
         );
         event.set_commentary(Commentary::for_teamfight(
-            side_name(winner_side),
+            &state.team_name(winner_side),
             kills_won,
             kills_lost,
         ));
@@ -334,7 +323,7 @@ impl SimEvent for TowerSiege {
                 },
             );
             event.set_commentary(Commentary::for_tower_destroy(
-                side_name(actual_attacker),
+                &state.team_name(actual_attacker),
                 lane,
             ));
             event
@@ -397,7 +386,7 @@ impl SimEvent for DragonFight {
             state.phase(),
             MatchEventKind::DragonKill { killer },
         );
-        event.set_commentary(Commentary::for_dragon(side_name(killer), count));
+        event.set_commentary(Commentary::for_dragon(&state.team_name(killer), count));
         event
     }
 }
@@ -434,7 +423,7 @@ impl SimEvent for HeraldFight {
             state.phase(),
             MatchEventKind::HeraldKill { killer },
         );
-        event.set_commentary(Commentary::for_herald(side_name(killer)));
+        event.set_commentary(Commentary::for_herald(&state.team_name(killer)));
         event
     }
 }
@@ -479,7 +468,7 @@ impl SimEvent for BaronFight {
             state.phase(),
             MatchEventKind::BaronKill { killer },
         );
-        event.set_commentary(Commentary::for_baron(side_name(killer)));
+        event.set_commentary(Commentary::for_baron(&state.team_name(killer)));
         event
     }
 }
@@ -538,7 +527,7 @@ impl SimEvent for InhibSiege {
                 },
             );
             event.set_commentary(Commentary::for_inhibitor_destroy(
-                side_name(actual_attacker),
+                &state.team_name(actual_attacker),
                 lane,
             ));
             event
@@ -615,7 +604,7 @@ impl SimEvent for NexusSiege {
                 state.phase(),
                 MatchEventKind::NexusDestroyed { winner: attacker },
             );
-            event.set_commentary(Commentary::for_nexus_destroy(side_name(attacker)));
+            event.set_commentary(Commentary::for_nexus_destroy(&state.team_name(attacker)));
             event
         } else {
             // Failed push — a teamfight occurs instead, defender holds
@@ -646,7 +635,7 @@ impl SimEvent for NexusSiege {
                 },
             );
             event.set_commentary(Commentary::for_teamfight(
-                side_name(defender),
+                &state.team_name(defender),
                 kills_for_defender,
                 0,
             ));

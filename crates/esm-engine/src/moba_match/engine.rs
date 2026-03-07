@@ -84,11 +84,28 @@ impl MobaMatchEngine {
         config: &MobaMatchConfig,
         tactics: &MatchTactics,
     ) -> MobaMatchResult {
+        Self::simulate_with_names(rng, blue_sim_data, red_sim_data, config, tactics, None)
+    }
+
+    /// Run a full match simulation with tactical modifiers and optional player/team names
+    /// for richer commentary.
+    pub fn simulate_with_names(
+        rng: &mut GameRng,
+        blue_sim_data: &[MatchPlayerSimulationData],
+        red_sim_data: &[MatchPlayerSimulationData],
+        config: &MobaMatchConfig,
+        tactics: &MatchTactics,
+        names: Option<(Vec<String>, Vec<String>, String, String)>,
+    ) -> MobaMatchResult {
         let mut state = MatchGameState::new(
             blue_sim_data.to_vec(),
             red_sim_data.to_vec(),
             config.players_per_side,
         );
+
+        if let Some((blue_names, red_names, blue_team, red_team)) = names {
+            state.set_names(blue_names, red_names, blue_team, red_team);
+        }
 
         let events = all_events();
 
