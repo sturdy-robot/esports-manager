@@ -168,7 +168,7 @@ impl DraftSession {
         self.ai_pick()
     }
 
-    /// Internal: use DraftAi to select a champion and apply SelectChampion.
+    /// Internal: use DraftAi to select a champion, then hover + lock it.
     fn ai_pick(&mut self) -> bool {
         let selected = self.draft.all_selected();
         let candidates: Vec<ChampionEval> = self
@@ -181,7 +181,14 @@ impl DraftSession {
             return false;
         }
         let chosen = DraftAi::select_champion(&mut self.rng, &candidates);
-        let _ = self.draft.apply_action(DraftAction::SelectChampion(chosen));
+        if self
+            .draft
+            .apply_action(DraftAction::HoverChampion(chosen))
+            .is_err()
+        {
+            return false;
+        }
+        let _ = self.draft.apply_action(DraftAction::LockChampion);
         true
     }
 
