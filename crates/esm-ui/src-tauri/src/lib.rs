@@ -257,6 +257,10 @@ fn list_saves(state: State<'_, AppState>) -> Result<Vec<SaveInfo>, String> {
     Ok(saves.into_iter().map(SaveInfo::from).collect())
 }
 
+fn init_team_schedules(team_count: usize) -> Vec<TeamWeeklySchedule> {
+    (0..team_count).map(|_| TeamWeeklySchedule::new()).collect()
+}
+
 #[tauri::command]
 fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInfo, String> {
     // Parse esport type
@@ -333,6 +337,11 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
     let champ_names: Vec<String> = pack.champions.iter().map(|c| c.name.clone()).collect();
     *state.champion_names.lock().unwrap() = champ_names;
 
+    // Initialize team schedules (one per team)
+    let team_count = gs.teams().len();
+    *state.team_schedules.lock().unwrap() = init_team_schedules(team_count);
+    *state.scrim_manager.lock().unwrap() = ScrimManager::new();
+
     // Store in memory
     *state.game_state.lock().unwrap() = Some(gs);
     *state.tournament.lock().unwrap() = Some(tournament);
@@ -359,6 +368,11 @@ fn load_save(name: String, state: State<'_, AppState>) -> Result<GameInfo, Strin
     } else {
         serde_json::from_str(&moba_teams_json).ok()
     };
+
+    // Initialize team schedules (one per team)
+    let team_count = gs.teams().len();
+    *state.team_schedules.lock().unwrap() = init_team_schedules(team_count);
+    *state.scrim_manager.lock().unwrap() = ScrimManager::new();
 
     let info = game_info_from_state(&gs, tournament.as_ref().unwrap_or(&empty_tournament()));
     *state.game_state.lock().unwrap() = Some(gs);
