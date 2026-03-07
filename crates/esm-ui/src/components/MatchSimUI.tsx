@@ -3,7 +3,6 @@ import {
   Swords, Shield, Flame, Crown, Castle, Trophy, Zap,
   ChevronRight, Play, Pause, SkipForward,
 } from 'lucide-react';
-import { TacticsPanel } from './TacticsPanel';
 import type { SimulateMatchResult, MatchEventInfo, GameSnapshotInfo, PlayerSnapshotInfo, PlaystyleType, FocusType, TacticsInfo, MatchRosterEntry } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
@@ -93,8 +92,6 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
   const [revealedCount, setRevealedCount] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [speedIdx, setSpeedIdx] = useState(0);
-  const [showTactics, setShowTactics] = useState(false);
-  const [acknowledgedPhases, setAcknowledgedPhases] = useState<Set<string>>(new Set());
   const feedRef = useRef<HTMLDivElement>(null);
 
   const allDone = revealedCount >= result.events.length;
@@ -103,52 +100,14 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
   const snapshot = latestEvent?.snapshot ?? null;
   const currentMinute = latestEvent?.minute ?? 0;
 
-  // Derived: upcoming phase info for tactics overlay
-  const nextEvent = revealedCount < result.events.length ? result.events[revealedCount] : null;
-  const nextPhase = nextEvent?.phase ?? '';
-
-  // Detect phase-boundary pause: compute whether we should pause NOW
-  // This is derived state computed during render, not an effect.
-  const shouldPauseForTactics = (() => {
-    if (allDone || showTactics || !onTacticsChange || !tactics) return false;
-    const curPhase = latestEvent?.phase ?? '';
-    return curPhase !== '' && nextPhase !== '' && curPhase !== nextPhase && !acknowledgedPhases.has(nextPhase);
-  })();
-
-  const handleTacticsConfirm = useCallback((playstyle: PlaystyleType, focus: FocusType) => {
-    onTacticsChange?.(playstyle, focus);
-    setAcknowledgedPhases((prev) => new Set(prev).add(nextPhase));
-    setShowTactics(false);
-    setIsPlaying(true);
-  }, [onTacticsChange, nextPhase]);
-
-  const handleTacticsSkip = useCallback(() => {
-    setAcknowledgedPhases((prev) => new Set(prev).add(nextPhase));
-    setShowTactics(false);
-    setIsPlaying(true);
-  }, [nextPhase]);
-
-  // Progressive reveal timer — skips tick when shouldPauseForTactics is true
+  // Progressive reveal timer
   useEffect(() => {
-    if (!isPlaying || allDone || showTactics || shouldPauseForTactics) return;
+    if (!isPlaying || allDone) return;
 
     const ms = BASE_INTERVAL_MS / SPEEDS[speedIdx];
     const id = setTimeout(() => setRevealedCount((prev) => prev + 1), ms);
     return () => clearTimeout(id);
-  }, [isPlaying, speedIdx, revealedCount, allDone, showTactics, shouldPauseForTactics]);
-
-  // When the timer stops due to a phase boundary, show the tactics panel
-  // This runs as a separate effect triggered by shouldPauseForTactics becoming true
-  // while isPlaying is still true.
-  useEffect(() => {
-    if (shouldPauseForTactics && isPlaying) {
-      // Use a microtask to avoid synchronous setState-in-effect lint warning
-      Promise.resolve().then(() => {
-        setIsPlaying(false);
-        setShowTactics(true);
-      });
-    }
-  }, [shouldPauseForTactics, isPlaying]);
+  }, [isPlaying, speedIdx, revealedCount, allDone]);
 
   // Auto-scroll event feed
   useEffect(() => {
@@ -217,6 +176,69 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
       {/* Objectives bar */}
       <ObjectivesBar snapshot={snapshot} />
 
+      {/* Controls bar — playback + inline tactics (always at top, above event feed) */}
+      <div
+        className="flex items-center justify-between gap-3 shrink-0 px-3 py-1.5 rounded-lg border"
+        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
+      >
+        {/* Playback controls */}
+        <div className="flex items-center gap-2">
+          {!allDone ? (
+            <>
+              <button
+                onClick={() => setIsPlaying((p) => !p)}
+                className="p-1.5 rounded-md border cursor-pointer transition-all duration-150 glow-hover"
+                style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+              >
+                {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+              </button>
+              <button
+                onClick={cycleSpeed}
+                className="px-2.5 py-1 rounded-md border text-xs font-mono font-bold cursor-pointer transition-all duration-150 glow-hover"
+                style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+              >
+                {SPEEDS[speedIdx]}x
+              </button>
+              <button
+                onClick={handleSkip}
+                className="p-1.5 rounded-md border cursor-pointer transition-all duration-150 glow-hover"
+                style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+                title="Skip to end"
+              >
+                <SkipForward size={14} />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onComplete}
+              className="px-5 py-1.5 rounded-md font-bold text-white text-xs flex items-center gap-1.5 transition-all duration-150"
+              style={{
+                background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
+                boxShadow: '0 0 12px rgba(6,182,212,0.3)',
+              }}
+            >
+              <ChevronRight size={14} />
+              Continue
+            </button>
+          )}
+
+          {/* Phase badge */}
+          {latestEvent?.phase && (
+            <span
+              className="text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded"
+              style={{ color: phaseBadgeColor(latestEvent.phase), backgroundColor: `${phaseBadgeColor(latestEvent.phase)}15` }}
+            >
+              {latestEvent.phase}
+            </span>
+          )}
+        </div>
+
+        {/* Inline tactics — always accessible */}
+        {tactics && onTacticsChange && (
+          <InlineTactics tactics={tactics} onChange={onTacticsChange} />
+        )}
+      </div>
+
       {/* Main area: scoreboard | events | scoreboard */}
       <div className="flex gap-2 flex-1 min-h-0">
         {/* Blue scoreboard */}
@@ -252,80 +274,6 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
           color="#EF4444"
           side="red"
         />
-      </div>
-
-      {/* Phase transition tactics overlay */}
-      {showTactics && tactics && (
-        <div
-          className="shrink-0 relative"
-        >
-          <div className="flex items-center justify-between px-3 py-1.5 mb-1">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-2 h-2 rounded-full animate-pulse"
-                style={{ backgroundColor: phaseBadgeColor(nextPhase) }}
-              />
-              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: phaseBadgeColor(nextPhase) }}>
-                Entering {nextPhase} Game
-              </span>
-            </div>
-            <button
-              onClick={handleTacticsSkip}
-              className="text-xs px-2 py-1 rounded border cursor-pointer"
-              style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-muted)', backgroundColor: 'transparent' }}
-            >
-              Keep Current
-            </button>
-          </div>
-          <TacticsPanel
-            tactics={tactics}
-            onConfirm={handleTacticsConfirm}
-            context={`Adjust for ${nextPhase} Phase`}
-            compact
-          />
-        </div>
-      )}
-
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-3 shrink-0 py-1">
-        {!allDone ? (
-          <>
-            <button
-              onClick={() => setIsPlaying((p) => !p)}
-              className="p-2 rounded-lg border cursor-pointer transition-all duration-150 glow-hover"
-              style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
-            >
-              {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-            </button>
-            <button
-              onClick={cycleSpeed}
-              className="px-3 py-1.5 rounded-lg border text-xs font-mono font-bold cursor-pointer transition-all duration-150 glow-hover"
-              style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
-            >
-              {SPEEDS[speedIdx]}x
-            </button>
-            <button
-              onClick={handleSkip}
-              className="p-2 rounded-lg border cursor-pointer transition-all duration-150 glow-hover"
-              style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
-              title="Skip to end"
-            >
-              <SkipForward size={16} />
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={onComplete}
-            className="px-8 py-2.5 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
-            style={{
-              background: 'linear-gradient(135deg, #06B6D4, #8B5CF6)',
-              boxShadow: '0 0 16px rgba(6,182,212,0.3)',
-            }}
-          >
-            <ChevronRight size={18} />
-            Continue
-          </button>
-        )}
       </div>
     </div>
   );
@@ -508,6 +456,59 @@ function DraftBanner({ blueRoster, redRoster }: { blueRoster: MatchRosterEntry[]
               {entry.nickname}
             </div>
           </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const PLAYSTYLE_OPTIONS: { value: PlaystyleType; label: string; color: string }[] = [
+  { value: 'aggressive', label: 'AGR', color: '#EF4444' },
+  { value: 'balanced',   label: 'BAL', color: '#06B6D4' },
+  { value: 'defensive',  label: 'DEF', color: '#22C55E' },
+];
+
+const FOCUS_OPTIONS: { value: FocusType; label: string; color: string }[] = [
+  { value: 'teamfight',  label: 'TF',  color: '#8B5CF6' },
+  { value: 'splitpush',  label: 'SP',  color: '#F59E0B' },
+  { value: 'objective',  label: 'OBJ', color: '#06B6D4' },
+];
+
+function InlineTactics({ tactics, onChange }: { tactics: TacticsInfo; onChange: (p: PlaystyleType, f: FocusType) => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1">
+        <span className="text-[0.55rem] font-mono uppercase" style={{ color: 'var(--text-muted)' }}>Style</span>
+        {PLAYSTYLE_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onChange(opt.value, tactics.focus)}
+            className="px-1.5 py-0.5 rounded text-[0.6rem] font-mono font-bold cursor-pointer border transition-all duration-150"
+            style={{
+              backgroundColor: tactics.playstyle === opt.value ? `${opt.color}20` : 'transparent',
+              borderColor: tactics.playstyle === opt.value ? opt.color : 'transparent',
+              color: tactics.playstyle === opt.value ? opt.color : 'var(--text-muted)',
+            }}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="text-[0.55rem] font-mono uppercase" style={{ color: 'var(--text-muted)' }}>Focus</span>
+        {FOCUS_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onChange(tactics.playstyle, opt.value)}
+            className="px-1.5 py-0.5 rounded text-[0.6rem] font-mono font-bold cursor-pointer border transition-all duration-150"
+            style={{
+              backgroundColor: tactics.focus === opt.value ? `${opt.color}20` : 'transparent',
+              borderColor: tactics.focus === opt.value ? opt.color : 'transparent',
+              color: tactics.focus === opt.value ? opt.color : 'var(--text-muted)',
+            }}
+          >
+            {opt.label}
+          </button>
         ))}
       </div>
     </div>
