@@ -669,9 +669,43 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                     .get(opponent_idx)
                     .map(|t| t.name().to_string())
                     .unwrap_or_default();
+
+                // Build enriched pre-match report
+                let mut body = format!("Coach:\nToday we face {}.\n", opponent_name);
+
+                // Opponent record from standings
+                let standings = tournament.standings();
+                if let Some(opp_standing) = standings.iter().find(|s| s.team_name == opponent_name)
+                {
+                    body.push_str(&format!(
+                        "\nRecord: {}W - {}L",
+                        opp_standing.wins, opp_standing.losses,
+                    ));
+                    let rank = standings
+                        .iter()
+                        .position(|s| s.team_name == opponent_name)
+                        .unwrap_or(0)
+                        + 1;
+                    body.push_str(&format!(" (Rank #{})\n", rank));
+                }
+
+                // Opponent roster
+                if let Some(opp_team) = moba_teams.get(opponent_idx) {
+                    body.push_str("\nRoster:\n");
+                    for p in opp_team.roster() {
+                        body.push_str(
+                            &format!("  {} — {:?}\n", p.nickname(), p.roles().primary(),),
+                        );
+                    }
+                }
+
+                body.push_str(
+                    "\nMake sure your activity schedule is set to manage player stamina.",
+                );
+
                 let msg = esm_core::inbox::Message::new(
                     format!("Pre-match Report: vs {}", opponent_name),
-                    format!("Coach:\nWe're playing against {} today. Make sure you select the best activity schedule beforehand to manage player stamina.", opponent_name),
+                    body,
                     esm_core::inbox::MessagePriority::ReadOptional,
                     esm_core::inbox::MessageCategory::Staff,
                     day,
@@ -704,6 +738,9 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                 let team_count = moba_teams.len();
 
                 // Each AI team tries to schedule 2-3 scrims for the upcoming week
+                // Some may request scrims with the player's team
+                let mut scrim_requests: Vec<(String, u32, String)> = Vec::new(); // (team_name, day, time_slot_name)
+
                 for home_idx in 0..team_count {
                     if home_idx == player_idx {
                         continue; // Skip player's team
@@ -715,6 +752,25 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                         let mut away_idx = gs.rng_mut().range_u32(0, team_count as u32) as usize;
                         if away_idx == home_idx {
                             away_idx = (away_idx + 1) % team_count;
+                        }
+
+                        // If the AI wants to scrim with the player, send an inbox message instead
+                        if away_idx == player_idx {
+                            let day_offset = gs.rng_mut().range_u32(1, 7);
+                            let scheduled_day = current_day + day_offset;
+                            let slot_idx = gs.rng_mut().range_u32(0, 3) as usize;
+                            let time_slot_name = match slot_idx {
+                                0 => "Morning",
+                                1 => "Afternoon",
+                                _ => "Evening",
+                            };
+                            let ai_name = moba_teams[home_idx].name().to_string();
+                            scrim_requests.push((
+                                ai_name,
+                                scheduled_day,
+                                time_slot_name.to_string(),
+                            ));
+                            continue;
                         }
 
                         // Pick random day (1-6 days ahead) and time slot
@@ -740,6 +796,24 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                             current_day,
                         );
                     }
+                }
+
+                // Send inbox messages for AI scrim requests to the player
+                drop(schedules);
+                drop(scrim_mgr);
+                for (team_name, sday, slot_name) in scrim_requests {
+                    let day_diff = sday - current_day;
+                    let msg = esm_core::inbox::Message::new(
+                        format!("Scrim Request from {}", team_name),
+                        format!(
+                            "{} would like to schedule a scrim against your team.\n\nRequested: Day {} ({} days from now), {} slot.\n\nHead to the Schedule page to set up scrims.",
+                            team_name, sday, day_diff, slot_name,
+                        ),
+                        esm_core::inbox::MessagePriority::ReadOptional,
+                        esm_core::inbox::MessageCategory::Scrim,
+                        current_day,
+                    );
+                    gs.inbox_mut().push(msg);
                 }
             }
         }
