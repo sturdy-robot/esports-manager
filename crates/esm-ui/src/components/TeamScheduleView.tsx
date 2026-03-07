@@ -7,6 +7,7 @@ import {
   Plus,
   X,
   ChevronDown,
+  AlertTriangle,
 } from "lucide-react";
 import type {
   WeekScheduleInfo,
@@ -212,9 +213,11 @@ function AddSlotModal({
   const [selectedPlayers, setSelectedPlayers] = useState<number[]>([]);
   const [focus, setFocus] = useState<SoloQueueFocusType>("mechanics");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    setError(null);
     try {
       if (mode === "scrim") {
         await onScheduleScrim(awayTeamIdx, gameCount, draftRules);
@@ -224,8 +227,8 @@ function AddSlotModal({
         await onScheduleRest();
       }
       onClose();
-    } catch {
-      // Error handling could be added
+    } catch (e) {
+      setError(String(e));
     } finally {
       setSubmitting(false);
     }
@@ -269,6 +272,20 @@ function AddSlotModal({
             <X size={14} />
           </button>
         </div>
+
+        {error && (
+          <div
+            className="flex items-center gap-2 px-3 py-2 rounded-lg mb-3 text-xs"
+            style={{
+              backgroundColor: "rgba(239, 68, 68, 0.1)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              color: "var(--color-loss)",
+            }}
+          >
+            <AlertTriangle size={14} className="shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
         {!mode && (
           <div className="flex flex-col gap-2">
@@ -577,6 +594,25 @@ export function TeamScheduleView({
     dayIndex: number;
     timeSlot: TimeSlotType;
   } | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const handleClearSlot = async (dayIndex: number, timeSlot: TimeSlotType) => {
+    setActionError(null);
+    try {
+      await onClearSlot(dayIndex, timeSlot);
+    } catch (e) {
+      setActionError(String(e));
+    }
+  };
+
+  const handleCancelScrim = async (scrimId: number) => {
+    setActionError(null);
+    try {
+      await onCancelScrim(scrimId);
+    } catch (e) {
+      setActionError(String(e));
+    }
+  };
 
   if (!schedule) {
     return (
@@ -589,6 +625,30 @@ export function TeamScheduleView({
 
   return (
     <div className="flex flex-col gap-4 animate-fade-in-up">
+      {/* Error banner */}
+      {actionError && (
+        <div
+          className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs"
+          style={{
+            backgroundColor: "rgba(239, 68, 68, 0.1)",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            color: "var(--color-loss)",
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={14} className="shrink-0" />
+            <span>{actionError}</span>
+          </div>
+          <button
+            onClick={() => setActionError(null)}
+            className="shrink-0 w-5 h-5 flex items-center justify-center rounded cursor-pointer border-none"
+            style={{ backgroundColor: "transparent", color: "var(--color-loss)" }}
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
       {/* Header stats */}
       <div className="flex items-center justify-between">
         <h2
@@ -684,7 +744,7 @@ export function TeamScheduleView({
                     dayIndex={day.day_index}
                     timeSlot={ts}
                     onAdd={(d, t) => setAddingSlot({ dayIndex: d, timeSlot: t })}
-                    onClear={onClearSlot}
+                    onClear={handleClearSlot}
                   />
                 </div>
               );
@@ -786,7 +846,7 @@ export function TeamScheduleView({
                   </span>
                   {s.status === "Scheduled" && (
                     <button
-                      onClick={() => onCancelScrim(s.id)}
+                      onClick={() => handleCancelScrim(s.id)}
                       className="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none transition-colors"
                       style={{
                         backgroundColor: "var(--bg-surface)",

@@ -1014,6 +1014,7 @@ export function useTeamSchedule() {
       await refresh();
     } catch (e) {
       console.error('useTeamSchedule scheduleScrim error:', e);
+      throw e;
     }
   }, [refresh]);
 
@@ -1024,6 +1025,7 @@ export function useTeamSchedule() {
       await refresh();
     } catch (e) {
       console.error('useTeamSchedule cancelScrim error:', e);
+      throw e;
     }
   }, [refresh]);
 
@@ -1034,6 +1036,7 @@ export function useTeamSchedule() {
       setWeekSchedule(result);
     } catch (e) {
       console.error('useTeamSchedule scheduleSoloQueue error:', e);
+      throw e;
     }
   }, []);
 
@@ -1044,6 +1047,7 @@ export function useTeamSchedule() {
       setWeekSchedule(result);
     } catch (e) {
       console.error('useTeamSchedule scheduleRest error:', e);
+      throw e;
     }
   }, []);
 
@@ -1054,6 +1058,7 @@ export function useTeamSchedule() {
       setWeekSchedule(result);
     } catch (e) {
       console.error('useTeamSchedule clearSlot error:', e);
+      throw e;
     }
   }, []);
 

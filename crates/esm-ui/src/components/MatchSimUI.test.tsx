@@ -21,6 +21,8 @@ function makeResult(overrides: Partial<SimulateMatchResult> = {}): SimulateMatch
     red_team: 'Gen.G',
     blue_gold: 58200,
     red_gold: 51800,
+    blue_roster: [],
+    red_roster: [],
     events: SAMPLE_EVENTS,
     ...overrides,
   };
