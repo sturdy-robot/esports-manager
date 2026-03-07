@@ -682,6 +682,56 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
                 gs.inbox_mut().push(msg);
             }
         }
+
+        // AI teams auto-schedule scrims at the start of each new week
+        if gs.calendar().is_weekly_tick() {
+            if let Some(moba_teams) = m_lock.as_ref() {
+                let mut schedules = state.team_schedules.lock().unwrap();
+                let mut scrim_mgr = state.scrim_manager.lock().unwrap();
+                let player_idx = gs.player_team_index();
+                let current_day = gs.calendar().days_elapsed();
+                let team_count = moba_teams.len();
+
+                // Each AI team tries to schedule 2-3 scrims for the upcoming week
+                for home_idx in 0..team_count {
+                    if home_idx == player_idx {
+                        continue; // Skip player's team
+                    }
+
+                    let target_scrims = gs.rng_mut().range_u32(2, 4); // 2 or 3
+                    for _ in 0..target_scrims {
+                        // Pick a random opponent (not self)
+                        let mut away_idx = gs.rng_mut().range_u32(0, team_count as u32) as usize;
+                        if away_idx == home_idx {
+                            away_idx = (away_idx + 1) % team_count;
+                        }
+
+                        // Pick random day (1-6 days ahead) and time slot
+                        let day_offset = gs.rng_mut().range_u32(1, 7);
+                        let scheduled_day = current_day + day_offset;
+                        let slot_idx = gs.rng_mut().range_u32(0, 3) as usize;
+                        let time_slot = TimeSlot::ALL[slot_idx];
+
+                        let home_name = moba_teams[home_idx].name().to_string();
+                        let away_name = moba_teams[away_idx].name().to_string();
+
+                        // Attempt to schedule — validation will reject conflicts
+                        let _ = scrim_mgr.schedule_scrim(
+                            &mut schedules,
+                            home_idx,
+                            away_idx,
+                            &home_name,
+                            &away_name,
+                            scheduled_day,
+                            time_slot,
+                            gs.rng_mut().range_u32(1, 4), // 1-3 games
+                            ScrimDraftRules::Standard,
+                            current_day,
+                        );
+                    }
+                }
+            }
+        }
     } else {
         gs.advance_phase();
     }
