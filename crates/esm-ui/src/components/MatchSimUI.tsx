@@ -214,6 +214,9 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
         />
       </div>
 
+      {/* Objectives bar */}
+      <ObjectivesBar snapshot={snapshot} />
+
       {/* Main area: scoreboard | events | scoreboard */}
       <div className="flex gap-2 flex-1 min-h-0">
         {/* Blue scoreboard */}
@@ -282,9 +285,6 @@ export function MatchSimUI({ result, onComplete, tactics, onTacticsChange }: Mat
           />
         </div>
       )}
-
-      {/* Objectives bar */}
-      <ObjectivesBar snapshot={snapshot} />
 
       {/* Controls */}
       <div className="flex items-center justify-center gap-3 shrink-0 py-1">
