@@ -327,11 +327,29 @@ impl MatchGameState {
                 })
                 .collect()
         };
+        let standing_towers = |side| {
+            self.map
+                .towers(side)
+                .iter()
+                .filter(|tower| tower.is_standing())
+                .count() as u32
+        };
+        let standing_inhibitors = |side| {
+            self.map
+                .inhibitors(side)
+                .iter()
+                .filter(|inhibitor| inhibitor.is_standing())
+                .count() as u32
+        };
         GameSnapshot {
             blue_players: snap_players(&self.blue_players),
             red_players: snap_players(&self.red_players),
             blue_team_gold: self.blue_total_gold(),
             red_team_gold: self.red_total_gold(),
+            blue_towers: standing_towers(TeamSide::Blue),
+            red_towers: standing_towers(TeamSide::Red),
+            blue_inhibitors: standing_inhibitors(TeamSide::Blue),
+            red_inhibitors: standing_inhibitors(TeamSide::Red),
             dragons_blue: self.map.objectives().dragon_count(TeamSide::Blue),
             dragons_red: self.map.objectives().dragon_count(TeamSide::Red),
             baron_alive: self.map.objectives().baron_alive(),

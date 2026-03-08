@@ -10,7 +10,28 @@ const SAMPLE_EVENTS: MatchEventInfo[] = [
   { minute: 8, phase: 'Early', kind: 'dragon', commentary: 'Blue slays the dragon! That\'s dragon number 1 for them.', snapshot: null },
   { minute: 16, phase: 'Mid', kind: 'teamfight', commentary: 'Blue wins the teamfight 3 to 1!', snapshot: null },
   { minute: 20, phase: 'Mid', kind: 'baron', commentary: 'BARON NASHOR IS DOWN! Blue secures the baron buff!', snapshot: null },
-  { minute: 32, phase: 'Late', kind: 'nexus', commentary: 'AND THAT\'S THE GAME! Blue destroys the Nexus! GG!', snapshot: null },
+  {
+    minute: 32,
+    phase: 'Late',
+    kind: 'nexus',
+    commentary: 'AND THAT\'S THE GAME! Blue destroys the Nexus! GG!',
+    snapshot: {
+      blue_players: [],
+      red_players: [],
+      blue_team_gold: 58200,
+      red_team_gold: 51800,
+      blue_towers: 11,
+      red_towers: 8,
+      blue_inhibitors: 2,
+      red_inhibitors: 0,
+      dragons_blue: 3,
+      dragons_red: 1,
+      baron_alive: false,
+      baron_timer: 4,
+      dragon_timer: 2,
+      herald_available: false,
+    },
+  },
 ];
 
 function makeResult(overrides: Partial<SimulateMatchResult> = {}): SimulateMatchResult {
@@ -126,5 +147,17 @@ describe('MatchSimUI', () => {
     const banner = screen.getByTestId('winner-banner');
     expect(banner).toBeInTheDocument();
     expect(banner.textContent).toMatch(/T1\s+wins/i);
+  });
+
+  it('shows tower and inhibitor counts when snapshot data is available', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MatchSimUI {...defaultProps} />);
+    await skipToEnd(user);
+    const towersLabel = screen.getByText('Towers');
+    const inhibitorsLabel = screen.getByText('Inhibitors');
+    expect(towersLabel).toBeInTheDocument();
+    expect(inhibitorsLabel).toBeInTheDocument();
+    expect(towersLabel.parentElement?.textContent).toContain('11 – 8');
+    expect(inhibitorsLabel.parentElement?.textContent).toContain('2 – 0');
   });
 });

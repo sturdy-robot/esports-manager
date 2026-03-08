@@ -460,7 +460,7 @@ function AddSlotModal({
                           gameCount === n ? "#fff" : "var(--text-secondary)",
                       }}
                     >
-                      Bo{n}
+                      {n} games
                     </button>
                   ))}
                 </div>
@@ -857,8 +857,7 @@ export function TeamScheduleView({
                       className="text-xs ml-2"
                       style={{ color: "var(--text-muted)" }}
                     >
-                      Day {s.scheduled_day} · {s.time_slot} · Bo
-                      {s.game_count}
+                      Day {s.scheduled_day} · {s.time_slot} · {s.game_count} games
                     </span>
                   </div>
                 </div>

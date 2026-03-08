@@ -76,6 +76,8 @@ pub struct ChampionData {
     pub class: String,
     pub scaling: String,
     pub tags: Vec<String>,
+    #[serde(default)]
+    pub preferred_roles: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -117,24 +119,37 @@ impl DataPack {
             })
         };
 
-        let teams: Vec<TeamData> = serde_json::from_str(&read_json("teams.json")?)
-            .map_err(|e| DataPackError { message: format!("Failed to parse teams.json: {}", e) })?;
-            
-        let players: Vec<PlayerData> = serde_json::from_str(&read_json("players.json")?)
-            .map_err(|e| DataPackError { message: format!("Failed to parse players.json: {}", e) })?;
-            
+        let teams: Vec<TeamData> =
+            serde_json::from_str(&read_json("teams.json")?).map_err(|e| DataPackError {
+                message: format!("Failed to parse teams.json: {}", e),
+            })?;
+
+        let players: Vec<PlayerData> =
+            serde_json::from_str(&read_json("players.json")?).map_err(|e| DataPackError {
+                message: format!("Failed to parse players.json: {}", e),
+            })?;
+
         let champions: Vec<ChampionData> = serde_json::from_str(&read_json("champions.json")?)
-            .map_err(|e| DataPackError { message: format!("Failed to parse champions.json: {}", e) })?;
-            
-        let player_names: std::collections::HashMap<String, PlayerNamesData> = 
-            serde_json::from_str(&read_json("player_names.json")?)
-            .map_err(|e| DataPackError { message: format!("Failed to parse player_names.json: {}", e) })?;
-            
-        let player_nicknames: Vec<String> = serde_json::from_str(&read_json("player_nicknames.json")?)
-            .map_err(|e| DataPackError { message: format!("Failed to parse player_nicknames.json: {}", e) })?;
-            
+            .map_err(|e| DataPackError {
+                message: format!("Failed to parse champions.json: {}", e),
+            })?;
+
+        let player_names: std::collections::HashMap<String, PlayerNamesData> =
+            serde_json::from_str(&read_json("player_names.json")?).map_err(|e| DataPackError {
+                message: format!("Failed to parse player_names.json: {}", e),
+            })?;
+
+        let player_nicknames: Vec<String> =
+            serde_json::from_str(&read_json("player_nicknames.json")?).map_err(|e| {
+                DataPackError {
+                    message: format!("Failed to parse player_nicknames.json: {}", e),
+                }
+            })?;
+
         let team_names: Vec<String> = serde_json::from_str(&read_json("team_names.json")?)
-            .map_err(|e| DataPackError { message: format!("Failed to parse team_names.json: {}", e) })?;
+            .map_err(|e| DataPackError {
+                message: format!("Failed to parse team_names.json: {}", e),
+            })?;
 
         Ok(Self {
             teams,
@@ -245,6 +260,16 @@ impl DataPack {
                 if !VALID_TAGS.contains(&tag.as_str()) {
                     return Err(DataPackError {
                         message: format!("Champion '{}' has invalid tag: '{}'", champ.name, tag),
+                    });
+                }
+            }
+            for role in &champ.preferred_roles {
+                if !VALID_ROLES.contains(&role.as_str()) {
+                    return Err(DataPackError {
+                        message: format!(
+                            "Champion '{}' has invalid preferred role: '{}'",
+                            champ.name, role
+                        ),
                     });
                 }
             }

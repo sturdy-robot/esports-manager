@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Lock, CheckCircle, Clock, Shield, Swords, Search, X, ArrowLeftRight } from 'lucide-react';
-import type { DraftSessionState, DraftPlayerInfo, ChampionClass, ChampionScaling } from '@/lib/api';
+import { useState, useEffect, useCallback } from 'react';
+import { Lock, CheckCircle, Clock, Shield, Swords } from 'lucide-react';
+import type { DraftSessionState } from '@/lib/api';
+import { DraftChampionGrid } from './DraftChampionGrid';
+import { SwapPhaseUI } from './SwapPhaseUI';
+import { DraftTeamPanel } from './DraftTeamPanel';
 
 /**
  * Custom hook: countdown timer that resets when `step` changes.
@@ -23,68 +26,6 @@ function useDraftTimer(totalSeconds: number, step: number, active: boolean) {
   }, [active, step, totalSeconds]);
 
   return timeLeft;
-}
-
-function classColor(cls: ChampionClass): string {
-  switch (cls) {
-    case 'Tank':     return 'var(--color-info)';
-    case 'Fighter':  return 'var(--color-warning)';
-    case 'Assassin': return 'var(--color-loss)';
-    case 'Mage':     return 'var(--color-accent-emerald)';
-    case 'Marksman': return 'var(--color-accent-cyan)';
-    case 'Support':  return 'var(--color-win)';
-  }
-}
-
-function scalingColor(scaling: ChampionScaling): string {
-  switch (scaling) {
-    case 'Early': return 'var(--color-win)';
-    case 'Mid':   return 'var(--color-warning)';
-    case 'Late':  return 'var(--color-loss)';
-  }
-}
-
-const ROLE_SHORT: Record<string, string> = {
-  Top: 'TOP', Jungle: 'JNG', Mid: 'MID', Bot: 'BOT', Support: 'SUP',
-};
-
-const ALL_CLASSES: ChampionClass[] = ['Tank', 'Fighter', 'Assassin', 'Mage', 'Marksman', 'Support'];
-
-function masteryColor(mastery: string): string {
-  switch (mastery) {
-    case 'Challenger': return '#F59E0B';
-    case 'Master':     return '#A855F7';
-    case 'Diamond':    return '#06B6D4';
-    case 'Platinum':   return '#22D3EE';
-    case 'Gold':       return '#EAB308';
-    case 'Silver':     return '#94A3B8';
-    case 'Bronze':     return 'var(--text-muted)';
-    default:           return 'var(--text-muted)';
-  }
-}
-
-function masteryShort(mastery: string): string {
-  switch (mastery) {
-    case 'Challenger': return 'CHL';
-    case 'Master':     return 'MAS';
-    case 'Diamond':    return 'DIA';
-    case 'Platinum':   return 'PLT';
-    case 'Gold':       return 'GLD';
-    case 'Silver':     return 'SLV';
-    case 'Bronze':     return 'BRZ';
-    default:           return mastery.slice(0, 3).toUpperCase();
-  }
-}
-
-function metaTierColor(tier: string): string {
-  switch (tier) {
-    case 'S': return '#F59E0B';
-    case 'A': return '#06B6D4';
-    case 'B': return 'var(--text-secondary)';
-    case 'C': return 'var(--text-muted)';
-    case 'D': return 'rgba(255,255,255,0.25)';
-    default:  return 'var(--text-muted)';
-  }
 }
 
 interface DraftUIProps {
@@ -145,39 +86,6 @@ export function DraftUI({
 
   const isBlueActive = draftState.current_team === 'Blue';
   const isRedActive = draftState.current_team === 'Red';
-
-  // ---- Champion grid filters ----
-  const [searchText, setSearchText] = useState('');
-  const [classFilter, setClassFilter] = useState<ChampionClass | null>(null);
-  const [swapSelected, setSwapSelected] = useState<number | null>(null);
-  const [swapping, setSwapping] = useState(false);
-
-  const handleSwapSlotClick = useCallback(async (idx: number) => {
-    if (!onSwap || swapping) return;
-    if (swapSelected === null) {
-      setSwapSelected(idx);
-    } else if (swapSelected === idx) {
-      setSwapSelected(null);
-    } else {
-      setSwapping(true);
-      await onSwap(swapSelected, idx);
-      setSwapSelected(null);
-      setSwapping(false);
-    }
-  }, [onSwap, swapSelected, swapping]);
-
-  const filteredChampions = useMemo(() => {
-    return draftState.available_champions.filter((champ) => {
-      if (searchText && !champ.toLowerCase().includes(searchText.toLowerCase())) {
-        return false;
-      }
-      if (classFilter) {
-        const info = draftState.champion_details?.[champ];
-        if (info && info.class !== classFilter) return false;
-      }
-      return true;
-    });
-  }, [draftState.available_champions, draftState.champion_details, searchText, classFilter]);
 
   return (
     <div className="flex w-full flex-1 min-h-0 gap-3">
@@ -249,260 +157,43 @@ export function DraftUI({
 
         {/* Swap panel (shown when draft is complete) */}
         {draftState.is_complete && onSwap && (
-          <div
-            className="flex flex-col flex-1 rounded-xl border overflow-hidden"
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              borderColor: 'var(--border-subtle)',
-            }}
-          >
-            <div
-              className="flex items-center justify-center gap-2 px-3 py-2 border-b shrink-0"
-              style={{ borderColor: 'var(--border-subtle)' }}
-            >
-              <ArrowLeftRight size={14} style={{ color: 'var(--color-accent-cyan)' }} />
-              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                Champion Swap
-              </span>
-              <span className="text-[0.6rem]" style={{ color: 'var(--text-muted)' }}>
-                — Click two slots to swap champions
-              </span>
-            </div>
-            <div className="flex-1 flex flex-col justify-center gap-1.5 p-4">
-              {(() => {
-                const players = playerSide === 'blue' ? draftState.blue_players : draftState.red_players;
-                const picks = playerSide === 'blue' ? draftState.blue_picks : draftState.red_picks;
-                const accent = playerSide === 'blue' ? '#3B82F6' : '#EF4444';
-                const bgTint = playerSide === 'blue' ? 'rgba(59,130,246,' : 'rgba(239,68,68,';
-                return Array.from({ length: 5 }, (_, i) => {
-                  const player = players[i] ?? null;
-                  const champ = picks[i] ?? null;
-                  const champInfo = champ ? draftState.champion_details?.[champ] : null;
-                  const isSelected = swapSelected === i;
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => handleSwapSlotClick(i)}
-                      disabled={!champ || swapping}
-                      className="flex items-center gap-3 px-4 py-2.5 rounded-lg border transition-all duration-150"
-                      style={{
-                        borderColor: isSelected ? accent : 'var(--border-subtle)',
-                        backgroundColor: isSelected ? `${bgTint}0.15)` : 'var(--bg-elevated)',
-                        cursor: champ ? 'pointer' : 'default',
-                        boxShadow: isSelected ? `0 0 8px ${bgTint}0.3)` : 'none',
-                      }}
-                    >
-                      <div
-                        className="w-10 h-6 rounded text-[0.65rem] font-semibold flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: `${bgTint}0.12)`, color: accent }}
-                      >
-                        {player ? (ROLE_SHORT[player.role] ?? player.role.slice(0, 3).toUpperCase()) : `P${i + 1}`}
-                      </div>
-                      <span
-                        className="text-sm font-semibold flex-1 text-left truncate"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {player?.nickname ?? `Player ${i + 1}`}
-                      </span>
-                      {champ && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold" style={{ color: accent }}>
-                            {champ}
-                          </span>
-                          {champInfo && (
-                            <span
-                              className="text-[0.6rem] text-xs"
-                              style={{ color: classColor(champInfo.class as ChampionClass) }}
-                            >
-                              {champInfo.class}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {isSelected && (
-                        <ArrowLeftRight size={14} style={{ color: accent, flexShrink: 0 }} />
-                      )}
-                    </button>
-                  );
-                });
-              })()}
-              {swapSelected !== null && (
-                <p className="text-xs text-center animate-pulse mt-1" style={{ color: playerSide === 'blue' ? '#3B82F6' : '#EF4444' }}>
-                  Select another player to swap with
-                </p>
-              )}
-            </div>
-          </div>
+          <SwapPhaseUI
+            draftState={draftState}
+            playerSide={playerSide}
+            onSwap={onSwap}
+            onConfirm={onComplete}
+          />
         )}
 
         {/* Champion grid with filters */}
         {!draftState.is_complete && (
-          <div
-            className="flex flex-col flex-1 rounded-xl border overflow-hidden"
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              borderColor: 'var(--border-subtle)',
-            }}
-          >
-            {/* Filter bar */}
-            <div
-              className="flex items-center gap-2 px-3 py-2 border-b shrink-0"
-              style={{ borderColor: 'var(--border-subtle)' }}
-            >
-              {/* Search input */}
-              <div
-                className="flex items-center gap-1.5 px-2 py-1 rounded-lg border flex-1 max-w-48"
-                style={{
-                  backgroundColor: 'var(--bg-elevated)',
-                  borderColor: searchText ? 'var(--color-accent-cyan)' : 'var(--border-subtle)',
-                }}
-              >
-                <Search size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  className="bg-transparent text-xs outline-none flex-1 min-w-0"
-                  style={{ color: 'var(--text-primary)' }}
-                />
-                {searchText && (
-                  <button onClick={() => setSearchText('')} className="shrink-0">
-                    <X size={10} style={{ color: 'var(--text-muted)' }} />
-                  </button>
-                )}
-              </div>
-
-              {/* Class filter pills */}
-              <div className="flex gap-1">
-                {ALL_CLASSES.map((cls) => {
-                  const isActive = classFilter === cls;
-                  return (
-                    <button
-                      key={cls}
-                      onClick={() => setClassFilter(isActive ? null : cls)}
-                      className="px-2 py-0.5 rounded text-[0.6rem] font-semibold transition-all duration-150 border"
-                      style={{
-                        backgroundColor: isActive ? 'rgba(6,182,212,0.15)' : 'transparent',
-                        borderColor: isActive ? classColor(cls) : 'var(--border-subtle)',
-                        color: isActive ? classColor(cls) : 'var(--text-muted)',
-                      }}
-                    >
-                      {cls}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Result count */}
-              <span
-                className="text-[0.6rem] tabular-nums ml-auto shrink-0"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                {filteredChampions.length}/{draftState.available_champions.length}
-              </span>
-            </div>
-
-            {/* Grid */}
-            <div className="flex-1 p-3 overflow-y-auto relative">
-              <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
-                {filteredChampions.map((champ) => {
-                  const isHovered = draftState.active_hover === champ;
-                  const info = draftState.champion_details?.[champ];
-                  return (
-                    <button
-                      key={champ}
-                      aria-label={champ}
-                      data-hovered={isHovered ? 'true' : 'false'}
-                      disabled={!draftState.is_player_turn}
-                      onClick={() => onHover(champ)}
-                      className="flex flex-col items-center justify-center gap-0.5 p-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border"
-                      style={{
-                        backgroundColor: isHovered
-                          ? 'rgba(6,182,212,0.15)'
-                          : 'var(--bg-elevated)',
-                        borderColor: isHovered
-                          ? 'var(--color-accent-cyan)'
-                          : 'var(--border-subtle)',
-                        color: isHovered
-                          ? 'var(--color-accent-cyan)'
-                          : 'var(--text-primary)',
-                        opacity: draftState.is_player_turn ? 1 : 0.5,
-                        cursor: draftState.is_player_turn ? 'pointer' : 'not-allowed',
-                        boxShadow: isHovered ? '0 0 8px rgba(6,182,212,0.25)' : 'none',
-                      }}
-                    >
-                      <span className="font-bold text-[0.65rem] leading-tight truncate w-full text-center">
-                        {champ}
-                      </span>
-                      {info && (
-                        <>
-                          <span
-                            className="text-[0.55rem] leading-tight"
-                            style={{ color: classColor(info.class) }}
-                          >
-                            {info.class}
-                          </span>
-                          <div className="flex gap-1 items-center">
-                            <span
-                              className="text-[0.5rem] leading-tight"
-                              style={{ color: scalingColor(info.scaling) }}
-                            >
-                              {info.scaling}
-                            </span>
-                            {info.meta_tier && (
-                              <span
-                                className="text-[0.5rem] font-bold leading-tight"
-                                style={{ color: metaTierColor(info.meta_tier) }}
-                              >
-                                {info.meta_tier}
-                              </span>
-                            )}
-                            {info.best_mastery && info.best_mastery !== 'Bronze' && (
-                              <span
-                                className="text-[0.5rem] leading-tight"
-                                style={{ color: masteryColor(info.best_mastery) }}
-                              >
-                                {masteryShort(info.best_mastery)}
-                              </span>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </button>
-                  );
-                })}
-                {filteredChampions.length === 0 && (
-                  <div
-                    className="col-span-full text-center py-8 text-sm"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    No champions match filters
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <DraftChampionGrid
+            availableChampions={draftState.available_champions}
+            activeHover={draftState.active_hover}
+            isPlayerTurn={draftState.is_player_turn}
+            championDetails={draftState.champion_details}
+            onHover={onHover}
+          />
         )}
 
         {/* Lock / Complete button */}
+        {!draftState.is_complete || !onSwap ? (
         <div className="flex justify-center px-4 pb-1 shrink-0">
           {draftState.is_complete ? (
             <button
               onClick={onComplete}
-              disabled={swapping}
               className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
               style={{
                 background: 'linear-gradient(135deg, #10B981, #06B6D4)',
                 boxShadow: '0 0 16px rgba(6,182,212,0.3)',
-                opacity: swapping ? 0.5 : 1,
               }}
             >
               <CheckCircle size={18} />
-              {onSwap ? 'Confirm Lineup' : 'Continue'}
+              Continue
             </button>
           ) : draftState.active_hover ? (
             <button
+              aria-label="Lock In"
               onClick={onLock}
               className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
               style={{
@@ -524,6 +215,7 @@ export function DraftUI({
             </div>
           )}
         </div>
+        ) : null}
       </div>
 
       {/* ---- Red side panel ---- */}
@@ -544,148 +236,5 @@ export function DraftUI({
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function TeamPanel({
-  side,
-  teamName,
-  players,
-  picks,
-  bans,
-  isActive,
-  championDetails,
-}: {
-  side: 'blue' | 'red';
-  teamName: string;
-  players: DraftPlayerInfo[];
-  picks: string[];
-  bans: string[];
-  isActive: boolean;
-  championDetails: Record<string, import('@/lib/api').ChampionDraftInfo>;
-}) {
-  const accent = side === 'blue' ? '#3B82F6' : '#EF4444';
-  const bgTint = side === 'blue' ? 'rgba(59,130,246,' : 'rgba(239,68,68,';
-  const slots = Array.from({ length: 5 }, (_, i) => ({
-    player: players[i] ?? null,
-    champion: picks[i] ?? null,
-  }));
-
-  return (
-    <div
-      className="flex flex-col w-52 shrink-0 rounded-xl border overflow-hidden"
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderColor: isActive ? accent : 'var(--border-subtle)',
-        boxShadow: isActive ? `0 0 16px ${bgTint}0.25)` : 'none',
-        transition: 'border-color 0.3s, box-shadow 0.3s',
-      }}
-    >
-      {/* Team header */}
-      <div
-        className="px-4 py-2.5 text-center font-bold text-sm uppercase tracking-wider border-b"
-        style={{
-          color: accent,
-          backgroundColor: `${bgTint}0.08)`,
-          borderColor: `${bgTint}0.2)`,
-        }}
-      >
-        {teamName}
-      </div>
-
-      {/* Player pick slots */}
-      <div className="flex flex-col flex-1">
-        {slots.map((slot, i) => {
-          const champInfo = slot.champion ? championDetails?.[slot.champion] : null;
-          const isLocked = !!slot.champion;
-          return (
-            <div
-              key={i}
-              className="flex items-center gap-2 px-3 py-2.5 border-b last:border-b-0"
-              style={{
-                borderColor: 'var(--border-subtle)',
-                backgroundColor: isLocked ? `${bgTint}0.06)` : 'transparent',
-              }}
-            >
-              {/* Role badge */}
-              <div
-                className="w-8 h-5 rounded text-[0.6rem] font-semibold flex items-center justify-center shrink-0"
-                style={{
-                  backgroundColor: `${bgTint}0.12)`,
-                  color: isLocked ? accent : 'var(--text-muted)',
-                }}
-              >
-                {slot.player ? (ROLE_SHORT[slot.player.role] ?? slot.player.role.slice(0, 3).toUpperCase()) : `P${i + 1}`}
-              </div>
-
-              {/* Player + champion info */}
-              <div className="flex flex-col min-w-0 flex-1">
-                <span
-                  className="text-xs font-semibold truncate"
-                  style={{ color: isLocked ? 'var(--text-primary)' : 'var(--text-secondary)' }}
-                >
-                  {slot.player?.nickname ?? `Player ${i + 1}`}
-                </span>
-                {isLocked ? (
-                  <div className="flex items-center gap-1">
-                    <span
-                      className="text-[0.65rem] font-bold truncate"
-                      style={{ color: accent }}
-                    >
-                      {slot.champion}
-                    </span>
-                    {champInfo && (
-                      <span
-                        className="text-[0.5rem] text-xs"
-                        style={{ color: classColor(champInfo.class as ChampionClass) }}
-                      >
-                        {champInfo.class}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <span
-                    className="text-[0.6rem] italic"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    —
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Bans row */}
-      <div
-        className="px-3 py-2 border-t"
-        style={{ borderColor: 'var(--border-subtle)', backgroundColor: `${bgTint}0.04)` }}
-      >
-        <div
-          className="text-[0.55rem] font-semibold uppercase tracking-wider mb-1"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          Bans
-        </div>
-        <div className="flex gap-1">
-          {Array.from({ length: 5 }, (_, i) => {
-            const champ = bans[i] ?? null;
-            return (
-              <div
-                key={i}
-                className="flex-1 h-5 rounded flex items-center justify-center text-[0.5rem] border"
-                style={{
-                  backgroundColor: champ ? 'rgba(239,68,68,0.1)' : 'var(--bg-elevated)',
-                  borderColor: champ ? `${bgTint}0.3)` : 'var(--border-subtle)',
-                  color: champ ? '#EF4444' : 'var(--text-muted)',
-                  textDecoration: champ ? 'line-through' : 'none',
-                }}
-              >
-                {champ ? champ.slice(0, 4) : '—'}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
+const TeamPanel = DraftTeamPanel;
 

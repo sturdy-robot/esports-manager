@@ -59,12 +59,26 @@ fn champion_data_from_json() {
         "name": "Orianna",
         "class": "Mage",
         "scaling": "Mid",
-        "tags": ["Poke", "Waveclear", "Peel"]
+        "tags": ["Poke", "Waveclear", "Peel"],
+        "preferred_roles": ["Mid", "Support"]
     }"#;
     let champ: ChampionData = serde_json::from_str(json).unwrap();
     assert_eq!(champ.name, "Orianna");
     assert_eq!(champ.class, "Mage");
     assert_eq!(champ.tags.len(), 3);
+    assert_eq!(champ.preferred_roles, vec!["Mid", "Support"]);
+}
+
+#[test]
+fn champion_data_without_preferred_roles_defaults_to_empty() {
+    let json = r#"{
+        "name": "Orianna",
+        "class": "Mage",
+        "scaling": "Mid",
+        "tags": ["Poke", "Waveclear", "Peel"]
+    }"#;
+    let champ: ChampionData = serde_json::from_str(json).unwrap();
+    assert!(champ.preferred_roles.is_empty());
 }
 
 // ---------------------------------------------------------------------------
@@ -94,8 +108,8 @@ fn sample_datapack_json() -> String {
             }
         ],
         "champions": [
-            {"name": "Orianna", "class": "Mage", "scaling": "Mid", "tags": ["Poke", "Waveclear"]},
-            {"name": "Malphite", "class": "Tank", "scaling": "Late", "tags": ["Knockup", "Engage"]}
+            {"name": "Orianna", "class": "Mage", "scaling": "Mid", "tags": ["Poke", "Waveclear"], "preferred_roles": ["Mid"]},
+            {"name": "Malphite", "class": "Tank", "scaling": "Late", "tags": ["Knockup", "Engage"], "preferred_roles": ["Top"]}
         ]
     }"#
     .to_string()
@@ -237,6 +251,17 @@ fn datapack_validate_rejects_invalid_champion_class() {
     let pack = DataPack::from_json(json).unwrap();
     let result = pack.validate();
     assert!(result.is_err());
+}
+
+#[test]
+fn datapack_validate_rejects_invalid_champion_preferred_role() {
+    let json = r#"{
+        "teams": [],
+        "players": [],
+        "champions": [{"name": "X", "class": "Mage", "scaling": "Mid", "tags": [], "preferred_roles": ["Coach"]}]
+    }"#;
+    let pack = DataPack::from_json(json).unwrap();
+    assert!(pack.validate().is_err());
 }
 
 #[test]

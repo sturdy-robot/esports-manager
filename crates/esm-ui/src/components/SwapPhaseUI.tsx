@@ -1,21 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ArrowLeftRight, Check } from 'lucide-react';
-import type { DraftSessionState, DraftPlayerInfo, ChampionDraftInfo, ChampionClass } from '@/lib/api';
-
-const ROLE_SHORT: Record<string, string> = {
-  Top: 'TOP', Jungle: 'JNG', Mid: 'MID', Bot: 'BOT', Support: 'SUP',
-};
-
-function classColor(cls: ChampionClass): string {
-  switch (cls) {
-    case 'Tank':     return 'var(--color-info)';
-    case 'Fighter':  return 'var(--color-warning)';
-    case 'Assassin': return 'var(--color-loss)';
-    case 'Mage':     return 'var(--color-accent-emerald)';
-    case 'Marksman': return 'var(--color-accent-cyan)';
-    case 'Support':  return 'var(--color-win)';
-  }
-}
+import type { DraftSessionState, DraftPlayerInfo, ChampionDraftInfo } from '@/lib/api';
+import { classColor, roleShort } from './draftUiShared';
 
 interface SwapPhaseUIProps {
   draftState: DraftSessionState;
@@ -127,7 +113,7 @@ export function SwapPhaseUI({
                 }}
               >
                 {player
-                  ? (ROLE_SHORT[player.role] ?? player.role.slice(0, 3).toUpperCase())
+                  ? roleShort(player.role)
                   : `P${i + 1}`}
               </div>
 
@@ -151,7 +137,7 @@ export function SwapPhaseUI({
                   {info && (
                     <span
                       className="text-[0.6rem] text-xs"
-                      style={{ color: classColor(info.class as ChampionClass) }}
+                      style={{ color: classColor(info.class) }}
                     >
                       {info.class}
                     </span>

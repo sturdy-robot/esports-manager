@@ -108,6 +108,7 @@ describe("TeamScheduleView", () => {
     expect(screen.getByRole("heading", { name: /scrims/i })).toBeInTheDocument();
     // Status badge
     expect(screen.getByText("Scheduled")).toBeInTheDocument();
+    expect(screen.getByText(/3 games/)).toBeInTheDocument();
   });
 
   it("shows loading state when schedule is null", () => {

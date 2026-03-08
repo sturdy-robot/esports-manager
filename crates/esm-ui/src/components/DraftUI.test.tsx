@@ -13,26 +13,26 @@ const SAMPLE_CHAMPIONS = [
 ];
 
 const SAMPLE_CHAMPION_DETAILS: Record<string, ChampionDraftInfo> = {
-  Orianna:  { name: 'Orianna',  class: 'Mage',     scaling: 'Mid',   tags: ['Poke', 'Waveclear'], meta_tier: 'S' },
-  Azir:     { name: 'Azir',     class: 'Mage',     scaling: 'Late',  tags: ['Poke'], meta_tier: 'A' },
-  Ahri:     { name: 'Ahri',     class: 'Mage',     scaling: 'Mid',   tags: ['Burst'], meta_tier: 'A' },
-  Syndra:   { name: 'Syndra',   class: 'Mage',     scaling: 'Mid',   tags: ['Burst'], meta_tier: 'B' },
-  Zed:      { name: 'Zed',      class: 'Assassin', scaling: 'Mid',   tags: ['Burst'], meta_tier: 'B' },
-  Malphite: { name: 'Malphite', class: 'Tank',     scaling: 'Mid',   tags: ['Engage'], meta_tier: 'A' },
-  Ornn:     { name: 'Ornn',     class: 'Tank',     scaling: 'Late',  tags: ['Engage'], meta_tier: 'S' },
-  Gnar:     { name: 'Gnar',     class: 'Fighter',  scaling: 'Mid',   tags: ['Engage'], meta_tier: 'B' },
-  Fiora:    { name: 'Fiora',    class: 'Fighter',  scaling: 'Late',  tags: ['Splitpush'], meta_tier: 'A' },
-  Jayce:    { name: 'Jayce',    class: 'Fighter',  scaling: 'Early', tags: ['Poke'], meta_tier: 'B' },
-  'Lee Sin':   { name: 'Lee Sin',   class: 'Fighter',  scaling: 'Early', tags: ['Engage'], meta_tier: 'S' },
-  Viego:    { name: 'Viego',    class: 'Assassin', scaling: 'Mid',   tags: ['Sustain'], meta_tier: 'A' },
-  'Jarvan IV': { name: 'Jarvan IV', class: 'Fighter',  scaling: 'Early', tags: ['Engage'], meta_tier: 'B' },
-  Jinx:     { name: 'Jinx',     class: 'Marksman', scaling: 'Late',  tags: ['Waveclear'], meta_tier: 'A' },
-  "Kai'Sa": { name: "Kai'Sa",   class: 'Marksman', scaling: 'Mid',   tags: ['Burst'], meta_tier: 'S' },
-  Ezreal:   { name: 'Ezreal',   class: 'Marksman', scaling: 'Mid',   tags: ['Poke'], meta_tier: 'A' },
-  Aphelios: { name: 'Aphelios', class: 'Marksman', scaling: 'Late',  tags: ['Burst'], meta_tier: 'B' },
-  Thresh:   { name: 'Thresh',   class: 'Support',  scaling: 'Early', tags: ['Engage'], meta_tier: 'S' },
-  Nautilus: { name: 'Nautilus', class: 'Support',  scaling: 'Early', tags: ['Engage'], meta_tier: 'A' },
-  Lulu:     { name: 'Lulu',     class: 'Support',  scaling: 'Mid',   tags: ['Peel'], meta_tier: 'A' },
+  Orianna:  { name: 'Orianna',  class: 'Mage',     scaling: 'Mid',   tags: ['Poke', 'Waveclear'], preferred_roles: ['Mid'], meta_tier: 'S' },
+  Azir:     { name: 'Azir',     class: 'Mage',     scaling: 'Late',  tags: ['Poke'], preferred_roles: ['Mid'], meta_tier: 'A' },
+  Ahri:     { name: 'Ahri',     class: 'Mage',     scaling: 'Mid',   tags: ['Burst'], preferred_roles: ['Mid'], meta_tier: 'A' },
+  Syndra:   { name: 'Syndra',   class: 'Mage',     scaling: 'Mid',   tags: ['Burst'], preferred_roles: ['Mid'], meta_tier: 'B' },
+  Zed:      { name: 'Zed',      class: 'Assassin', scaling: 'Mid',   tags: ['Burst'], preferred_roles: ['Mid'], meta_tier: 'B' },
+  Malphite: { name: 'Malphite', class: 'Tank',     scaling: 'Mid',   tags: ['Engage'], preferred_roles: ['Top'], meta_tier: 'A' },
+  Ornn:     { name: 'Ornn',     class: 'Tank',     scaling: 'Late',  tags: ['Engage'], preferred_roles: ['Top'], meta_tier: 'S' },
+  Gnar:     { name: 'Gnar',     class: 'Fighter',  scaling: 'Mid',   tags: ['Engage'], preferred_roles: ['Top'], meta_tier: 'B' },
+  Fiora:    { name: 'Fiora',    class: 'Fighter',  scaling: 'Late',  tags: ['Splitpush'], preferred_roles: ['Top'], meta_tier: 'A' },
+  Jayce:    { name: 'Jayce',    class: 'Fighter',  scaling: 'Early', tags: ['Poke'], preferred_roles: ['Top', 'Mid'], meta_tier: 'B' },
+  'Lee Sin':   { name: 'Lee Sin',   class: 'Fighter',  scaling: 'Early', tags: ['Engage'], preferred_roles: ['Jungle'], meta_tier: 'S' },
+  Viego:    { name: 'Viego',    class: 'Assassin', scaling: 'Mid',   tags: ['Sustain'], preferred_roles: ['Jungle'], meta_tier: 'A' },
+  'Jarvan IV': { name: 'Jarvan IV', class: 'Fighter',  scaling: 'Early', tags: ['Engage'], preferred_roles: ['Jungle'], meta_tier: 'B' },
+  Jinx:     { name: 'Jinx',     class: 'Marksman', scaling: 'Late',  tags: ['Waveclear'], preferred_roles: ['Bot'], meta_tier: 'A' },
+  "Kai'Sa": { name: "Kai'Sa",   class: 'Marksman', scaling: 'Mid',   tags: ['Burst'], preferred_roles: ['Bot'], meta_tier: 'S' },
+  Ezreal:   { name: 'Ezreal',   class: 'Marksman', scaling: 'Mid',   tags: ['Poke'], preferred_roles: ['Bot'], meta_tier: 'A' },
+  Aphelios: { name: 'Aphelios', class: 'Marksman', scaling: 'Late',  tags: ['Burst'], preferred_roles: ['Bot'], meta_tier: 'B' },
+  Thresh:   { name: 'Thresh',   class: 'Support',  scaling: 'Early', tags: ['Engage'], preferred_roles: ['Support'], meta_tier: 'S' },
+  Nautilus: { name: 'Nautilus', class: 'Support',  scaling: 'Early', tags: ['Engage'], preferred_roles: ['Support'], meta_tier: 'A' },
+  Lulu:     { name: 'Lulu',     class: 'Support',  scaling: 'Mid',   tags: ['Peel'], preferred_roles: ['Support'], meta_tier: 'A' },
 };
 
 function makeDraftState(overrides: Partial<DraftSessionState> = {}): DraftSessionState {
@@ -239,5 +239,13 @@ describe('DraftUI', () => {
     expect(azirBtn.textContent).toContain('Late');
     const jayceBtn = screen.getByRole('button', { name: /jayce/i });
     expect(jayceBtn.textContent).toContain('Early');
+  });
+
+  it('shows champion preferred role chips on champion buttons', () => {
+    renderWithProviders(<DraftUI {...defaultProps} />);
+    const oriannaBtn = screen.getByRole('button', { name: /orianna/i });
+    expect(oriannaBtn.textContent).toContain('MID');
+    const kaiSaBtn = screen.getByRole('button', { name: /kai'sa/i });
+    expect(kaiSaBtn.textContent).toContain('ADC');
   });
 });

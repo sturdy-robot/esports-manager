@@ -67,6 +67,57 @@ impl AppState {
     }
 }
 
+fn push_role_if_missing(roles: &mut Vec<String>, role: &str) {
+    if !roles.iter().any(|existing| existing == role) {
+        roles.push(role.to_string());
+    }
+}
+
+fn preferred_roles_for_champion(champion: &esm_data::datapack::ChampionData) -> Vec<String> {
+    if !champion.preferred_roles.is_empty() {
+        return champion.preferred_roles.clone();
+    }
+
+    let mut roles = Vec::new();
+    let has_tag = |needle: &str| champion.tags.iter().any(|tag| tag == needle);
+
+    match champion.class.as_str() {
+        "Support" => push_role_if_missing(&mut roles, "Support"),
+        "Marksman" => push_role_if_missing(&mut roles, "Bot"),
+        "Mage" => {
+            push_role_if_missing(&mut roles, "Mid");
+            if has_tag("Peel") {
+                push_role_if_missing(&mut roles, "Support");
+            }
+        }
+        "Assassin" => {
+            push_role_if_missing(&mut roles, "Mid");
+            push_role_if_missing(&mut roles, "Jungle");
+        }
+        "Tank" => {
+            push_role_if_missing(&mut roles, "Top");
+            if has_tag("Engage") {
+                push_role_if_missing(&mut roles, "Jungle");
+            }
+            if has_tag("Peel") {
+                push_role_if_missing(&mut roles, "Support");
+            }
+        }
+        "Fighter" => {
+            push_role_if_missing(&mut roles, "Top");
+            if has_tag("Engage") {
+                push_role_if_missing(&mut roles, "Jungle");
+            }
+            if has_tag("Poke") {
+                push_role_if_missing(&mut roles, "Mid");
+            }
+        }
+        _ => {}
+    }
+
+    roles
+}
+
 // ---------------------------------------------------------------------------
 // DTOs for frontend ↔ backend
 // ---------------------------------------------------------------------------
@@ -131,6 +182,10 @@ pub struct GameSnapshotInfo {
     pub red_players: Vec<PlayerSnapshotInfo>,
     pub blue_team_gold: u32,
     pub red_team_gold: u32,
+    pub blue_towers: u32,
+    pub red_towers: u32,
+    pub blue_inhibitors: u32,
+    pub red_inhibitors: u32,
     pub dragons_blue: u32,
     pub dragons_red: u32,
     pub baron_alive: bool,
@@ -367,6 +422,7 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
                     class: c.class.clone(),
                     scaling: c.scaling.clone(),
                     tags: c.tags.clone(),
+                    preferred_roles: preferred_roles_for_champion(c),
                     meta_tier: "B".to_string(),
                     best_mastery: None,
                 },
@@ -1662,6 +1718,10 @@ fn match_result_to_info(
                     red_players: convert_players(&s.red_players),
                     blue_team_gold: s.blue_team_gold,
                     red_team_gold: s.red_team_gold,
+                    blue_towers: s.blue_towers,
+                    red_towers: s.red_towers,
+                    blue_inhibitors: s.blue_inhibitors,
+                    red_inhibitors: s.red_inhibitors,
                     dragons_blue: s.dragons_blue,
                     dragons_red: s.dragons_red,
                     baron_alive: s.baron_alive,

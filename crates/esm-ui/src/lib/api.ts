@@ -159,6 +159,7 @@ export interface ChampionDraftInfo {
   class: ChampionClass;
   scaling: ChampionScaling;
   tags: string[];
+  preferred_roles: string[];
   meta_tier: string;
   best_mastery?: string;
 }
@@ -239,6 +240,10 @@ export interface GameSnapshotInfo {
   red_players: PlayerSnapshotInfo[];
   blue_team_gold: number;
   red_team_gold: number;
+  blue_towers: number;
+  red_towers: number;
+  blue_inhibitors: number;
+  red_inhibitors: number;
   dragons_blue: number;
   dragons_red: number;
   baron_alive: boolean;

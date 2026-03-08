@@ -360,7 +360,7 @@ function ObjectivesBar({ snapshot }: { snapshot: GameSnapshotInfo | null }) {
   if (!snapshot) return null;
   return (
     <div
-      className="flex items-center justify-center gap-6 px-4 py-2 rounded-xl border shrink-0"
+      className="flex items-center justify-center gap-6 px-4 py-2 rounded-xl border shrink-0 flex-wrap"
       style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}
     >
       <ObjectiveChip
@@ -368,6 +368,18 @@ function ObjectivesBar({ snapshot }: { snapshot: GameSnapshotInfo | null }) {
         label="Dragons"
         blue={snapshot.dragons_blue}
         red={snapshot.dragons_red}
+      />
+      <ObjectiveChip
+        icon={<Castle size={14} />}
+        label="Towers"
+        blue={snapshot.blue_towers}
+        red={snapshot.red_towers}
+      />
+      <ObjectiveChip
+        icon={<Shield size={14} />}
+        label="Inhibitors"
+        blue={snapshot.blue_inhibitors}
+        red={snapshot.red_inhibitors}
       />
       <ObjectiveChip
         icon={<Crown size={14} />}
