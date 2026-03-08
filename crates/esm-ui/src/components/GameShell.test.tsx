@@ -11,6 +11,10 @@ const mockFetch = vi.fn();
 const MOCK_WEEK_SCHEDULE = {
     days: Array.from({ length: 7 }, (_, i) => ({
         day_index: i,
+        day_label: ['Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue'][i],
+        date_label: `Jan ${i + 1}, 2025`,
+        is_past: false,
+        has_match: false,
         slots: ['Morning', 'Afternoon', 'Evening'].map((ts) => ({
             time_slot: ts,
             entry_type: 'free',
@@ -21,6 +25,7 @@ const MOCK_WEEK_SCHEDULE = {
         })),
     })),
     total_scrims: 0,
+    total_matches: 0,
     occupied_slots: 0,
 };
 
@@ -41,7 +46,6 @@ vi.mock('../lib/use-api', async () => {
             scheduleScrim: mockFetch,
             cancelScrim: mockFetch,
             scheduleSoloQueue: mockFetch,
-            scheduleRest: mockFetch,
             clearSlot: mockFetch,
         })),
     };
@@ -62,30 +66,24 @@ describe('GameShell', () => {
         expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0);
     });
 
-    it('navigates to different pages via sidebar', () => {
+    it('navigates to different pages via sidebar', async () => {
+        const user = userEvent.setup();
         renderWithProviders(<GameShell {...defaultProps} />);
 
-        // Roster
-        fireEvent.click(screen.getByRole('button', { name: /roster/i }));
+        await user.click(screen.getByRole('button', { name: /roster/i }));
         expect(screen.getAllByText('Roster').length).toBeGreaterThan(0);
 
-        // Schedule
-        fireEvent.click(screen.getByRole('button', { name: /schedule/i }));
-        expect(screen.getAllByText('Schedule').length).toBeGreaterThan(0);
-
-        // Inbox
-        fireEvent.click(screen.getByRole('button', { name: /inbox/i }));
+        await user.click(screen.getByRole('button', { name: /inbox/i }));
         expect(screen.getAllByText('Inbox').length).toBeGreaterThan(0);
 
-        // Standings
-        fireEvent.click(screen.getByRole('button', { name: /standings/i }));
+        await user.click(screen.getByRole('button', { name: /standings/i }));
         expect(screen.getAllByText('Standings').length).toBeGreaterThan(0);
     });
 
-    it('renders weekly schedule content when navigating to schedule page', () => {
+    it('renders team calendar content when navigating to schedule page', () => {
         renderWithProviders(<GameShell {...defaultProps} />);
         fireEvent.click(screen.getByRole('button', { name: /schedule/i }));
-        expect(screen.getByRole('heading', { name: /weekly schedule/i })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /team calendar/i })).toBeInTheDocument();
         expect(screen.queryByText(/loading schedule/i)).not.toBeInTheDocument();
     });
 

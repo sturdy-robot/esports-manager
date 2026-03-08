@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { Sun, Moon, Play, Save } from 'lucide-react'
 import { useTheme } from '@/lib/use-theme'
 import { PlayMatchButton } from './PlayMatchButton'
 import type { MatchMode } from './PlayMatchButton'
+
+export type ContinueMode = 'smart' | 'step'
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -19,7 +22,7 @@ interface TopBarProps {
   isMatchDay?: boolean
   continueDisabled?: boolean
   onSave?: () => void
-  onContinue?: () => void
+  onContinue?: (mode: ContinueMode) => void
   onPlayMatch?: (mode: MatchMode) => void
 }
 
@@ -39,6 +42,7 @@ export function TopBar({
 }: TopBarProps) {
   const { theme, toggleTheme } = useTheme()
   const monthLabel = MONTH_NAMES[(month - 1) % 12]
+  const [continueMode, setContinueMode] = useState<ContinueMode>('smart')
 
   return (
     <header
@@ -138,21 +142,37 @@ export function TopBar({
         {isMatchDay && onPlayMatch ? (
           <PlayMatchButton onConfirm={onPlayMatch} />
         ) : onContinue ? (
-          <button
-            onClick={onContinue}
-            disabled={continueDisabled}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all"
-            style={{
-              background: continueDisabled
-                ? 'var(--bg-elevated)'
-                : 'linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))',
-              color: continueDisabled ? 'var(--text-muted)' : '#fff',
-              cursor: continueDisabled ? 'not-allowed' : 'pointer',
-            }}
-          >
-            <Play size={12} />
-            Continue
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              aria-label="Continue mode"
+              value={continueMode}
+              onChange={(e) => setContinueMode(e.target.value as ContinueMode)}
+              className="px-2 py-1.5 rounded-md text-xs font-medium border"
+              style={{
+                borderColor: 'var(--border-subtle)',
+                backgroundColor: 'var(--bg-elevated)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <option value="smart">Smart</option>
+              <option value="step">Step</option>
+            </select>
+            <button
+              onClick={() => onContinue(continueMode)}
+              disabled={continueDisabled}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all"
+              style={{
+                background: continueDisabled
+                  ? 'var(--bg-elevated)'
+                  : 'linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))',
+                color: continueDisabled ? 'var(--text-muted)' : '#fff',
+                cursor: continueDisabled ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <Play size={12} />
+              Continue
+            </button>
+          </div>
         ) : null}
       </div>
     </header>

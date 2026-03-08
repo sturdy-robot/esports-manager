@@ -3,7 +3,6 @@ import {
   Calendar,
   Swords,
   Gamepad2,
-  Moon,
   Plus,
   X,
   ChevronDown,
@@ -39,7 +38,6 @@ interface TeamScheduleViewProps {
     players: number[],
     focus: SoloQueueFocusType
   ) => Promise<void>;
-  onScheduleRest: (dayIndex: number, timeSlot: TimeSlotType) => Promise<void>;
   onClearSlot: (dayIndex: number, timeSlot: TimeSlotType) => Promise<void>;
   onCancelScrim: (scrimId: number) => Promise<void>;
   teamNames: string[];
@@ -50,7 +48,6 @@ interface TeamScheduleViewProps {
 // Constants
 // ---------------------------------------------------------------------------
 
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const TIME_SLOTS: TimeSlotType[] = ["Morning", "Afternoon", "Evening"];
 const FOCUS_OPTIONS: SoloQueueFocusType[] = [
   "champions",
@@ -70,6 +67,8 @@ function SlotCell({
   onAdd,
   onClear,
   scrimResult,
+  blockedReason,
+  canClear,
 }: {
   slot: ScheduleSlotInfo;
   dayIndex: number;
@@ -77,8 +76,27 @@ function SlotCell({
   onAdd: (dayIndex: number, timeSlot: TimeSlotType) => void;
   onClear: (dayIndex: number, timeSlot: TimeSlotType) => void;
   scrimResult?: { homeWins: number; awayWins: number; completed: boolean };
+  blockedReason?: string;
+  canClear: boolean;
 }) {
   if (slot.entry_type === "free") {
+    if (blockedReason) {
+      return (
+        <div
+          className="w-full h-full min-h-[56px] flex items-center justify-center rounded border border-dashed"
+          style={{
+            borderColor: "var(--border-subtle)",
+            backgroundColor: "rgba(255,255,255,0.02)",
+            color: "var(--text-muted)",
+          }}
+        >
+          <span className="text-[10px] font-semibold uppercase tracking-wide">
+            {blockedReason}
+          </span>
+        </div>
+      );
+    }
+
     return (
       <button
         onClick={() => onAdd(dayIndex, timeSlot)}
@@ -105,34 +123,43 @@ function SlotCell({
   const bgColor =
     slot.entry_type === "scrim"
       ? "rgba(6, 182, 212, 0.12)"
+      : slot.entry_type === "match"
+        ? "rgba(251, 191, 36, 0.12)"
       : slot.entry_type === "solo_queue"
         ? "rgba(16, 185, 129, 0.12)"
-        : "rgba(34, 197, 94, 0.12)";
+        : "rgba(255,255,255,0.02)";
 
   const borderColor =
     slot.entry_type === "scrim"
       ? "var(--color-accent-cyan)"
+      : slot.entry_type === "match"
+        ? "var(--color-warning)"
       : slot.entry_type === "solo_queue"
         ? "var(--color-accent-emerald)"
-        : "var(--color-win)";
+        : "var(--border-subtle)";
 
   const icon =
     slot.entry_type === "scrim" ? (
       <Swords size={14} />
+    ) : slot.entry_type === "match" ? (
+      <Calendar size={14} />
     ) : slot.entry_type === "solo_queue" ? (
       <Gamepad2 size={14} />
-    ) : (
-      <Moon size={14} />
-    );
+    ) : null;
 
   const label =
     slot.entry_type === "scrim"
       ? `vs ${slot.opponent ?? "?"}`
+      : slot.entry_type === "match"
+        ? `Match vs ${slot.opponent ?? "?"}`
       : slot.entry_type === "solo_queue"
         ? `SoloQ · ${slot.focus ?? ""}`
-        : "Rest";
+        : "";
 
   const detail =
+    slot.entry_type === "match"
+      ? "Official series"
+      :
     slot.entry_type === "scrim" && scrimResult?.completed
       ? null
       : slot.entry_type === "solo_queue" && slot.players
@@ -153,16 +180,18 @@ function SlotCell({
         borderLeftWidth: "3px",
       }}
     >
-      <button
-        onClick={() => onClear(dayIndex, timeSlot)}
-        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 flex items-center justify-center rounded cursor-pointer border-none"
-        style={{
-          backgroundColor: "var(--bg-elevated)",
-          color: "var(--text-muted)",
-        }}
-      >
-        <X size={10} />
-      </button>
+      {canClear && (
+        <button
+          onClick={() => onClear(dayIndex, timeSlot)}
+          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 flex items-center justify-center rounded cursor-pointer border-none"
+          style={{
+            backgroundColor: "var(--bg-elevated)",
+            color: "var(--text-muted)",
+          }}
+        >
+          <X size={10} />
+        </button>
+      )}
       <div className="flex items-center gap-1.5">
         <span style={{ color: borderColor }}>{icon}</span>
         <span
@@ -200,7 +229,7 @@ function SlotCell({
 // Add slot modal
 // ---------------------------------------------------------------------------
 
-type AddMode = "scrim" | "solo_queue" | "rest";
+type AddMode = "scrim" | "solo_queue";
 
 function AddSlotModal({
   dayIndex,
@@ -211,7 +240,6 @@ function AddSlotModal({
   onClose,
   onScheduleScrim,
   onScheduleSoloQueue,
-  onScheduleRest,
 }: {
   dayIndex: number;
   timeSlot: TimeSlotType;
@@ -228,7 +256,6 @@ function AddSlotModal({
     players: number[],
     focus: SoloQueueFocusType
   ) => Promise<void>;
-  onScheduleRest: () => Promise<void>;
 }) {
   const [mode, setMode] = useState<AddMode | null>(null);
   const [awayTeamIdx, setAwayTeamIdx] = useState(() => {
@@ -250,8 +277,6 @@ function AddSlotModal({
         await onScheduleScrim(awayTeamIdx, gameCount, draftRules);
       } else if (mode === "solo_queue") {
         await onScheduleSoloQueue(selectedPlayers, focus);
-      } else if (mode === "rest") {
-        await onScheduleRest();
       }
       onClose();
     } catch (e) {
@@ -286,7 +311,7 @@ function AddSlotModal({
             className="text-sm font-bold"
             style={{ color: "var(--text-primary)" }}
           >
-            {DAY_LABELS[dayIndex]} · {timeSlot}
+            Day {dayIndex + 1} · {timeSlot}
           </h3>
           <button
             onClick={onClose}
@@ -369,32 +394,6 @@ function AddSlotModal({
                   style={{ color: "var(--text-muted)" }}
                 >
                   Individual practice session
-                </div>
-              </div>
-            </button>
-            <button
-              onClick={() => setMode("rest")}
-              className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
-              style={{
-                backgroundColor: "var(--bg-elevated)",
-                borderColor: "var(--border-subtle)",
-                color: "var(--text-primary)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--color-win)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--border-subtle)";
-              }}
-            >
-              <Moon size={18} style={{ color: "var(--color-win)" }} />
-              <div className="text-left">
-                <div className="text-sm font-semibold">Rest</div>
-                <div
-                  className="text-xs"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Recovery day for all players
                 </div>
               </div>
             </button>
@@ -580,26 +579,6 @@ function AddSlotModal({
           </div>
         )}
 
-        {mode === "rest" && (
-          <div className="flex flex-col gap-3">
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              All players will rest during this slot, recovering stamina.
-            </p>
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="w-full py-2 rounded-lg text-sm font-bold cursor-pointer border-none transition-colors"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))",
-                color: "#fff",
-                opacity: submitting ? 0.6 : 1,
-              }}
-            >
-              {submitting ? "Scheduling…" : "Schedule Rest"}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -615,7 +594,6 @@ export function TeamScheduleView({
   rosterNames,
   onScheduleScrim,
   onScheduleSoloQueue,
-  onScheduleRest,
   onClearSlot,
   onCancelScrim,
   teamNames,
@@ -686,7 +664,7 @@ export function TeamScheduleView({
           className="text-lg font-bold"
           style={{ color: "var(--text-primary)" }}
         >
-          Weekly Schedule
+          Team Calendar
         </h2>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
@@ -705,6 +683,21 @@ export function TeamScheduleView({
             </span>
           </div>
           <div className="flex items-center gap-1.5">
+            <Calendar size={14} style={{ color: "var(--color-warning)" }} />
+            <span
+              className="text-sm tabular-nums font-bold"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {schedule.total_matches}
+            </span>
+            <span
+              className="text-xs"
+              style={{ color: "var(--text-muted)" }}
+            >
+              matches
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
             <Calendar size={14} style={{ color: "var(--text-muted)" }} />
             <span
               className="text-sm tabular-nums font-bold"
@@ -713,7 +706,7 @@ export function TeamScheduleView({
               {schedule.occupied_slots}
             </span>
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-              / 21 slots
+              / {schedule.days.length * 3} slots
             </span>
           </div>
         </div>
@@ -727,18 +720,17 @@ export function TeamScheduleView({
           borderColor: "var(--border-subtle)",
         }}
       >
-        {/* Header row */}
         <div
-          className="grid grid-cols-[80px_repeat(7,1fr)] border-b"
+          className="grid grid-cols-[180px_repeat(3,minmax(0,1fr))] border-b"
           style={{ borderColor: "var(--border-subtle)" }}
         >
           <div
             className="p-2 text-xs font-semibold"
             style={{ color: "var(--text-muted)" }}
           />
-          {DAY_LABELS.map((label, i) => (
+          {TIME_SLOTS.map((label) => (
             <div
-              key={i}
+              key={label}
               className="p-2 text-center text-xs font-bold uppercase tracking-wider"
               style={{ color: "var(--text-secondary)" }}
             >
@@ -747,35 +739,54 @@ export function TeamScheduleView({
           ))}
         </div>
 
-        {/* Slot rows */}
-        {TIME_SLOTS.map((ts, rowIdx) => (
+        {schedule.days.map((day, rowIdx) => (
           <div
-            key={ts}
-            className="grid grid-cols-[80px_repeat(7,1fr)]"
+            key={day.day_index}
+            className="grid grid-cols-[180px_repeat(3,minmax(0,1fr))]"
             style={{
               borderBottom:
-                rowIdx < TIME_SLOTS.length - 1
+                rowIdx < schedule.days.length - 1
                   ? "1px solid var(--border-subtle)"
                   : undefined,
             }}
           >
             <div
-              className="p-2 flex items-center text-xs font-semibold"
+              className="p-3 flex flex-col justify-center"
               style={{ color: "var(--text-muted)" }}
             >
-              {ts}
+              <span className="text-xs font-bold uppercase tracking-wide">
+                {day.day_label}
+              </span>
+              <span className="text-xs">{day.date_label}</span>
+              {day.is_past && (
+                <span className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
+                  Passed
+                </span>
+              )}
+              {!day.is_past && day.has_match && (
+                <span className="text-[10px] mt-1" style={{ color: "var(--color-warning)" }}>
+                  Match day
+                </span>
+              )}
             </div>
-            {schedule.days.map((day) => {
+            {TIME_SLOTS.map((ts) => {
               const slot = day.slots.find((s) => s.time_slot === ts);
-              if (!slot) return <div key={day.day_index} className="p-1.5" />;
+              if (!slot) return <div key={`${day.day_index}-${ts}`} className="p-1.5" />;
               const matchedScrim = slot.scrim_id != null
                 ? scrims.find((s) => s.id === slot.scrim_id)
                 : undefined;
               const scrimResult = matchedScrim
                 ? { homeWins: matchedScrim.home_wins, awayWins: matchedScrim.away_wins, completed: matchedScrim.status === "Completed" }
                 : undefined;
+              const blockedReason = slot.entry_type === "free"
+                ? day.is_past
+                  ? "Past"
+                  : day.has_match
+                    ? "Match day"
+                    : undefined
+                : undefined;
               return (
-                <div key={day.day_index} className="p-1.5">
+                <div key={`${day.day_index}-${ts}`} className="p-1.5">
                   <SlotCell
                     slot={slot}
                     dayIndex={day.day_index}
@@ -783,6 +794,8 @@ export function TeamScheduleView({
                     onAdd={(d, t) => setAddingSlot({ dayIndex: d, timeSlot: t })}
                     onClear={handleClearSlot}
                     scrimResult={scrimResult}
+                    blockedReason={blockedReason}
+                    canClear={!day.is_past && slot.entry_type !== "match"}
                   />
                 </div>
               );
@@ -814,10 +827,10 @@ export function TeamScheduleView({
         <div className="flex items-center gap-1.5">
           <div
             className="w-3 h-3 rounded-sm"
-            style={{ backgroundColor: "rgba(34, 197, 94, 0.3)" }}
+            style={{ backgroundColor: "rgba(251, 191, 36, 0.3)" }}
           />
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            Rest
+            Match
           </span>
         </div>
       </div>
@@ -946,9 +959,6 @@ export function TeamScheduleView({
               players,
               focus
             )
-          }
-          onScheduleRest={() =>
-            onScheduleRest(addingSlot.dayIndex, addingSlot.timeSlot)
           }
         />
       )}

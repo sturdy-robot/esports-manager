@@ -90,18 +90,22 @@ impl TeamDailySchedule {
 // Team weekly schedule (7 days)
 // ---------------------------------------------------------------------------
 
-const DAYS_PER_WEEK: usize = 7;
+const MIN_SCHEDULE_DAYS: usize = 7;
 
-/// A full week of team scheduling, indexed by day offset (0 = Monday .. 6 = Sunday).
+/// A calendar-backed team schedule indexed by absolute day offset.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TeamWeeklySchedule {
-    days: [TeamDailySchedule; DAYS_PER_WEEK],
+    days: Vec<TeamDailySchedule>,
 }
 
 impl TeamWeeklySchedule {
     pub fn new() -> Self {
+        Self::with_total_days(MIN_SCHEDULE_DAYS)
+    }
+
+    pub fn with_total_days(total_days: usize) -> Self {
         Self {
-            days: std::array::from_fn(|_| TeamDailySchedule::new()),
+            days: vec![TeamDailySchedule::new(); total_days.max(MIN_SCHEDULE_DAYS)],
         }
     }
 
@@ -110,19 +114,22 @@ impl TeamWeeklySchedule {
     }
 
     pub fn day_mut(&mut self, day_index: usize) -> &mut TeamDailySchedule {
+        if day_index >= self.days.len() {
+            self.days.resize_with(day_index + 1, TeamDailySchedule::new);
+        }
         &mut self.days[day_index]
     }
 
-    pub fn days(&self) -> &[TeamDailySchedule; DAYS_PER_WEEK] {
+    pub fn days(&self) -> &[TeamDailySchedule] {
         &self.days
     }
 
-    /// Total scrims scheduled across the entire week.
+    /// Total scrims scheduled across the entire calendar.
     pub fn total_scrims(&self) -> usize {
         self.days.iter().map(|d| d.scrim_count()).sum()
     }
 
-    /// Count how many slots are occupied (non-free) across the week.
+    /// Count how many slots are occupied (non-free) across the entire calendar.
     pub fn occupied_slots(&self) -> usize {
         self.days
             .iter()
@@ -131,9 +138,9 @@ impl TeamWeeklySchedule {
             .count()
     }
 
-    /// Maximum possible slots in a week (3 per day × 7 days).
+    /// Maximum possible slots in the current calendar span.
     pub fn total_slots(&self) -> usize {
-        DAYS_PER_WEEK * SLOTS_PER_DAY
+        self.days.len() * SLOTS_PER_DAY
     }
 }
 

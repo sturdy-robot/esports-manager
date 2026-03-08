@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
-use esm_core::calendar::DayPhase;
+use esm_core::calendar::{Calendar, DayPhase};
 use esm_core::game_state::GameState;
 use esm_core::turn::TurnProcessor;
 use esm_db::save_manager::{SaveEntry, SaveManager};
@@ -331,8 +331,41 @@ fn list_saves(state: State<'_, AppState>) -> Result<Vec<SaveInfo>, String> {
     Ok(saves.into_iter().map(SaveInfo::from).collect())
 }
 
-fn init_team_schedules(team_count: usize) -> Vec<TeamWeeklySchedule> {
-    (0..team_count).map(|_| TeamWeeklySchedule::new()).collect()
+fn schedule_span_days(tournament: &Tournament) -> usize {
+    tournament
+        .schedule()
+        .matches()
+        .iter()
+        .map(|m| m.scheduled_day() as usize)
+        .max()
+        .unwrap_or(0)
+        + 1
+}
+
+fn init_team_schedules(team_count: usize, total_days: usize) -> Vec<TeamWeeklySchedule> {
+    (0..team_count)
+        .map(|_| TeamWeeklySchedule::with_total_days(total_days))
+        .collect()
+}
+
+fn push_onboarding_messages(gs: &mut GameState) {
+    let day = gs.calendar().days_elapsed();
+    gs.inbox_mut().push(esm_core::inbox::Message::new(
+        "Welcome from the Board".to_string(),
+        "Board of Directors:\nWelcome to your new role. We expect disciplined weekly planning, steady results, and clear communication through the inbox. Resolve important messages promptly and keep the team on schedule.".
+            to_string(),
+        esm_core::inbox::MessagePriority::RequiresResponse,
+        esm_core::inbox::MessageCategory::Board,
+        day,
+    ));
+    gs.inbox_mut().push(esm_core::inbox::Message::new(
+        "Assistant Coach Briefing".to_string(),
+        "Assistant Coach:\nWelcome aboard. In your first days, check the schedule page, review upcoming opponents, and manage practice carefully around match days. I will flag important prep through the inbox.".
+            to_string(),
+        esm_core::inbox::MessagePriority::RequiresResponse,
+        esm_core::inbox::MessageCategory::Staff,
+        day,
+    ));
 }
 
 #[tauri::command]
@@ -377,7 +410,7 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
         .unwrap_or_default()
         .as_millis() as u64;
 
-    let gs = GameState::new(2025, seed, esport_type, manager, params.team_index, teams);
+    let mut gs = GameState::new(2025, seed, esport_type, manager, params.team_index, teams);
 
     // Create tournament (Double Round Robin, Bo3, starting day 3)
     let team_names: Vec<String> = moba_teams.iter().map(|t| t.name().to_string()).collect();
@@ -388,6 +421,8 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
         BracketKind::Bo3,
         3,
     );
+    let schedule_days = schedule_span_days(&tournament);
+    push_onboarding_messages(&mut gs);
 
     // Serialize tournament + moba teams for persistence
     let tournament_json =
@@ -433,7 +468,7 @@ fn new_game(params: NewGameParams, state: State<'_, AppState>) -> Result<GameInf
 
     // Initialize team schedules (one per team)
     let team_count = gs.teams().len();
-    *state.team_schedules.lock().unwrap() = init_team_schedules(team_count);
+    *state.team_schedules.lock().unwrap() = init_team_schedules(team_count, schedule_days);
     *state.scrim_manager.lock().unwrap() = ScrimManager::new();
 
     // Store in memory
@@ -465,10 +500,15 @@ fn load_save(name: String, state: State<'_, AppState>) -> Result<GameInfo, Strin
 
     // Restore team schedules from save, or initialize fresh if missing/corrupt
     let team_count = gs.teams().len();
+    let schedule_days = tournament.as_ref().map(schedule_span_days).unwrap_or(7);
     let schedules: Vec<TeamWeeklySchedule> = serde_json::from_str(&schedules_json)
         .ok()
         .filter(|v: &Vec<TeamWeeklySchedule>| v.len() == team_count)
-        .unwrap_or_else(|| init_team_schedules(team_count));
+        .unwrap_or_else(|| init_team_schedules(team_count, schedule_days));
+    let mut schedules = schedules;
+    for schedule in &mut schedules {
+        schedule.day_mut(schedule_days.saturating_sub(1));
+    }
     *state.team_schedules.lock().unwrap() = schedules;
 
     let scrim_mgr: ScrimManager =
@@ -581,8 +621,87 @@ fn get_inbox(state: State<'_, AppState>) -> Result<Vec<InboxMessageInfo>, String
     Ok(messages)
 }
 
+#[derive(Debug, Clone, Deserialize)]
+struct AdvanceTurnParams {
+    mode: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AdvanceTurnMode {
+    Smart,
+    Step,
+}
+
+fn parse_advance_turn_mode(params: Option<AdvanceTurnParams>) -> Result<AdvanceTurnMode, String> {
+    match params.and_then(|p| p.mode).as_deref().unwrap_or("smart") {
+        "smart" => Ok(AdvanceTurnMode::Smart),
+        "step" => Ok(AdvanceTurnMode::Step),
+        other => Err(format!("Unknown advance mode: {other}")),
+    }
+}
+
+fn has_attention_messages(gs: &GameState) -> bool {
+    gs.inbox()
+        .messages()
+        .iter()
+        .any(|m| !m.is_resolved() && m.priority() != esm_core::inbox::MessagePriority::ReadOptional)
+}
+
+fn advance_turn_smart_impl(state: &State<'_, AppState>) -> Result<GameInfo, String> {
+    {
+        let lock = state.game_state.lock().unwrap();
+        let gs = lock.as_ref().ok_or("No active game session")?;
+        let t_lock = state.tournament.lock().unwrap();
+        let info = game_info_from_state(gs, t_lock.as_ref().unwrap_or(&empty_tournament()));
+        if info.is_match_day || has_attention_messages(gs) {
+            return Ok(info);
+        }
+    }
+
+    let mut last_info: Option<GameInfo> = None;
+    for _ in 0..(366 * 3) {
+        let info = advance_turn_step_impl(state)?;
+        let lock = state.game_state.lock().unwrap();
+        let gs = lock.as_ref().ok_or("No active game session")?;
+        if !info.match_results.is_empty() || info.is_match_day || has_attention_messages(gs) {
+            return Ok(info);
+        }
+        last_info = Some(info);
+    }
+
+    last_info.ok_or("Failed to find a future actionable state".to_string())
+}
+
+fn advance_after_match_slot(
+    state: &State<'_, AppState>,
+    time_slot: TimeSlot,
+) -> Result<GameInfo, String> {
+    let steps = match time_slot {
+        TimeSlot::Morning => 1,
+        TimeSlot::Afternoon => 2,
+        TimeSlot::Evening => 3,
+    };
+
+    let mut info = None;
+    for _ in 0..steps {
+        info = Some(advance_turn_step_impl(state)?);
+    }
+
+    info.ok_or("Failed to advance after match".to_string())
+}
+
 #[tauri::command]
-fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
+fn advance_turn(
+    state: State<'_, AppState>,
+    params: Option<AdvanceTurnParams>,
+) -> Result<GameInfo, String> {
+    match parse_advance_turn_mode(params)? {
+        AdvanceTurnMode::Step => advance_turn_step_impl(&state),
+        AdvanceTurnMode::Smart => advance_turn_smart_impl(&state),
+    }
+}
+
+fn advance_turn_step_impl(state: &State<'_, AppState>) -> Result<GameInfo, String> {
     let mut lock = state.game_state.lock().unwrap();
     let gs = lock.as_mut().ok_or("No active game session")?;
     let mut t_lock = state.tournament.lock().unwrap();
@@ -595,10 +714,10 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
         // Apply team schedule effects (scrims/solo-queue/rest) to player rosters
         {
             let schedules = state.team_schedules.lock().unwrap();
-            let day_in_week = (gs.calendar().days_elapsed() % 7) as usize;
+            let current_day = gs.calendar().days_elapsed() as usize;
             for (team_idx, team) in gs.teams_mut().iter_mut().enumerate() {
                 if let Some(sched) = schedules.get(team_idx) {
-                    let today = sched.day(day_in_week);
+                    let today = sched.day(current_day);
                     ScheduleProcessor::apply_daily_effects(today, team.roster_mut());
                 }
             }
@@ -885,76 +1004,96 @@ fn advance_turn(state: State<'_, AppState>) -> Result<GameInfo, String> {
 
 #[tauri::command]
 fn play_match_delegate(state: State<'_, AppState>) -> Result<GameInfo, String> {
-    let mut lock = state.game_state.lock().unwrap();
-    let gs = lock.as_mut().ok_or("No active game session")?;
-    let mut t_lock = state.tournament.lock().unwrap();
-    let m_lock = state.moba_teams.lock().unwrap();
-
     let mut match_results: Vec<MatchResultInfo> = Vec::new();
 
-    if let (Some(tournament), Some(moba_teams)) = (t_lock.as_mut(), m_lock.as_ref()) {
-        let player_idx = gs.player_team_index();
-        let day = gs.calendar().days_elapsed();
+    let post_match_slot = {
+        let mut lock = state.game_state.lock().unwrap();
+        let gs = lock.as_mut().ok_or("No active game session")?;
+        let mut t_lock = state.tournament.lock().unwrap();
+        let m_lock = state.moba_teams.lock().unwrap();
+        let mut post_match_slot = None;
 
-        let player_match = tournament.matches_today(day).into_iter().find(|m| {
-            (m.blue_team_idx() == player_idx || m.red_team_idx() == player_idx)
-                && m.winner_team_idx().is_none()
-        });
+        if let (Some(tournament), Some(moba_teams)) = (t_lock.as_mut(), m_lock.as_ref()) {
+            let player_idx = gs.player_team_index();
+            let day = gs.calendar().days_elapsed();
 
-        if let Some(m) = player_match {
-            let match_id = m.id();
-            let blue_idx = m.blue_team_idx();
-            let red_idx = m.red_team_idx();
-
-            let config = MobaMatchConfig::default();
-            let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
-            let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
-
-            let result = MobaMatchEngine::simulate(gs.rng_mut(), &blue_attrs, &red_attrs, &config);
-
-            let (bw, rw) = match result.winner {
-                TeamSide::Blue => (1u32, 0u32),
-                TeamSide::Red => (0u32, 1u32),
-            };
-            tournament.record_result(match_id, bw, rw);
-
-            let is_blue = blue_idx == player_idx;
-            let player_won = (is_blue && bw > 0) || (!is_blue && rw > 0);
-            gs.teams_mut()[player_idx].apply_match_result(player_won);
-
-            let winner_name = match result.winner {
-                TeamSide::Blue => moba_teams[blue_idx].name().to_string(),
-                TeamSide::Red => moba_teams[red_idx].name().to_string(),
-            };
-
-            match_results.push(MatchResultInfo {
-                blue_team: moba_teams[blue_idx].name().to_string(),
-                red_team: moba_teams[red_idx].name().to_string(),
-                winner: winner_name,
-                duration_minutes: result.duration_minutes,
+            let player_match = tournament.matches_today(day).into_iter().find(|m| {
+                (m.blue_team_idx() == player_idx || m.red_team_idx() == player_idx)
+                    && m.winner_team_idx().is_none()
             });
 
-            // Same logic to conclude tournament if this was the last match
-            if tournament.is_complete() {
-                let msg = esm_core::inbox::Message::new(
-                    "Tournament Concluded".to_string(),
-                    format!(
-                        "The {} has concluded! Check the final standings.",
-                        tournament.name()
-                    ),
-                    esm_core::inbox::MessagePriority::HardBlock,
-                    esm_core::inbox::MessageCategory::News,
-                    gs.calendar().days_elapsed(),
-                );
-                gs.inbox_mut().push(msg);
-            }
-        } else {
-            return Err("No pending match today".to_string());
-        }
-    }
+            if let Some(m) = player_match {
+                let match_id = m.id();
+                let blue_idx = m.blue_team_idx();
+                let red_idx = m.red_team_idx();
+                post_match_slot = match_time_slot_for_day(tournament, day, match_id);
 
-    let tournament_ref = t_lock.as_ref();
-    let mut info = game_info_from_state(gs, tournament_ref.unwrap_or(&empty_tournament()));
+                let config = MobaMatchConfig::default();
+                let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
+                let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
+                let wins_needed = m.bracket().wins_needed();
+                let mut bw = 0u32;
+                let mut rw = 0u32;
+                let mut last_duration = 0u32;
+
+                while bw < wins_needed && rw < wins_needed {
+                    let result =
+                        MobaMatchEngine::simulate(gs.rng_mut(), &blue_attrs, &red_attrs, &config);
+                    match result.winner {
+                        TeamSide::Blue => bw += 1,
+                        TeamSide::Red => rw += 1,
+                    }
+                    last_duration = result.duration_minutes;
+                }
+
+                tournament.record_result(match_id, bw, rw);
+
+                let player_won_series = if blue_idx == player_idx {
+                    bw > rw
+                } else {
+                    rw > bw
+                };
+                gs.teams_mut()[player_idx].apply_match_result(player_won_series);
+
+                let winner_name = if bw > rw {
+                    moba_teams[blue_idx].name().to_string()
+                } else {
+                    moba_teams[red_idx].name().to_string()
+                };
+
+                match_results.push(MatchResultInfo {
+                    blue_team: moba_teams[blue_idx].name().to_string(),
+                    red_team: moba_teams[red_idx].name().to_string(),
+                    winner: winner_name,
+                    duration_minutes: last_duration,
+                });
+
+                if tournament.is_complete() {
+                    let msg = esm_core::inbox::Message::new(
+                        "Tournament Concluded".to_string(),
+                        format!(
+                            "The {} has concluded! Check the final standings.",
+                            tournament.name()
+                        ),
+                        esm_core::inbox::MessagePriority::HardBlock,
+                        esm_core::inbox::MessageCategory::News,
+                        gs.calendar().days_elapsed(),
+                    );
+                    gs.inbox_mut().push(msg);
+                }
+            } else {
+                return Err("No pending match today".to_string());
+            }
+        }
+
+        post_match_slot
+    };
+
+    let mut info = if let Some(slot) = post_match_slot {
+        advance_after_match_slot(&state, slot)?
+    } else {
+        get_game_info(state.clone())?
+    };
     info.match_results = match_results;
     Ok(info)
 }
@@ -1299,7 +1438,7 @@ fn get_tactics(state: State<'_, AppState>) -> TacticsInfo {
 #[derive(Debug, Clone, Serialize)]
 pub struct ScheduleSlotInfo {
     pub time_slot: String,
-    pub entry_type: String, // "free", "scrim", "solo_queue", "rest"
+    pub entry_type: String, // "free", "scrim", "solo_queue", "match"
     pub scrim_id: Option<u32>,
     pub opponent: Option<String>,
     pub players: Option<Vec<usize>>,
@@ -1309,6 +1448,10 @@ pub struct ScheduleSlotInfo {
 #[derive(Debug, Clone, Serialize)]
 pub struct DayScheduleInfo {
     pub day_index: usize,
+    pub day_label: String,
+    pub date_label: String,
+    pub is_past: bool,
+    pub has_match: bool,
     pub slots: Vec<ScheduleSlotInfo>,
 }
 
@@ -1316,6 +1459,7 @@ pub struct DayScheduleInfo {
 pub struct WeekScheduleInfo {
     pub days: Vec<DayScheduleInfo>,
     pub total_scrims: usize,
+    pub total_matches: usize,
     pub occupied_slots: usize,
 }
 
@@ -1391,10 +1535,115 @@ fn parse_draft_rules(s: &str) -> Result<ScrimDraftRules, String> {
     }
 }
 
+fn month_short_name(month: u32) -> &'static str {
+    match month {
+        1 => "Jan",
+        2 => "Feb",
+        3 => "Mar",
+        4 => "Apr",
+        5 => "May",
+        6 => "Jun",
+        7 => "Jul",
+        8 => "Aug",
+        9 => "Sep",
+        10 => "Oct",
+        11 => "Nov",
+        12 => "Dec",
+        _ => "?",
+    }
+}
+
+fn calendar_labels_for_day(start_year: u32, day_index: u32) -> (String, String) {
+    let mut calendar = Calendar::new(start_year, 1, 1);
+    for _ in 0..day_index {
+        calendar.advance_day();
+    }
+
+    (
+        calendar.day_of_week_name().to_string(),
+        format!(
+            "{} {}, {}",
+            month_short_name(calendar.month()),
+            calendar.day(),
+            calendar.year()
+        ),
+    )
+}
+
+fn match_time_slot_for_position(position: usize) -> TimeSlot {
+    match position {
+        0 => TimeSlot::Morning,
+        _ => TimeSlot::Evening,
+    }
+}
+
+fn team_match_for_day<'a>(
+    tournament: &'a Tournament,
+    team_idx: usize,
+    day: u32,
+) -> Option<&'a esm_engine::tournament::Match> {
+    tournament
+        .schedule()
+        .matches_for_day(day)
+        .into_iter()
+        .find(|m| m.blue_team_idx() == team_idx || m.red_team_idx() == team_idx)
+}
+
+fn teams_play_each_other_in_week(
+    tournament: &Tournament,
+    first_team_idx: usize,
+    second_team_idx: usize,
+    scheduled_day: u32,
+) -> bool {
+    let target_week = scheduled_day / 7;
+    tournament.schedule().matches().iter().any(|m| {
+        m.scheduled_day() / 7 == target_week
+            && ((m.blue_team_idx() == first_team_idx && m.red_team_idx() == second_team_idx)
+                || (m.blue_team_idx() == second_team_idx && m.red_team_idx() == first_team_idx))
+    })
+}
+
+fn ensure_day_is_schedulable(
+    tournament: &Tournament,
+    team_idx: usize,
+    scheduled_day: u32,
+    current_day: u32,
+) -> Result<(), String> {
+    if scheduled_day <= current_day {
+        return Err("Past days cannot be changed".to_string());
+    }
+
+    if team_match_for_day(tournament, team_idx, scheduled_day).is_some() {
+        return Err("Cannot schedule activities on a match day".to_string());
+    }
+
+    Ok(())
+}
+
+fn match_time_slot_for_day(tournament: &Tournament, day: u32, match_id: u32) -> Option<TimeSlot> {
+    let day_matches = tournament.schedule().matches_for_day(day);
+    day_matches
+        .iter()
+        .position(|m| m.id() == match_id)
+        .map(match_time_slot_for_position)
+}
+
+fn match_slot_info(ts: TimeSlot, opponent: String) -> ScheduleSlotInfo {
+    ScheduleSlotInfo {
+        time_slot: time_slot_str(ts).to_string(),
+        entry_type: "match".to_string(),
+        scrim_id: None,
+        opponent: Some(opponent),
+        players: None,
+        focus: None,
+    }
+}
+
 fn slot_to_info(
     ts: TimeSlot,
     entry: Option<&ScheduleEntry>,
     scrim_mgr: &ScrimManager,
+    player_team_name: &str,
 ) -> ScheduleSlotInfo {
     match entry {
         None => ScheduleSlotInfo {
@@ -1406,9 +1655,13 @@ fn slot_to_info(
             focus: None,
         },
         Some(ScheduleEntry::Scrim { scrim_id }) => {
-            let opponent = scrim_mgr
-                .scrim_by_id(*scrim_id)
-                .map(|s| s.away_team().to_string());
+            let opponent = scrim_mgr.scrim_by_id(*scrim_id).map(|s| {
+                if s.home_team() == player_team_name {
+                    s.away_team().to_string()
+                } else {
+                    s.home_team().to_string()
+                }
+            });
             ScheduleSlotInfo {
                 time_slot: time_slot_str(ts).to_string(),
                 entry_type: "scrim".to_string(),
@@ -1428,7 +1681,7 @@ fn slot_to_info(
         },
         Some(ScheduleEntry::Rest) => ScheduleSlotInfo {
             time_slot: time_slot_str(ts).to_string(),
-            entry_type: "rest".to_string(),
+            entry_type: "free".to_string(),
             scrim_id: None,
             opponent: None,
             players: None,
@@ -1437,26 +1690,88 @@ fn slot_to_info(
     }
 }
 
-fn week_schedule_to_info(
+fn calendar_schedule_to_info(
+    start_year: u32,
+    current_day: u32,
+    player_team_name: &str,
+    player_team_index: usize,
+    tournament: &Tournament,
     schedule: &TeamWeeklySchedule,
     scrim_mgr: &ScrimManager,
 ) -> WeekScheduleInfo {
-    let days = (0..7)
+    let last_match_day = tournament
+        .schedule()
+        .matches()
+        .iter()
+        .filter(|m| m.blue_team_idx() == player_team_index || m.red_team_idx() == player_team_index)
+        .map(|m| m.scheduled_day() as usize)
+        .max()
+        .unwrap_or(0);
+    let last_scrim_day = scrim_mgr
+        .scrims_for_team(player_team_name)
+        .iter()
+        .map(|s| s.scheduled_day() as usize)
+        .max()
+        .unwrap_or(0);
+    let max_day = (current_day as usize)
+        .max(last_match_day)
+        .max(last_scrim_day)
+        .min(schedule.days().len().saturating_sub(1));
+
+    let days = (0..=max_day)
         .map(|i| {
             let day = schedule.day(i);
+            let player_match = team_match_for_day(tournament, player_team_index, i as u32);
+            let match_slot =
+                player_match.and_then(|m| match_time_slot_for_day(tournament, i as u32, m.id()));
+            let match_opponent = player_match.and_then(|m| {
+                let opponent_idx = if m.blue_team_idx() == player_team_index {
+                    m.red_team_idx()
+                } else {
+                    m.blue_team_idx()
+                };
+                tournament
+                    .team_name(opponent_idx)
+                    .map(|name| name.to_string())
+            });
             let slots = TimeSlot::ALL
                 .iter()
-                .map(|&ts| slot_to_info(ts, day.get(ts), scrim_mgr))
+                .map(|&ts| {
+                    if Some(ts) == match_slot {
+                        match_slot_info(
+                            ts,
+                            match_opponent
+                                .clone()
+                                .unwrap_or_else(|| "Opponent".to_string()),
+                        )
+                    } else {
+                        slot_to_info(ts, day.get(ts), scrim_mgr, player_team_name)
+                    }
+                })
                 .collect();
+            let (day_label, date_label) = calendar_labels_for_day(start_year, i as u32);
             DayScheduleInfo {
                 day_index: i,
+                day_label,
+                date_label,
+                is_past: (i as u32) < current_day,
+                has_match: player_match.is_some(),
                 slots,
             }
         })
         .collect();
+
     WeekScheduleInfo {
         days,
-        total_scrims: schedule.total_scrims(),
+        total_scrims: scrim_mgr.scrims_for_team(player_team_name).len(),
+        total_matches: tournament
+            .schedule()
+            .matches()
+            .iter()
+            .filter(|m| {
+                m.blue_team_idx() == player_team_index || m.red_team_idx() == player_team_index
+            })
+            .count(),
         occupied_slots: schedule.occupied_slots(),
     }
 }
@@ -1465,13 +1780,23 @@ fn week_schedule_to_info(
 fn get_team_schedule(state: State<'_, AppState>) -> Result<WeekScheduleInfo, String> {
     let gs = state.game_state.lock().unwrap();
     let gs = gs.as_ref().ok_or("No active game session")?;
+    let t_lock = state.tournament.lock().unwrap();
+    let tournament = t_lock.as_ref().ok_or("No tournament active")?;
     let schedules = state.team_schedules.lock().unwrap();
     let scrim_mgr = state.scrim_manager.lock().unwrap();
     let idx = gs.player_team_index();
     if idx >= schedules.len() {
         return Err("Schedule not initialized".to_string());
     }
-    Ok(week_schedule_to_info(&schedules[idx], &scrim_mgr))
+    Ok(calendar_schedule_to_info(
+        gs.calendar().year(),
+        gs.calendar().days_elapsed(),
+        gs.player_team().name(),
+        idx,
+        tournament,
+        &schedules[idx],
+        &scrim_mgr,
+    ))
 }
 
 #[tauri::command]
@@ -1481,6 +1806,8 @@ fn schedule_scrim(
 ) -> Result<ScrimInfo, String> {
     let gs = state.game_state.lock().unwrap();
     let gs = gs.as_ref().ok_or("No active game session")?;
+    let t_lock = state.tournament.lock().unwrap();
+    let tournament = t_lock.as_ref().ok_or("No tournament active")?;
     let mut schedules = state.team_schedules.lock().unwrap();
     let mut scrim_mgr = state.scrim_manager.lock().unwrap();
 
@@ -1489,11 +1816,23 @@ fn schedule_scrim(
     if home_idx == away_idx {
         return Err("Cannot schedule a scrim against your own team".to_string());
     }
+    if away_idx >= gs.teams().len() {
+        return Err("Opponent is out of range".to_string());
+    }
     let home_name = gs.teams()[home_idx].name().to_string();
     let away_name = gs.teams()[away_idx].name().to_string();
     let time_slot = parse_time_slot(&params.time_slot)?;
     let draft_rules = parse_draft_rules(&params.draft_rules)?;
     let current_day = gs.calendar().days_elapsed();
+
+    ensure_day_is_schedulable(tournament, home_idx, params.scheduled_day, current_day)?;
+    ensure_day_is_schedulable(tournament, away_idx, params.scheduled_day, current_day)?;
+
+    if teams_play_each_other_in_week(tournament, home_idx, away_idx, params.scheduled_day) {
+        return Err(
+            "Cannot schedule a scrim against a team you will face in the same week".to_string(),
+        );
+    }
 
     let scrim_id = scrim_mgr
         .schedule_scrim(
@@ -1578,12 +1917,17 @@ fn schedule_solo_queue(
 ) -> Result<WeekScheduleInfo, String> {
     let gs = state.game_state.lock().unwrap();
     let gs = gs.as_ref().ok_or("No active game session")?;
+    let t_lock = state.tournament.lock().unwrap();
+    let tournament = t_lock.as_ref().ok_or("No tournament active")?;
     let mut schedules = state.team_schedules.lock().unwrap();
     let scrim_mgr = state.scrim_manager.lock().unwrap();
 
     let idx = gs.player_team_index();
     let time_slot = parse_time_slot(&params.time_slot)?;
     let focus = parse_solo_queue_focus(&params.focus)?;
+    let absolute_day = params.day_index as u32;
+
+    ensure_day_is_schedulable(tournament, idx, absolute_day, gs.calendar().days_elapsed())?;
 
     if !schedules[idx].day(params.day_index).is_free(time_slot) {
         return Err("Slot is already occupied".to_string());
@@ -1597,7 +1941,15 @@ fn schedule_solo_queue(
         },
     );
 
-    Ok(week_schedule_to_info(&schedules[idx], &scrim_mgr))
+    Ok(calendar_schedule_to_info(
+        gs.calendar().year(),
+        gs.calendar().days_elapsed(),
+        gs.player_team().name(),
+        idx,
+        tournament,
+        &schedules[idx],
+        &scrim_mgr,
+    ))
 }
 
 #[tauri::command]
@@ -1605,23 +1957,10 @@ fn schedule_rest(
     state: State<'_, AppState>,
     params: ScheduleRestParams,
 ) -> Result<WeekScheduleInfo, String> {
-    let gs = state.game_state.lock().unwrap();
-    let gs = gs.as_ref().ok_or("No active game session")?;
-    let mut schedules = state.team_schedules.lock().unwrap();
-    let scrim_mgr = state.scrim_manager.lock().unwrap();
-
-    let idx = gs.player_team_index();
-    let time_slot = parse_time_slot(&params.time_slot)?;
-
-    if !schedules[idx].day(params.day_index).is_free(time_slot) {
-        return Err("Slot is already occupied".to_string());
-    }
-
-    schedules[idx]
-        .day_mut(params.day_index)
-        .set(time_slot, ScheduleEntry::Rest);
-
-    Ok(week_schedule_to_info(&schedules[idx], &scrim_mgr))
+    let lock = state.game_state.lock().unwrap();
+    let _gs = lock.as_ref().ok_or("No active game session")?;
+    let _ = params;
+    Err("Rest days are implicit — leave the slot empty instead".to_string())
 }
 
 #[tauri::command]
@@ -1632,15 +1971,38 @@ fn clear_schedule_slot(
 ) -> Result<WeekScheduleInfo, String> {
     let gs = state.game_state.lock().unwrap();
     let gs = gs.as_ref().ok_or("No active game session")?;
+    let t_lock = state.tournament.lock().unwrap();
+    let tournament = t_lock.as_ref().ok_or("No tournament active")?;
     let mut schedules = state.team_schedules.lock().unwrap();
     let scrim_mgr = state.scrim_manager.lock().unwrap();
 
     let idx = gs.player_team_index();
     let ts = parse_time_slot(&time_slot)?;
 
+    ensure_day_is_schedulable(
+        tournament,
+        idx,
+        day_index as u32,
+        gs.calendar().days_elapsed(),
+    )?;
+
+    if let Some(player_match) = team_match_for_day(tournament, idx, day_index as u32) {
+        if match_time_slot_for_day(tournament, day_index as u32, player_match.id()) == Some(ts) {
+            return Err("Matches cannot be cancelled or rescheduled".to_string());
+        }
+    }
+
     schedules[idx].day_mut(day_index).clear(ts);
 
-    Ok(week_schedule_to_info(&schedules[idx], &scrim_mgr))
+    Ok(calendar_schedule_to_info(
+        gs.calendar().year(),
+        gs.calendar().days_elapsed(),
+        gs.player_team().name(),
+        idx,
+        tournament,
+        &schedules[idx],
+        &scrim_mgr,
+    ))
 }
 
 #[tauri::command]
@@ -1763,119 +2125,124 @@ fn match_result_to_info(
 /// effects when the series is complete.
 #[tauri::command]
 fn simulate_match(state: State<'_, AppState>) -> Result<SimulateMatchResultInfo, String> {
-    let mut lock = state.game_state.lock().unwrap();
-    let gs = lock.as_mut().ok_or("No active game session")?;
-    let mut t_lock = state.tournament.lock().unwrap();
-    let m_lock = state.moba_teams.lock().unwrap();
+    let mut post_match_slot = None;
 
-    if let (Some(tournament), Some(moba_teams)) = (t_lock.as_mut(), m_lock.as_ref()) {
-        let player_idx = gs.player_team_index();
-        let day = gs.calendar().days_elapsed();
+    let info = {
+        let mut lock = state.game_state.lock().unwrap();
+        let gs = lock.as_mut().ok_or("No active game session")?;
+        let mut t_lock = state.tournament.lock().unwrap();
+        let m_lock = state.moba_teams.lock().unwrap();
 
-        let player_match = tournament.matches_today(day).into_iter().find(|m| {
-            (m.blue_team_idx() == player_idx || m.red_team_idx() == player_idx)
-                && m.winner_team_idx().is_none()
-        });
+        if let (Some(tournament), Some(moba_teams)) = (t_lock.as_mut(), m_lock.as_ref()) {
+            let player_idx = gs.player_team_index();
+            let day = gs.calendar().days_elapsed();
 
-        if let Some(m) = player_match {
-            let match_id = m.id();
-            let blue_idx = m.blue_team_idx();
-            let red_idx = m.red_team_idx();
+            let player_match = tournament.matches_today(day).into_iter().find(|m| {
+                (m.blue_team_idx() == player_idx || m.red_team_idx() == player_idx)
+                    && m.winner_team_idx().is_none()
+            });
 
-            let config = MobaMatchConfig::default();
-            let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
-            let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
+            if let Some(m) = player_match {
+                let match_id = m.id();
+                let blue_idx = m.blue_team_idx();
+                let red_idx = m.red_team_idx();
+                let scheduled_slot = match_time_slot_for_day(tournament, day, match_id);
 
-            let tactics = state.match_tactics.lock().unwrap().clone();
+                let config = MobaMatchConfig::default();
+                let blue_attrs = extract_team_attrs(&moba_teams[blue_idx]);
+                let red_attrs = extract_team_attrs(&moba_teams[red_idx]);
 
-            // Build player/team names for commentary
-            let blue_nicknames: Vec<String> = moba_teams[blue_idx]
-                .roster()
-                .iter()
-                .map(|p| p.nickname().to_string())
-                .collect();
-            let red_nicknames: Vec<String> = moba_teams[red_idx]
-                .roster()
-                .iter()
-                .map(|p| p.nickname().to_string())
-                .collect();
-            let blue_team_name = moba_teams[blue_idx].name().to_string();
-            let red_team_name = moba_teams[red_idx].name().to_string();
+                let tactics = state.match_tactics.lock().unwrap().clone();
 
-            let result = MobaMatchEngine::simulate_with_names(
-                gs.rng_mut(),
-                &blue_attrs,
-                &red_attrs,
-                &config,
-                &tactics,
-                Some((blue_nicknames, red_nicknames, blue_team_name, red_team_name)),
-            );
+                let blue_nicknames: Vec<String> = moba_teams[blue_idx]
+                    .roster()
+                    .iter()
+                    .map(|p| p.nickname().to_string())
+                    .collect();
+                let red_nicknames: Vec<String> = moba_teams[red_idx]
+                    .roster()
+                    .iter()
+                    .map(|p| p.nickname().to_string())
+                    .collect();
+                let blue_team_name = moba_teams[blue_idx].name().to_string();
+                let red_team_name = moba_teams[red_idx].name().to_string();
 
-            let blue_won = matches!(result.winner, TeamSide::Blue);
-            let series_complete = tournament.add_game_win(match_id, blue_won);
+                let result = MobaMatchEngine::simulate_with_names(
+                    gs.rng_mut(),
+                    &blue_attrs,
+                    &red_attrs,
+                    &config,
+                    &tactics,
+                    Some((blue_nicknames, red_nicknames, blue_team_name, red_team_name)),
+                );
 
-            // Only apply team effects when the series is fully decided
-            if series_complete {
-                let is_blue = blue_idx == player_idx;
-                let player_won = (is_blue && blue_won) || (!is_blue && !blue_won);
-                // For Bo3, check actual series winner
-                // Re-fetch match to get final wins
-                let final_match = tournament
-                    .matches_today(day)
-                    .into_iter()
-                    .find(|m| m.id() == match_id);
-                if let Some(fm) = final_match {
-                    let player_won_series = if fm.blue_team_idx() == player_idx {
-                        fm.blue_wins() > fm.red_wins()
+                let blue_won = matches!(result.winner, TeamSide::Blue);
+                let series_complete = tournament.add_game_win(match_id, blue_won);
+
+                if series_complete {
+                    let final_match = tournament
+                        .matches_today(day)
+                        .into_iter()
+                        .find(|m| m.id() == match_id);
+                    if let Some(fm) = final_match {
+                        let player_won_series = if fm.blue_team_idx() == player_idx {
+                            fm.blue_wins() > fm.red_wins()
+                        } else {
+                            fm.red_wins() > fm.blue_wins()
+                        };
+                        gs.teams_mut()[player_idx].apply_match_result(player_won_series);
+                    }
+
+                    if tournament.is_complete() {
+                        let msg = esm_core::inbox::Message::new(
+                            "Tournament Concluded".to_string(),
+                            format!(
+                                "The {} has concluded! Check the final standings.",
+                                tournament.name()
+                            ),
+                            esm_core::inbox::MessagePriority::HardBlock,
+                            esm_core::inbox::MessageCategory::News,
+                            gs.calendar().days_elapsed(),
+                        );
+                        gs.inbox_mut().push(msg);
+                    }
+
+                    post_match_slot = scheduled_slot;
+                }
+
+                let (blue_picks, red_picks) = {
+                    let ds = state.draft_session.lock().unwrap();
+                    if let Some(session) = ds.as_ref() {
+                        let st = session.state();
+                        (st.blue_picks.clone(), st.red_picks.clone())
                     } else {
-                        fm.red_wins() > fm.blue_wins()
-                    };
-                    gs.teams_mut()[player_idx].apply_match_result(player_won_series);
-                } else {
-                    gs.teams_mut()[player_idx].apply_match_result(player_won);
-                }
+                        (Vec::new(), Vec::new())
+                    }
+                };
+                let blue_roster = extract_roster_entries(&moba_teams[blue_idx], &blue_picks);
+                let red_roster = extract_roster_entries(&moba_teams[red_idx], &red_picks);
 
-                if tournament.is_complete() {
-                    let msg = esm_core::inbox::Message::new(
-                        "Tournament Concluded".to_string(),
-                        format!(
-                            "The {} has concluded! Check the final standings.",
-                            tournament.name()
-                        ),
-                        esm_core::inbox::MessagePriority::HardBlock,
-                        esm_core::inbox::MessageCategory::News,
-                        gs.calendar().days_elapsed(),
-                    );
-                    gs.inbox_mut().push(msg);
-                }
+                Some(match_result_to_info(
+                    &result,
+                    moba_teams[blue_idx].name(),
+                    moba_teams[red_idx].name(),
+                    blue_roster,
+                    red_roster,
+                ))
+            } else {
+                None
             }
-
-            // Build roster entries from draft session (if available) + moba teams
-            let (blue_picks, red_picks) = {
-                let ds = state.draft_session.lock().unwrap();
-                if let Some(session) = ds.as_ref() {
-                    let st = session.state();
-                    (st.blue_picks.clone(), st.red_picks.clone())
-                } else {
-                    (Vec::new(), Vec::new())
-                }
-            };
-            let blue_roster = extract_roster_entries(&moba_teams[blue_idx], &blue_picks);
-            let red_roster = extract_roster_entries(&moba_teams[red_idx], &red_picks);
-
-            let info = match_result_to_info(
-                &result,
-                moba_teams[blue_idx].name(),
-                moba_teams[red_idx].name(),
-                blue_roster,
-                red_roster,
-            );
-
-            return Ok(info);
+        } else {
+            None
         }
+    };
+
+    let info = info.ok_or("No pending match today".to_string())?;
+    if let Some(slot) = post_match_slot {
+        let _ = advance_after_match_slot(&state, slot)?;
     }
 
-    Err("No pending match today".to_string())
+    Ok(info)
 }
 
 /// Get the current series state for the player's match today.

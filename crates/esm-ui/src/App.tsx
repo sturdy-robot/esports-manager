@@ -7,11 +7,13 @@ import { Settings } from '@/components/Settings'
 import { GameShell } from '@/components/GameShell'
 import { SeriesFlow } from '@/components/SeriesFlow'
 import { useListSaves, useDeleteSave, useLoadSave, useNewGame, useSaveGame, useAdvanceTurn } from '@/lib/use-api'
+import { getGameInfo } from '@/lib/api'
 import type { MenuTarget } from '@/components/MainMenu'
 import type { ManagerFormData } from '@/components/NewGame'
 import type { TeamOption } from '@/components/TeamSelection'
 import type { GameInfo } from '@/lib/api'
 import type { MatchMode } from '@/components/PlayMatchButton'
+import type { ContinueMode } from '@/components/TopBar'
 
 type AppScreen =
   | 'main-menu'
@@ -118,8 +120,8 @@ function App() {
     }
   }
 
-  const handleContinue = async () => {
-    const info = await advanceTurn()
+  const handleContinue = async (mode: ContinueMode) => {
+    const info = await advanceTurn(mode)
     if (info) {
       setGameInfo(info)
     }
@@ -136,8 +138,7 @@ function App() {
   }
 
   const handleMatchComplete = async () => {
-    // Refresh game info after match and return to dashboard
-    const info = await advanceTurn()
+    const info = await getGameInfo()
     if (info) setGameInfo(info)
     setScreen('playing')
   }

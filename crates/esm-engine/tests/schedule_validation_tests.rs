@@ -1,7 +1,5 @@
 use esm_engine::schedule::validation::{ScheduleError, ScheduleValidator};
-use esm_engine::schedule::{
-    ScheduleEntry, SoloQueueFocus, TeamDailySchedule, TeamWeeklySchedule,
-};
+use esm_engine::schedule::{ScheduleEntry, SoloQueueFocus, TeamWeeklySchedule};
 use esm_models::time::TimeSlot;
 
 // ---------------------------------------------------------------------------
@@ -39,8 +37,10 @@ fn cannot_schedule_into_occupied_slot() {
 #[test]
 fn allows_up_to_three_scrims_per_day() {
     let mut ws = TeamWeeklySchedule::new();
-    ws.day_mut(0).set(TimeSlot::Morning, ScheduleEntry::Scrim { scrim_id: 1 });
-    ws.day_mut(0).set(TimeSlot::Afternoon, ScheduleEntry::Scrim { scrim_id: 2 });
+    ws.day_mut(0)
+        .set(TimeSlot::Morning, ScheduleEntry::Scrim { scrim_id: 1 });
+    ws.day_mut(0)
+        .set(TimeSlot::Afternoon, ScheduleEntry::Scrim { scrim_id: 2 });
     // Third scrim in evening — should be allowed (check before adding)
     let result = ScheduleValidator::check_scrim_limit(&ws, 0);
     assert!(result.is_ok());
@@ -49,9 +49,12 @@ fn allows_up_to_three_scrims_per_day() {
 #[test]
 fn rejects_fourth_scrim_on_same_day() {
     let mut ws = TeamWeeklySchedule::new();
-    ws.day_mut(0).set(TimeSlot::Morning, ScheduleEntry::Scrim { scrim_id: 1 });
-    ws.day_mut(0).set(TimeSlot::Afternoon, ScheduleEntry::Scrim { scrim_id: 2 });
-    ws.day_mut(0).set(TimeSlot::Evening, ScheduleEntry::Scrim { scrim_id: 3 });
+    ws.day_mut(0)
+        .set(TimeSlot::Morning, ScheduleEntry::Scrim { scrim_id: 1 });
+    ws.day_mut(0)
+        .set(TimeSlot::Afternoon, ScheduleEntry::Scrim { scrim_id: 2 });
+    ws.day_mut(0)
+        .set(TimeSlot::Evening, ScheduleEntry::Scrim { scrim_id: 3 });
     // All 3 slots filled with scrims — no room for another
     let result = ScheduleValidator::check_scrim_limit(&ws, 0);
     assert_eq!(result, Err(ScheduleError::MaxScrimsPerDay));
@@ -76,7 +79,7 @@ fn rejects_scheduling_on_current_day() {
 #[test]
 fn rejects_scheduling_in_the_past() {
     let result = ScheduleValidator::check_not_same_day(5, 7);
-    assert_eq!(result, Err(ScheduleError::SameDayScheduling));
+    assert_eq!(result, Err(ScheduleError::PastDate));
 }
 
 // ---------------------------------------------------------------------------

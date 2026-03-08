@@ -17,6 +17,7 @@ import type { Transaction } from "@/components/Finances";
 import type { StaffMember } from "@/components/Staff";
 import type { ScoutingTarget } from "@/components/Scouting";
 import type { MatchMode } from "./PlayMatchButton";
+import type { ContinueMode } from "./TopBar";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
@@ -66,7 +67,7 @@ interface GameShellProps {
   dayOfWeek?: string;
   phase?: string;
   isMatchDay?: boolean;
-  onContinue?: () => void;
+  onContinue?: (mode: ContinueMode) => void;
   onPlayMatch?: (mode: MatchMode) => void;
   onSave?: () => void;
   onExitToMenu?: () => void;
@@ -94,7 +95,7 @@ export function GameShell({
   const { playMatchDelegate, playing: simulating } = usePlayMatchDelegate();
   const {
     weekSchedule, scrims, refresh: refreshTeamSchedule,
-    scheduleScrim, cancelScrim, scheduleSoloQueue, scheduleRest, clearSlot,
+    scheduleScrim, cancelScrim, scheduleSoloQueue, clearSlot,
   } = useTeamSchedule();
   const [resolvingMsgId, setResolvingMsgId] = useState<string | null>(null);
   const hasUrgentUnread = inboxMessages.some((m) => m.priority === 'Urgent' && !m.read);
@@ -109,15 +110,16 @@ export function GameShell({
   }, [fetchRoster, fetchInbox, fetchStandings, fetchSchedule, refreshTeamSchedule]);
 
   // Wrap onContinue to also refresh data after advancing
-  const handleContinue = useCallback(async () => {
+  const handleContinue = useCallback(async (mode: ContinueMode) => {
     if (onContinueProp) {
-      await onContinueProp();
+      await onContinueProp(mode);
       fetchRoster();
       fetchInbox();
       fetchStandings();
       fetchSchedule();
+      refreshTeamSchedule();
     }
-  }, [onContinueProp, fetchRoster, fetchInbox, fetchStandings, fetchSchedule]);
+  }, [onContinueProp, fetchRoster, fetchInbox, fetchStandings, fetchSchedule, refreshTeamSchedule]);
 
   const handlePlayMatch = useCallback((mode: MatchMode) => {
     if (onPlayMatchProp) {
@@ -128,11 +130,14 @@ export function GameShell({
   const handleDelegate = useCallback(async () => {
     const info = await playMatchDelegate();
     if (info) {
+      await fetchRoster();
+      await fetchInbox();
       await fetchSchedule();
       await fetchStandings();
-      setActivePage("results");
+      await refreshTeamSchedule();
+      setActivePage("dashboard");
     }
-  }, [playMatchDelegate, fetchSchedule, fetchStandings]);
+  }, [playMatchDelegate, fetchRoster, fetchInbox, fetchSchedule, fetchStandings, refreshTeamSchedule]);
 
   const handleResolveMessage = async (id: string, subject: string) => {
     setResolvingMsgId(id);
@@ -177,8 +182,7 @@ export function GameShell({
         const nextMatch = schedule.find(
           (m) => (m.blue_team === teamName || m.red_team === teamName) && m.winner === null
         );
-        const currentDayIndex = day % 7;
-        const todaySlots = weekSchedule?.days[currentDayIndex]?.slots;
+        const todaySlots = weekSchedule?.days.find((d) => d.day_index === day)?.slots;
         return (
           <Dashboard
             inboxCount={inboxMapped.length}
@@ -214,9 +218,6 @@ export function GameShell({
             }}
             onScheduleSoloQueue={async (dayIndex, timeSlot, players, focus) => {
               await scheduleSoloQueue({ day_index: dayIndex, time_slot: timeSlot, players, focus });
-            }}
-            onScheduleRest={async (dayIndex, timeSlot) => {
-              await scheduleRest({ day_index: dayIndex, time_slot: timeSlot });
             }}
             onClearSlot={async (dayIndex, timeSlot) => {
               await clearSlot(dayIndex, timeSlot);

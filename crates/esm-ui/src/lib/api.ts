@@ -28,6 +28,8 @@ export interface GameInfo {
   match_results: MatchResultInfo[];
 }
 
+export type AdvanceTurnMode = "smart" | "step";
+
 export interface MatchResultInfo {
   blue_team: string;
   red_team: string;
@@ -112,8 +114,8 @@ export async function saveGame(name: string): Promise<void> {
   return invoke<void>("save_game", { name });
 }
 
-export async function advanceTurn(): Promise<GameInfo> {
-  return invoke<GameInfo>("advance_turn");
+export async function advanceTurn(mode: AdvanceTurnMode = "smart"): Promise<GameInfo> {
+  return invoke<GameInfo>("advance_turn", { params: { mode } });
 }
 
 export async function getRoster(): Promise<PlayerInfo[]> {
@@ -330,7 +332,7 @@ export async function applyPlayerTalk(playerIndex: number, talk: TalkType): Prom
 // ---------------------------------------------------------------------------
 
 export type TimeSlotType = "Morning" | "Afternoon" | "Evening";
-export type EntryType = "free" | "scrim" | "solo_queue" | "rest";
+export type EntryType = "free" | "scrim" | "solo_queue" | "match";
 export type SoloQueueFocusType = "champions" | "tactics" | "mechanics" | "mentality";
 export type DraftRulesType = "standard" | "fearless";
 
@@ -345,12 +347,17 @@ export interface ScheduleSlotInfo {
 
 export interface DayScheduleInfo {
   day_index: number;
+  day_label: string;
+  date_label: string;
+  is_past: boolean;
+  has_match: boolean;
   slots: ScheduleSlotInfo[];
 }
 
 export interface WeekScheduleInfo {
   days: DayScheduleInfo[];
   total_scrims: number;
+  total_matches: number;
   occupied_slots: number;
 }
 

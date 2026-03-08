@@ -18,6 +18,10 @@ const MOCK_SCHEDULE: WeekScheduleInfo = {
   days: [
     {
       day_index: 0,
+      day_label: "Wed",
+      date_label: "Jan 1, 2025",
+      is_past: false,
+      has_match: false,
       slots: [
         { time_slot: "Morning", entry_type: "scrim", scrim_id: 1, opponent: "Gen.G", players: null, focus: null },
         { time_slot: "Afternoon", entry_type: "solo_queue", scrim_id: null, opponent: null, players: [0, 2], focus: "mechanics" },
@@ -26,10 +30,15 @@ const MOCK_SCHEDULE: WeekScheduleInfo = {
     },
     ...Array.from({ length: 6 }, (_, i) => ({
       day_index: i + 1,
+      day_label: ["Thu", "Fri", "Sat", "Sun", "Mon", "Tue"][i],
+      date_label: `Jan ${i + 2}, 2025`,
+      is_past: false,
+      has_match: i === 2,
       slots: [freeSlot("Morning"), freeSlot("Afternoon"), freeSlot("Evening")],
     })),
   ],
   total_scrims: 1,
+  total_matches: 1,
   occupied_slots: 2,
 };
 
@@ -55,23 +64,22 @@ const defaultProps = {
   teamNames: ["T1", "Gen.G", "DRX"],
   onScheduleScrim: vi.fn().mockResolvedValue(undefined),
   onScheduleSoloQueue: vi.fn().mockResolvedValue(undefined),
-  onScheduleRest: vi.fn().mockResolvedValue(undefined),
   onClearSlot: vi.fn().mockResolvedValue(undefined),
   onCancelScrim: vi.fn().mockResolvedValue(undefined),
 };
 
 describe("TeamScheduleView", () => {
-  it("renders the Weekly Schedule heading", () => {
+  it("renders the Team Calendar heading", () => {
     renderWithProviders(<TeamScheduleView {...defaultProps} />);
     expect(
-      screen.getByRole("heading", { name: /weekly schedule/i })
+      screen.getByRole("heading", { name: /team calendar/i })
     ).toBeInTheDocument();
   });
 
-  it("renders day column headers", () => {
+  it("renders calendar day labels", () => {
     renderWithProviders(<TeamScheduleView {...defaultProps} />);
-    expect(screen.getByText("Mon")).toBeInTheDocument();
-    expect(screen.getByText("Tue")).toBeInTheDocument();
+    expect(screen.getByText("Wed")).toBeInTheDocument();
+    expect(screen.getByText("Jan 1, 2025")).toBeInTheDocument();
     expect(screen.getByText("Sun")).toBeInTheDocument();
   });
 
@@ -94,11 +102,12 @@ describe("TeamScheduleView", () => {
     expect(screen.getByText(/SoloQ · mechanics/)).toBeInTheDocument();
   });
 
-  it("shows scrim count and occupied slots stats", () => {
+  it("shows scrim, match, and occupied slot stats", () => {
     renderWithProviders(<TeamScheduleView {...defaultProps} />);
-    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("scrims")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("matches")).toBeInTheDocument();
     expect(screen.getByText("/ 21 slots")).toBeInTheDocument();
   });
 
@@ -120,7 +129,7 @@ describe("TeamScheduleView", () => {
     renderWithProviders(<TeamScheduleView {...defaultProps} />);
     expect(screen.getByText("Scrim")).toBeInTheDocument();
     expect(screen.getByText("Solo Queue")).toBeInTheDocument();
-    expect(screen.getByText("Rest")).toBeInTheDocument();
+    expect(screen.getByText("Match")).toBeInTheDocument();
   });
 
   it("shows completed scrim result score in grid and scrims list", () => {

@@ -40,6 +40,7 @@ describe("TopBar", () => {
   it("renders the Continue button", () => {
     renderWithProviders(<TopBar {...defaults} />);
     expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/continue mode/i)).toBeInTheDocument();
   });
 
   it("calls onContinue when Continue is clicked", async () => {
@@ -49,6 +50,18 @@ describe("TopBar", () => {
 
     await user.click(screen.getByRole("button", { name: /continue/i }));
     expect(onContinue).toHaveBeenCalledTimes(1);
+    expect(onContinue).toHaveBeenCalledWith("smart");
+  });
+
+  it("passes step mode when selected before continuing", async () => {
+    const user = userEvent.setup();
+    const onContinue = vi.fn();
+    renderWithProviders(<TopBar {...defaults} onContinue={onContinue} />);
+
+    await user.selectOptions(screen.getByLabelText(/continue mode/i), "step");
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+
+    expect(onContinue).toHaveBeenCalledWith("step");
   });
 
   it("renders Save button", () => {

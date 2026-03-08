@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult, SeriesInfo, TacticsInfo, PlaystyleType, FocusType, PlayerStateInfo, TalkType, WeekScheduleInfo, ScrimInfo, ScheduleScrimParams, ScheduleSoloQueueParams, ScheduleRestParams, TimeSlotType, ScheduleSlotInfo, ChampionDraftInfo } from "./api";
+import type { SaveInfo, GameInfo, NewGameParams, TeamInfo, PlayerInfo, InboxMessageInfo, StandingInfo, ScheduleMatchInfo, DraftSessionState, StartDraftParams, SimulateMatchResult, SeriesInfo, TacticsInfo, PlaystyleType, FocusType, PlayerStateInfo, TalkType, WeekScheduleInfo, ScrimInfo, ScheduleScrimParams, ScheduleSoloQueueParams, ScheduleRestParams, TimeSlotType, ScheduleSlotInfo, ChampionDraftInfo, AdvanceTurnMode } from "./api";
 
 // ---------------------------------------------------------------------------
 // Detect whether we're running inside Tauri or in a browser (dev/test)
@@ -53,7 +53,7 @@ interface ApiAdapter {
   deleteSave(name: string): Promise<void>;
   newGame(params: NewGameParams): Promise<GameInfo>;
   saveGame(name: string): Promise<void>;
-  advanceTurn(): Promise<GameInfo>;
+  advanceTurn(mode?: AdvanceTurnMode): Promise<GameInfo>;
   getRoster(): Promise<PlayerInfo[]>;
   getInbox(): Promise<InboxMessageInfo[]>;
   loadDatapack(path: string): Promise<TeamInfo[]>;
@@ -146,8 +146,13 @@ const mockAdapter: ApiAdapter = {
   async saveGame(_name: string) {
     await delay(200);
   },
-  async advanceTurn() {
+  async advanceTurn(mode: AdvanceTurnMode = 'smart') {
     await delay(100);
+    if (mode === 'smart') {
+      mockPhaseIndex = 0;
+      mockDay += 1;
+      return { ...MOCK_GAME_INFO, day: mockDay, phase: MOCK_PHASES[mockPhaseIndex] };
+    }
     mockPhaseIndex++;
     if (mockPhaseIndex >= MOCK_PHASES.length) {
       mockPhaseIndex = 0;
@@ -349,19 +354,27 @@ function MOCK_WEEK_SCHEDULE(): WeekScheduleInfo {
       slots[1] = { time_slot: 'Afternoon', entry_type: 'solo_queue', scrim_id: null, opponent: null, players: [0, 2, 4], focus: 'mechanics' };
     }
     if (dayIdx === 2) {
-      slots[0] = { time_slot: 'Morning', entry_type: 'scrim', scrim_id: 2, opponent: 'DRX', players: null, focus: null };
-      slots[2] = { time_slot: 'Evening', entry_type: 'rest', scrim_id: null, opponent: null, players: null, focus: null };
+      slots[0] = { time_slot: 'Morning', entry_type: 'match', scrim_id: null, opponent: 'Hanwha Life', players: null, focus: null };
     }
     if (dayIdx === 5) {
-      slots[0] = { time_slot: 'Morning', entry_type: 'rest', scrim_id: null, opponent: null, players: null, focus: null };
-      slots[1] = { time_slot: 'Afternoon', entry_type: 'rest', scrim_id: null, opponent: null, players: null, focus: null };
-      slots[2] = { time_slot: 'Evening', entry_type: 'rest', scrim_id: null, opponent: null, players: null, focus: null };
+      slots[2] = { time_slot: 'Evening', entry_type: 'match', scrim_id: null, opponent: 'DRX', players: null, focus: null };
+    }
+    if (dayIdx === 7) {
+      slots[0] = { time_slot: 'Morning', entry_type: 'scrim', scrim_id: 2, opponent: 'KT Rolster', players: null, focus: null };
     }
     return slots;
   };
   return {
-    days: Array.from({ length: 7 }, (_, i) => ({ day_index: i, slots: makeSlots(i) })),
+    days: Array.from({ length: 10 }, (_, i) => ({
+      day_index: i,
+      day_label: ['Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'][i] ?? 'Day',
+      date_label: `Jan ${i + 1}, 2025`,
+      is_past: i < 1,
+      has_match: i === 2 || i === 5,
+      slots: makeSlots(i),
+    })),
     total_scrims: 2,
+    total_matches: 2,
     occupied_slots: 7,
   };
 }
@@ -590,12 +603,12 @@ export function useAdvanceTurn() {
   const [advancing, setAdvancing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const advanceTurn = useCallback(async (): Promise<GameInfo | null> => {
+  const advanceTurn = useCallback(async (mode: AdvanceTurnMode = 'smart'): Promise<GameInfo | null> => {
     setAdvancing(true);
     setError(null);
     try {
       const adapter = await getAdapter();
-      return await adapter.advanceTurn();
+      return await adapter.advanceTurn(mode);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error('useAdvanceTurn error:', msg);
