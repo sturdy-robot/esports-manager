@@ -154,26 +154,98 @@ pub struct Schedule {
     matches: Vec<Match>,
 }
 
+const MAX_SERIES_PER_DAY: usize = 2;
+
+fn round_robin_rounds(num_teams: usize) -> Vec<Vec<(usize, usize)>> {
+    if num_teams < 2 {
+        return Vec::new();
+    }
+
+    let has_bye = num_teams % 2 == 1;
+    let total_slots = if has_bye { num_teams + 1 } else { num_teams };
+    let bye_team = num_teams;
+    let mut rotation: Vec<usize> = (0..total_slots).collect();
+    let mut rounds = Vec::with_capacity(total_slots - 1);
+
+    for round_idx in 0..(total_slots - 1) {
+        let mut pairings = Vec::with_capacity(total_slots / 2);
+
+        for i in 0..(total_slots / 2) {
+            let left = rotation[i];
+            let right = rotation[total_slots - 1 - i];
+
+            if has_bye && (left == bye_team || right == bye_team) {
+                continue;
+            }
+
+            if round_idx % 2 == 0 {
+                pairings.push((left, right));
+            } else {
+                pairings.push((right, left));
+            }
+        }
+
+        rounds.push(pairings);
+
+        if total_slots > 2 {
+            let fixed = rotation[0];
+            let mut rotating = rotation[1..].to_vec();
+            rotating.rotate_right(1);
+            rotation = std::iter::once(fixed).chain(rotating.into_iter()).collect();
+        }
+    }
+
+    rounds
+}
+
+fn can_schedule_on_day(
+    day_matches: &[(usize, usize)],
+    blue_team_idx: usize,
+    red_team_idx: usize,
+) -> bool {
+    day_matches.len() < MAX_SERIES_PER_DAY
+        && day_matches.iter().all(|(scheduled_blue, scheduled_red)| {
+            *scheduled_blue != blue_team_idx
+                && *scheduled_blue != red_team_idx
+                && *scheduled_red != blue_team_idx
+                && *scheduled_red != red_team_idx
+        })
+}
+
+fn assign_rounds_to_days(
+    rounds: Vec<Vec<(usize, usize)>>,
+    start_day: u32,
+) -> Vec<(u32, usize, usize)> {
+    let mut scheduled_matches = Vec::new();
+    let mut current_day = start_day;
+    let mut current_day_matches: Vec<(usize, usize)> = Vec::new();
+
+    for round in rounds {
+        for (blue_team_idx, red_team_idx) in round {
+            if !can_schedule_on_day(&current_day_matches, blue_team_idx, red_team_idx) {
+                current_day += 1;
+                current_day_matches.clear();
+            }
+
+            current_day_matches.push((blue_team_idx, red_team_idx));
+            scheduled_matches.push((current_day, blue_team_idx, red_team_idx));
+        }
+    }
+
+    scheduled_matches
+}
+
 impl Schedule {
     /// Generate a single round-robin schedule for `num_teams` teams.
     /// Each pair plays once. Matches are spread across days starting at `start_day`.
     pub fn round_robin(num_teams: usize, bracket: BracketKind, start_day: u32) -> Self {
+        let rounds = round_robin_rounds(num_teams);
         let mut matches = Vec::new();
         let mut id = 1u32;
-        let mut day = start_day;
-        let matches_per_day = (num_teams / 2).max(1);
-        let mut count_on_day = 0;
 
-        for i in 0..num_teams {
-            for j in (i + 1)..num_teams {
-                matches.push(Match::new(id, i, j, day, bracket));
-                id += 1;
-                count_on_day += 1;
-                if count_on_day >= matches_per_day {
-                    count_on_day = 0;
-                    day += 1;
-                }
-            }
+        for (day, blue_team_idx, red_team_idx) in assign_rounds_to_days(rounds, start_day) {
+            matches.push(Match::new(id, blue_team_idx, red_team_idx, day, bracket));
+            id += 1;
         }
 
         Self { matches }
@@ -181,31 +253,34 @@ impl Schedule {
 
     /// Generate a double round-robin (each pair plays twice, home and away).
     pub fn double_round_robin(num_teams: usize, bracket: BracketKind, start_day: u32) -> Self {
-        let first_half = Self::round_robin(num_teams, bracket, start_day);
-        let max_day = first_half
-            .matches
-            .iter()
-            .map(|m| m.scheduled_day)
-            .max()
+        let rounds = round_robin_rounds(num_teams);
+        let mut all_matches = Vec::new();
+        let mut id = 1u32;
+
+        let first_half_matches = assign_rounds_to_days(rounds.clone(), start_day);
+        for (day, blue_team_idx, red_team_idx) in &first_half_matches {
+            all_matches.push(Match::new(id, *blue_team_idx, *red_team_idx, *day, bracket));
+            id += 1;
+        }
+
+        let second_half_start_day = first_half_matches
+            .last()
+            .map(|(day, _, _)| day + 1)
             .unwrap_or(start_day);
-
-        let mut all_matches = first_half.matches;
-        let mut id = all_matches.len() as u32 + 1;
-        let mut day = max_day + 1;
-        let matches_per_day = (num_teams / 2).max(1);
-        let mut count_on_day = 0;
-
-        // Second round: swap sides
-        for i in 0..num_teams {
-            for j in (i + 1)..num_teams {
-                all_matches.push(Match::new(id, j, i, day, bracket));
-                id += 1;
-                count_on_day += 1;
-                if count_on_day >= matches_per_day {
-                    count_on_day = 0;
-                    day += 1;
-                }
-            }
+        let mirrored_rounds: Vec<Vec<(usize, usize)>> = rounds
+            .into_iter()
+            .map(|round| {
+                round
+                    .into_iter()
+                    .map(|(blue_team_idx, red_team_idx)| (red_team_idx, blue_team_idx))
+                    .collect()
+            })
+            .collect();
+        for (day, blue_team_idx, red_team_idx) in
+            assign_rounds_to_days(mirrored_rounds, second_half_start_day)
+        {
+            all_matches.push(Match::new(id, blue_team_idx, red_team_idx, day, bracket));
+            id += 1;
         }
 
         Self {

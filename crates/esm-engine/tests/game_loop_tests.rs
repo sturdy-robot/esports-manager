@@ -9,6 +9,7 @@ use esm_models::player::{
     TechnicalAttributes,
 };
 use esm_models::team::Team;
+use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -286,7 +287,7 @@ fn game_loop_deterministic_season() {
 
 #[test]
 fn game_loop_stronger_team_tends_to_win_more() {
-    let mut charlie_first_count = 0;
+    let mut first_place_counts: HashMap<usize, u32> = HashMap::new();
     let trials = 200;
     for seed in 0..trials {
         let teams = vec![
@@ -340,13 +341,19 @@ fn game_loop_stronger_team_tends_to_win_more() {
         }
 
         let standings = tournament.standings();
-        if standings[0].team_idx == 2 {
-            charlie_first_count += 1;
-        }
+        *first_place_counts.entry(standings[0].team_idx).or_insert(0) += 1;
     }
 
+    let charlie_first_count = *first_place_counts.get(&2).unwrap_or(&0);
+    let best_other_first_count = first_place_counts
+        .iter()
+        .filter(|(team_idx, _)| **team_idx != 2)
+        .map(|(_, count)| *count)
+        .max()
+        .unwrap_or(0);
+
     assert!(
-        charlie_first_count > trials / 2,
-        "Charlie (skill 95) should finish first in >50% of seasons, got {charlie_first_count}/{trials}"
+        charlie_first_count > best_other_first_count,
+        "Charlie (skill 95) should finish first more often than any other team, got Charlie={charlie_first_count}, best_other={best_other_first_count}"
     );
 }

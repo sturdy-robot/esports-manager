@@ -1,6 +1,7 @@
 use esm_engine::tournament::{
     BracketKind, Match, MatchStatus, Schedule, Tournament, TournamentFormat,
 };
+use std::collections::HashSet;
 
 // ---------------------------------------------------------------------------
 // TournamentFormat
@@ -117,6 +118,74 @@ fn schedule_matches_for_day() {
     let schedule = Schedule::round_robin(4, BracketKind::Bo1, 1);
     let day1 = schedule.matches_for_day(1);
     assert!(!day1.is_empty());
+}
+
+#[test]
+fn schedule_round_robin_never_schedules_team_twice_on_same_day() {
+    let schedule = Schedule::round_robin(6, BracketKind::Bo3, 1);
+    let max_day = schedule
+        .matches()
+        .iter()
+        .map(|m| m.scheduled_day())
+        .max()
+        .unwrap();
+
+    for day in 1..=max_day {
+        let mut teams_seen = HashSet::new();
+        for m in schedule.matches_for_day(day) {
+            assert!(teams_seen.insert(m.blue_team_idx()));
+            assert!(teams_seen.insert(m.red_team_idx()));
+        }
+    }
+}
+
+#[test]
+fn schedule_round_robin_caps_days_at_two_series() {
+    let schedule = Schedule::round_robin(6, BracketKind::Bo3, 1);
+    let max_day = schedule
+        .matches()
+        .iter()
+        .map(|m| m.scheduled_day())
+        .max()
+        .unwrap();
+
+    for day in 1..=max_day {
+        assert!(schedule.matches_for_day(day).len() <= 2);
+    }
+}
+
+#[test]
+fn schedule_double_round_robin_never_schedules_team_twice_on_same_day() {
+    let schedule = Schedule::double_round_robin(6, BracketKind::Bo3, 1);
+    let max_day = schedule
+        .matches()
+        .iter()
+        .map(|m| m.scheduled_day())
+        .max()
+        .unwrap();
+
+    for day in 1..=max_day {
+        let mut teams_seen = HashSet::new();
+        for m in schedule.matches_for_day(day) {
+            assert!(teams_seen.insert(m.blue_team_idx()));
+            assert!(teams_seen.insert(m.red_team_idx()));
+        }
+    }
+}
+
+#[test]
+fn schedule_double_round_robin_caps_days_at_two_series() {
+    let schedule = Schedule::double_round_robin(6, BracketKind::Bo3, 1);
+    let max_day = schedule
+        .matches()
+        .iter()
+        .map(|m| m.scheduled_day())
+        .max()
+        .unwrap();
+
+    for day in 1..=max_day {
+        assert!(schedule.matches_for_day(day).len() <= 2);
+    }
 }
 
 // ---------------------------------------------------------------------------
