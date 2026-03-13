@@ -1,7 +1,7 @@
 use esm_core::rng::GameRng;
 use esm_engine::moba_match::event::MatchEventKind;
+use esm_engine::moba_match::events::*;
 use esm_engine::moba_match::game_state::{MatchGameState, MatchPlayerSimulationData};
-use esm_engine::moba_match::sim_events::*;
 use esm_engine::moba_match::state::TeamSide;
 
 fn make_attrs() -> Vec<MatchPlayerSimulationData> {
@@ -328,7 +328,7 @@ fn baron_fight_enabled_when_baron_alive_after_20() {
 
 #[test]
 fn baron_fight_disabled_when_baron_dead() {
-    let mut s = make_state_at(25);
+    let s = make_state_at(25);
     // Baron not spawned
     assert!(!BaronFight.is_enabled(&s));
 }

@@ -2,9 +2,9 @@ use esm_core::rng::GameRng;
 use serde::{Deserialize, Serialize};
 
 use super::event::MatchEvent;
+use super::events::{all_events, enabled_events_with_tactics, pick_event};
 use super::game_state::{MatchGameState, MatchPlayerSimulationData};
 use super::player_state::MatchPlayerState;
-use super::sim_events::{all_events, enabled_events_with_tactics, pick_event};
 use super::state::TeamSide;
 use super::tactics::MatchTactics;
 

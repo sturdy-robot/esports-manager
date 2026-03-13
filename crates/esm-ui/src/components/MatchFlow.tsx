@@ -6,7 +6,7 @@ import { useDraft, useMatchSimulation, useTactics } from '@/lib/use-api';
 import type { MatchMode } from './PlayMatchButton';
 import type { PlaystyleType, FocusType } from '@/lib/api';
 
-type MatchPhase = 'pre-match' | 'draft' | 'tactics' | 'match' | 'simulating' | 'results';
+export type MatchPhase = 'pre-match' | 'draft' | 'tactics' | 'match' | 'simulating' | 'results';
 
 interface MatchFlowProps {
   mode: MatchMode;
@@ -15,6 +15,7 @@ interface MatchFlowProps {
   teamSide: 'blue' | 'red';
   fearlessBans?: string[];
   onComplete: () => void;
+  onPhaseChange?: (phase: MatchPhase) => void;
 }
 
 function initialPhase(mode: MatchMode): MatchPhase {
@@ -35,11 +36,16 @@ export function MatchFlow({
   teamSide,
   fearlessBans = [],
   onComplete,
+  onPhaseChange,
 }: MatchFlowProps) {
   const [phase, setPhase] = useState<MatchPhase>(() => initialPhase(mode));
   const { draftState, startDraft, hover, lock, autoDraftComplete, swapPicks } = useDraft();
   const { result: matchResult, simulate } = useMatchSimulation();
   const { tactics, update: updateTactics } = useTactics();
+
+  useEffect(() => {
+    onPhaseChange?.(phase);
+  }, [phase, onPhaseChange]);
 
   // For simulating phase, run the backend simulation then advance
   useEffect(() => {
@@ -99,59 +105,6 @@ export function MatchFlow({
       className="flex flex-col flex-1 min-h-0"
       style={{ backgroundColor: 'var(--bg-base)' }}
     >
-      {/* Match header — replaces sidebar/topbar */}
-      <header
-        className="flex items-center justify-between h-16 px-8 border-b shrink-0"
-        style={{
-          borderColor: 'var(--border-subtle)',
-          backgroundColor: 'var(--bg-surface)',
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <span
-              className="text-lg font-bold"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {teamName}
-            </span>
-            <span
-              className="text-xs font-semibold px-2 py-0.5 rounded"
-              style={{
-                backgroundColor: teamSide === 'blue' ? 'rgba(6,182,212,0.15)' : 'rgba(239,68,68,0.15)',
-                color: teamSide === 'blue' ? 'var(--color-accent-cyan)' : 'var(--color-loss)',
-              }}
-            >
-              {teamSide === 'blue' ? 'Blue Side' : 'Red Side'}
-            </span>
-          </div>
-          <span className="text-2xl font-black" style={{ color: 'var(--border-subtle)' }}>
-            VS
-          </span>
-          <span
-            className="text-lg font-bold"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {opponentName}
-          </span>
-        </div>
-
-        <div
-          className="px-3 py-1 rounded-md text-xs font-semibold uppercase tracking-wider"
-          style={{
-            backgroundColor: 'var(--bg-elevated)',
-            color: 'var(--text-secondary)',
-          }}
-        >
-          {phase === 'pre-match' && 'Pre-Match'}
-          {phase === 'draft' && 'Draft Phase'}
-          {phase === 'tactics' && 'Tactics'}
-          {phase === 'match' && 'Live Match'}
-          {phase === 'simulating' && 'Simulating...'}
-          {phase === 'results' && 'Match Results'}
-        </div>
-      </header>
-
       {/* Main content — full-height phases vs centered panels */}
       {(phase === 'draft' || phase === 'match' || phase === 'tactics') ? (
         <main className="flex-1 flex flex-col min-h-0">
@@ -213,6 +166,7 @@ export function MatchFlow({
             <PreMatchPanel
               teamName={teamName}
               opponentName={opponentName}
+              teamSide={teamSide}
               onProceed={handleProceedToDraft}
             />
           )}
@@ -241,10 +195,12 @@ export function MatchFlow({
 function PreMatchPanel({
   teamName,
   opponentName,
+  teamSide,
   onProceed,
 }: {
   teamName: string;
   opponentName: string;
+  teamSide: 'blue' | 'red';
   onProceed: () => void;
 }) {
   return (
@@ -261,9 +217,30 @@ function PreMatchPanel({
       >
         Pre-Match
       </h2>
-      <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-        {teamName} vs {opponentName} — prepare your strategy.
+      <div className="flex items-center justify-center gap-3 mb-3">
+        <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+          {teamName}
+        </span>
+        <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+          vs
+        </span>
+        <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+          {opponentName}
+        </span>
+      </div>
+      <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
+        Prepare your strategy before the series begins.
       </p>
+      <div className="w-full items-center mb-6" style={{color: 'var(--text-secondary)'}}>
+        Your side:
+        <span className="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full" style={{
+          backgroundColor: teamSide === 'blue' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+          color: teamSide === 'blue' ? '#93C5FD' : '#FCA5A5',
+        }}>
+          {teamSide} Side
+        </span>
+      </div>
+      
       <button
         onClick={onProceed}
         className="px-6 py-2.5 rounded-md text-sm font-semibold cursor-pointer border-none transition-all"

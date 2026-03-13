@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test/render';
 import { SeriesFlow } from './SeriesFlow';
 
@@ -39,6 +40,21 @@ describe('SeriesFlow', () => {
     renderWithProviders(<SeriesFlow {...defaultProps} />);
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /pre-match/i })).toBeInTheDocument();
+    });
+  });
+
+  it('shows draft status in the series banner during draft', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<SeriesFlow {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /pre-match/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /proceed to draft/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/^draft$/i)).toBeInTheDocument();
     });
   });
 
