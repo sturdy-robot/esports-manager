@@ -32,23 +32,19 @@ function SummaryCard({
 }) {
   return (
     <div
-      className="flex flex-col gap-2 p-4 rounded-lg border glow-hover transition-all"
+      className="app-panel flex flex-col gap-3 p-5 rounded-2xl glow-hover transition-all"
       style={{
         backgroundColor: "var(--bg-surface)",
-        borderColor: "var(--border-subtle)",
       }}
     >
       <div className="flex items-center justify-between">
-        <span
-          className="text-xs font-semibold uppercase tracking-wider"
-          style={{ color: "var(--text-muted)" }}
-        >
+        <span className="app-eyebrow" style={{ color: "var(--text-muted)" }}>
           {label}
         </span>
         <span style={{ color }}>{icon}</span>
       </div>
       <span
-        className="text-2xl font-bold tabular-nums tracking-tight font-display"
+        className="text-[28px] leading-none font-bold tabular-nums tracking-tight font-display"
         style={{ color: "var(--text-primary)" }}
       >
         {value}
@@ -57,18 +53,25 @@ function SummaryCard({
   );
 }
 
-export function Finances({ balance, income, expenses, transactions }: FinancesProps) {
+export function Finances({
+  balance,
+  income,
+  expenses,
+  transactions,
+}: FinancesProps) {
   return (
     <div className="flex flex-col gap-6 animate-fade-in-up">
-      <h2
-        className="text-lg font-bold"
-        style={{ color: "var(--text-primary)" }}
-      >
-        Finances
-      </h2>
+      <div className="flex flex-col gap-1.5">
+        <span className="app-eyebrow">Club Operations</span>
+        <h2 className="app-page-title">Finances</h2>
+        <p className="app-page-subtitle">
+          Track runway, review income and expenses, and monitor how each
+          transaction shapes season flexibility.
+        </p>
+      </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <SummaryCard
           icon={<DollarSign size={18} />}
           label="Balance"
@@ -91,7 +94,7 @@ export function Finances({ balance, income, expenses, transactions }: FinancesPr
 
       {/* Transactions */}
       {transactions.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 py-16">
+        <div className="app-panel rounded-2xl flex flex-col items-center justify-center gap-3 py-16">
           <Receipt size={48} style={{ color: "var(--text-muted)" }} />
           <p style={{ color: "var(--text-muted)" }}>No transactions yet</p>
         </div>
@@ -99,10 +102,9 @@ export function Finances({ balance, income, expenses, transactions }: FinancesPr
 
       {transactions.length > 0 && (
         <div
-          className="rounded-lg border overflow-hidden"
+          className="app-panel rounded-2xl overflow-hidden"
           style={{
             backgroundColor: "var(--bg-surface)",
-            borderColor: "var(--border-subtle)",
           }}
         >
           <table className="w-full">
@@ -110,7 +112,7 @@ export function Finances({ balance, income, expenses, transactions }: FinancesPr
               <tr
                 style={{
                   borderBottom: "1px solid var(--border-subtle)",
-                  backgroundColor: "var(--bg-elevated)",
+                  backgroundColor: "rgba(255, 255, 255, 0.03)",
                 }}
               >
                 <th
@@ -178,7 +180,7 @@ export function Finances({ balance, income, expenses, transactions }: FinancesPr
                     </td>
                     <td className="py-3 px-3">
                       <span
-                        className="px-2 py-0.5 rounded text-xs font-semibold"
+                        className="px-2 py-0.5 rounded-full text-xs font-semibold"
                         style={{
                           backgroundColor: "rgba(6, 182, 212, 0.1)",
                           color: "var(--color-accent-cyan)",

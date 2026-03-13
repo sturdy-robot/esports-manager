@@ -10,7 +10,7 @@ describe("Settings", () => {
   it("renders the Settings heading", () => {
     renderWithProviders(<Settings {...defaults} />);
     expect(
-      screen.getByRole("heading", { name: /settings/i })
+      screen.getByRole("heading", { name: /^settings$/i, level: 1 }),
     ).toBeInTheDocument();
   });
 
@@ -19,9 +19,12 @@ describe("Settings", () => {
     expect(screen.getByLabelText(/saves folder/i)).toBeInTheDocument();
   });
 
-  it("renders a theme toggle section", () => {
+  it("renders the appearance section", () => {
     renderWithProviders(<Settings {...defaults} />);
     expect(screen.getByText(/appearance/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/broadcaster command center \+ performance lab/i),
+    ).toBeInTheDocument();
   });
 
   it("calls onBack when Back is clicked", async () => {

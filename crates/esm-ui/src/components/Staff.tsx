@@ -13,23 +13,25 @@ interface StaffProps {
 
 export function Staff({ members }: StaffProps) {
   return (
-    <div className="flex flex-col gap-4 animate-fade-in-up">
-      <h2
-        className="text-lg font-bold"
-        style={{ color: "var(--text-primary)" }}
-      >
-        Staff
-      </h2>
+    <div className="flex flex-col gap-6 animate-fade-in-up">
+      <div className="flex flex-col gap-1.5">
+        <span className="app-eyebrow">Support Structure</span>
+        <h2 className="app-page-title">Staff</h2>
+        <p className="app-page-subtitle">
+          Evaluate the specialists around your roster and monitor the support
+          quality behind daily performance.
+        </p>
+      </div>
 
       {members.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 py-16">
+        <div className="app-panel rounded-2xl flex flex-col items-center justify-center gap-3 py-16">
           <UserCog size={48} style={{ color: "var(--text-muted)" }} />
           <p style={{ color: "var(--text-muted)" }}>No staff members</p>
         </div>
       )}
 
       {members.length > 0 && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {members.map((m) => {
             const skillColor =
               m.skill >= 85
@@ -43,18 +45,18 @@ export function Staff({ members }: StaffProps) {
             return (
               <div
                 key={m.id}
-                className="flex items-center gap-4 p-4 rounded-lg border glow-hover transition-all"
+                className="app-panel flex items-center gap-4 p-5 rounded-2xl glow-hover transition-all"
                 style={{
                   backgroundColor: "var(--bg-surface)",
-                  borderColor: "var(--border-subtle)",
                 }}
               >
                 {/* Avatar */}
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
                   style={{
-                    backgroundColor: "var(--bg-elevated)",
-                    color: "var(--text-muted)",
+                    background: "var(--accent-gradient-soft)",
+                    border: "1px solid var(--border-strong)",
+                    color: "var(--color-accent-cyan)",
                   }}
                 >
                   <UserCog size={18} />
@@ -68,12 +70,15 @@ export function Staff({ members }: StaffProps) {
                   >
                     {m.name}
                   </div>
-                  <div
-                    className="text-xs"
-                    style={{ color: "var(--text-secondary)" }}
+                  <span
+                    className="inline-flex mt-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+                    style={{
+                      backgroundColor: "rgba(6, 182, 212, 0.1)",
+                      color: "var(--color-accent-cyan)",
+                    }}
                   >
                     {m.role}
-                  </div>
+                  </span>
                 </div>
 
                 {/* Skill badge */}

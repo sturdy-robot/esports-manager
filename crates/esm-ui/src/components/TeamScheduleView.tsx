@@ -30,13 +30,13 @@ interface TeamScheduleViewProps {
     timeSlot: TimeSlotType,
     awayTeamIndex: number,
     gameCount: number,
-    draftRules: DraftRulesType
+    draftRules: DraftRulesType,
   ) => Promise<void>;
   onScheduleSoloQueue: (
     dayIndex: number,
     timeSlot: TimeSlotType,
     players: number[],
-    focus: SoloQueueFocusType
+    focus: SoloQueueFocusType,
   ) => Promise<void>;
   onClearSlot: (dayIndex: number, timeSlot: TimeSlotType) => Promise<void>;
   onCancelScrim: (scrimId: number) => Promise<void>;
@@ -83,7 +83,7 @@ function SlotCell({
     if (blockedReason) {
       return (
         <div
-          className="w-full h-full min-h-[56px] flex items-center justify-center rounded border border-dashed"
+          className="w-full h-full min-h-[56px] flex items-center justify-center rounded-xl border border-dashed"
           style={{
             borderColor: "var(--border-subtle)",
             backgroundColor: "rgba(255,255,255,0.02)",
@@ -100,7 +100,7 @@ function SlotCell({
     return (
       <button
         onClick={() => onAdd(dayIndex, timeSlot)}
-        className="w-full h-full min-h-[56px] flex items-center justify-center rounded border border-dashed transition-all cursor-pointer group"
+        className="w-full h-full min-h-[56px] flex items-center justify-center rounded-xl border border-dashed transition-all cursor-pointer group"
         style={{
           borderColor: "var(--border-subtle)",
           backgroundColor: "transparent",
@@ -115,7 +115,10 @@ function SlotCell({
           e.currentTarget.style.backgroundColor = "transparent";
         }}
       >
-        <Plus size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Plus
+          size={14}
+          className="opacity-0 group-hover:opacity-100 transition-opacity"
+        />
       </button>
     );
   }
@@ -125,18 +128,18 @@ function SlotCell({
       ? "rgba(6, 182, 212, 0.12)"
       : slot.entry_type === "match"
         ? "rgba(251, 191, 36, 0.12)"
-      : slot.entry_type === "solo_queue"
-        ? "rgba(16, 185, 129, 0.12)"
-        : "rgba(255,255,255,0.02)";
+        : slot.entry_type === "solo_queue"
+          ? "rgba(16, 185, 129, 0.12)"
+          : "rgba(255,255,255,0.02)";
 
   const borderColor =
     slot.entry_type === "scrim"
       ? "var(--color-accent-cyan)"
       : slot.entry_type === "match"
         ? "var(--color-warning)"
-      : slot.entry_type === "solo_queue"
-        ? "var(--color-accent-emerald)"
-        : "var(--border-subtle)";
+        : slot.entry_type === "solo_queue"
+          ? "var(--color-accent-emerald)"
+          : "var(--border-subtle)";
 
   const icon =
     slot.entry_type === "scrim" ? (
@@ -152,28 +155,25 @@ function SlotCell({
       ? `vs ${slot.opponent ?? "?"}`
       : slot.entry_type === "match"
         ? `Match vs ${slot.opponent ?? "?"}`
-      : slot.entry_type === "solo_queue"
-        ? `SoloQ · ${slot.focus ?? ""}`
-        : "";
+        : slot.entry_type === "solo_queue"
+          ? `SoloQ · ${slot.focus ?? ""}`
+          : "";
 
   const detail =
     slot.entry_type === "match"
       ? "Official series"
-      :
-    slot.entry_type === "scrim" && scrimResult?.completed
-      ? null
-      : slot.entry_type === "solo_queue" && slot.players
-        ? `${slot.players.length} player${slot.players.length !== 1 ? "s" : ""}`
-        : null;
+      : slot.entry_type === "scrim" && scrimResult?.completed
+        ? null
+        : slot.entry_type === "solo_queue" && slot.players
+          ? `${slot.players.length} player${slot.players.length !== 1 ? "s" : ""}`
+          : null;
 
   const scrimScore =
-    slot.entry_type === "scrim" && scrimResult?.completed
-      ? scrimResult
-      : null;
+    slot.entry_type === "scrim" && scrimResult?.completed ? scrimResult : null;
 
   return (
     <div
-      className="relative w-full min-h-[56px] flex flex-col justify-center px-2 py-1.5 rounded border transition-all group"
+      className="relative w-full min-h-[56px] flex flex-col justify-center px-3 py-2 rounded-xl border transition-all group"
       style={{
         backgroundColor: bgColor,
         borderColor: borderColor,
@@ -213,9 +213,10 @@ function SlotCell({
         <span
           className="text-[10px] tabular-nums font-bold mt-0.5"
           style={{
-            color: scrimScore.homeWins > scrimScore.awayWins
-              ? "var(--color-win)"
-              : "var(--color-loss)",
+            color:
+              scrimScore.homeWins > scrimScore.awayWins
+                ? "var(--color-win)"
+                : "var(--color-loss)",
           }}
         >
           {scrimScore.homeWins}–{scrimScore.awayWins}
@@ -250,11 +251,11 @@ function AddSlotModal({
   onScheduleScrim: (
     awayTeamIndex: number,
     gameCount: number,
-    draftRules: DraftRulesType
+    draftRules: DraftRulesType,
   ) => Promise<void>;
   onScheduleSoloQueue: (
     players: number[],
-    focus: SoloQueueFocusType
+    focus: SoloQueueFocusType,
   ) => Promise<void>;
 }) {
   const [mode, setMode] = useState<AddMode | null>(null);
@@ -288,36 +289,37 @@ function AddSlotModal({
 
   const togglePlayer = (idx: number) => {
     setSelectedPlayers((prev) =>
-      prev.includes(idx) ? prev.filter((p) => p !== idx) : [...prev, idx]
+      prev.includes(idx) ? prev.filter((p) => p !== idx) : [...prev, idx],
     );
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
       style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
       onClick={onClose}
     >
       <div
-        className="rounded-xl p-5 w-[400px] max-w-[90vw] animate-fade-in-up"
+        className="app-panel-strong rounded-[28px] p-6 w-[400px] max-w-[90vw] animate-fade-in-up"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "1px solid var(--border-subtle)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3
-            className="text-sm font-bold"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Day {dayIndex + 1} · {timeSlot}
-          </h3>
+          <div className="flex flex-col gap-1">
+            <span className="app-eyebrow">Add activity</span>
+            <h3
+              className="text-sm font-bold"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Day {dayIndex + 1} · {timeSlot}
+            </h3>
+          </div>
           <button
             onClick={onClose}
-            className="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none"
+            className="app-icon-button w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer border-none"
             style={{
-              backgroundColor: "var(--bg-elevated)",
               color: "var(--text-muted)",
             }}
           >
@@ -343,10 +345,9 @@ function AddSlotModal({
           <div className="flex flex-col gap-2">
             <button
               onClick={() => setMode("scrim")}
-              className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+              className="app-panel flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-colors"
               style={{
                 backgroundColor: "var(--bg-elevated)",
-                borderColor: "var(--border-subtle)",
                 color: "var(--text-primary)",
               }}
               onMouseEnter={(e) => {
@@ -359,20 +360,16 @@ function AddSlotModal({
               <Swords size={18} style={{ color: "var(--color-accent-cyan)" }} />
               <div className="text-left">
                 <div className="text-sm font-semibold">Scrim</div>
-                <div
-                  className="text-xs"
-                  style={{ color: "var(--text-muted)" }}
-                >
+                <div className="text-xs" style={{ color: "var(--text-muted)" }}>
                   Practice match vs another team
                 </div>
               </div>
             </button>
             <button
               onClick={() => setMode("solo_queue")}
-              className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+              className="app-panel flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-colors"
               style={{
                 backgroundColor: "var(--bg-elevated)",
-                borderColor: "var(--border-subtle)",
                 color: "var(--text-primary)",
               }}
               onMouseEnter={(e) => {
@@ -389,10 +386,7 @@ function AddSlotModal({
               />
               <div className="text-left">
                 <div className="text-sm font-semibold">Solo Queue</div>
-                <div
-                  className="text-xs"
-                  style={{ color: "var(--text-muted)" }}
-                >
+                <div className="text-xs" style={{ color: "var(--text-muted)" }}>
                   Individual practice session
                 </div>
               </div>
@@ -404,7 +398,7 @@ function AddSlotModal({
           <div className="flex flex-col gap-3">
             <div>
               <label
-                className="text-xs font-semibold mb-1 block"
+                className="app-eyebrow mb-1 block"
                 style={{ color: "var(--text-secondary)" }}
               >
                 Opponent
@@ -413,11 +407,9 @@ function AddSlotModal({
                 <select
                   value={awayTeamIdx}
                   onChange={(e) => setAwayTeamIdx(Number(e.target.value))}
-                  className="w-full p-2 rounded text-sm appearance-none cursor-pointer"
+                  className="app-input w-full p-2.5 rounded-xl text-sm appearance-none cursor-pointer"
                   style={{
-                    backgroundColor: "var(--bg-elevated)",
                     color: "var(--text-primary)",
-                    border: "1px solid var(--border-subtle)",
                   }}
                 >
                   {teamNames.map((name, i) => {
@@ -439,7 +431,7 @@ function AddSlotModal({
             <div className="flex gap-3">
               <div className="flex-1">
                 <label
-                  className="text-xs font-semibold mb-1 block"
+                  className="app-eyebrow mb-1 block"
                   style={{ color: "var(--text-secondary)" }}
                 >
                   Games
@@ -449,7 +441,7 @@ function AddSlotModal({
                     <button
                       key={n}
                       onClick={() => setGameCount(n)}
-                      className="flex-1 py-1.5 rounded text-xs tabular-nums font-bold cursor-pointer border-none transition-colors"
+                      className="flex-1 py-2 rounded-xl text-xs tabular-nums font-bold cursor-pointer border-none transition-colors"
                       style={{
                         backgroundColor:
                           gameCount === n
@@ -466,7 +458,7 @@ function AddSlotModal({
               </div>
               <div className="flex-1">
                 <label
-                  className="text-xs font-semibold mb-1 block"
+                  className="app-eyebrow mb-1 block"
                   style={{ color: "var(--text-secondary)" }}
                 >
                   Draft
@@ -476,7 +468,7 @@ function AddSlotModal({
                     <button
                       key={r}
                       onClick={() => setDraftRules(r)}
-                      className="flex-1 py-1.5 rounded text-xs font-semibold cursor-pointer border-none transition-colors capitalize"
+                      className="flex-1 py-2 rounded-xl text-xs font-semibold cursor-pointer border-none transition-colors capitalize"
                       style={{
                         backgroundColor:
                           draftRules === r
@@ -495,10 +487,9 @@ function AddSlotModal({
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="w-full py-2 rounded-lg text-sm font-bold cursor-pointer border-none transition-colors"
+              className="app-button-primary w-full py-2.5 rounded-2xl text-sm font-bold cursor-pointer border-none transition-colors"
               style={{
-                background:
-                  "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))",
+                background: "var(--accent-gradient)",
                 color: "#fff",
                 opacity: submitting ? 0.6 : 1,
               }}
@@ -512,7 +503,7 @@ function AddSlotModal({
           <div className="flex flex-col gap-3">
             <div>
               <label
-                className="text-xs font-semibold mb-1 block"
+                className="app-eyebrow mb-1 block"
                 style={{ color: "var(--text-secondary)" }}
               >
                 Players
@@ -522,7 +513,7 @@ function AddSlotModal({
                   <button
                     key={i}
                     onClick={() => togglePlayer(i)}
-                    className="px-2.5 py-1 rounded text-xs font-semibold cursor-pointer border-none transition-colors"
+                    className="px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer border-none transition-colors"
                     style={{
                       backgroundColor: selectedPlayers.includes(i)
                         ? "var(--color-accent-emerald)"
@@ -539,7 +530,7 @@ function AddSlotModal({
             </div>
             <div>
               <label
-                className="text-xs font-semibold mb-1 block"
+                className="app-eyebrow mb-1 block"
                 style={{ color: "var(--text-secondary)" }}
               >
                 Focus
@@ -549,7 +540,7 @@ function AddSlotModal({
                   <button
                     key={f}
                     onClick={() => setFocus(f)}
-                    className="flex-1 py-1.5 rounded text-xs font-semibold cursor-pointer border-none transition-colors capitalize"
+                    className="flex-1 py-2 rounded-xl text-xs font-semibold cursor-pointer border-none transition-colors capitalize"
                     style={{
                       backgroundColor:
                         focus === f
@@ -566,10 +557,9 @@ function AddSlotModal({
             <button
               onClick={handleSubmit}
               disabled={submitting || selectedPlayers.length === 0}
-              className="w-full py-2 rounded-lg text-sm font-bold cursor-pointer border-none transition-colors"
+              className="app-button-primary w-full py-2.5 rounded-2xl text-sm font-bold cursor-pointer border-none transition-colors"
               style={{
-                background:
-                  "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))",
+                background: "var(--accent-gradient)",
                 color: "#fff",
                 opacity: submitting || selectedPlayers.length === 0 ? 0.6 : 1,
               }}
@@ -578,7 +568,6 @@ function AddSlotModal({
             </button>
           </div>
         )}
-
       </div>
     </div>
   );
@@ -625,7 +614,7 @@ export function TeamScheduleView({
 
   if (!schedule) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-16">
+      <div className="app-panel rounded-2xl flex flex-col items-center justify-center gap-3 py-16">
         <Calendar size={48} style={{ color: "var(--text-muted)" }} />
         <p style={{ color: "var(--text-muted)" }}>Loading schedule…</p>
       </div>
@@ -633,11 +622,11 @@ export function TeamScheduleView({
   }
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-in-up">
+    <div className="flex flex-col gap-6 animate-fade-in-up">
       {/* Error banner */}
       {actionError && (
         <div
-          className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs"
+          className="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl text-xs"
           style={{
             backgroundColor: "rgba(239, 68, 68, 0.1)",
             border: "1px solid rgba(239, 68, 68, 0.3)",
@@ -651,7 +640,10 @@ export function TeamScheduleView({
           <button
             onClick={() => setActionError(null)}
             className="shrink-0 w-5 h-5 flex items-center justify-center rounded cursor-pointer border-none"
-            style={{ backgroundColor: "transparent", color: "var(--color-loss)" }}
+            style={{
+              backgroundColor: "transparent",
+              color: "var(--color-loss)",
+            }}
           >
             <X size={12} />
           </button>
@@ -659,70 +651,79 @@ export function TeamScheduleView({
       )}
 
       {/* Header stats */}
-      <div className="flex items-center justify-between">
-        <h2
-          className="text-lg font-bold"
-          style={{ color: "var(--text-primary)" }}
-        >
-          Team Calendar
-        </h2>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-1.5">
+          <span className="app-eyebrow">Performance Planning</span>
+          <h2
+            className="app-page-title"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Team Calendar
+          </h2>
+          <p className="app-page-subtitle">
+            Plan scrims and solo queue blocks around locked match days while
+            keeping the full weekly calendar visible.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="app-panel rounded-2xl px-4 py-3 flex items-center gap-2">
             <Swords size={14} style={{ color: "var(--color-accent-cyan)" }} />
-            <span
-              className="text-sm tabular-nums font-bold"
-              style={{ color: "var(--text-primary)" }}
-            >
-              {schedule.total_scrims}
-            </span>
-            <span
-              className="text-xs"
-              style={{ color: "var(--text-muted)" }}
-            >
-              scrims
-            </span>
+            <div className="flex flex-col">
+              <span
+                className="text-sm tabular-nums font-bold"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {schedule.total_scrims}
+              </span>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                scrims
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="app-panel rounded-2xl px-4 py-3 flex items-center gap-2">
             <Calendar size={14} style={{ color: "var(--color-warning)" }} />
-            <span
-              className="text-sm tabular-nums font-bold"
-              style={{ color: "var(--text-primary)" }}
-            >
-              {schedule.total_matches}
-            </span>
-            <span
-              className="text-xs"
-              style={{ color: "var(--text-muted)" }}
-            >
-              matches
-            </span>
+            <div className="flex flex-col">
+              <span
+                className="text-sm tabular-nums font-bold"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {schedule.total_matches}
+              </span>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                matches
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="app-panel rounded-2xl px-4 py-3 flex items-center gap-2">
             <Calendar size={14} style={{ color: "var(--text-muted)" }} />
-            <span
-              className="text-sm tabular-nums font-bold"
-              style={{ color: "var(--text-primary)" }}
-            >
-              {schedule.occupied_slots}
-            </span>
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-              / {schedule.days.length * 3} slots
-            </span>
+            <div className="flex flex-col">
+              <span
+                className="text-sm tabular-nums font-bold"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {schedule.occupied_slots}
+              </span>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                / {schedule.days.length * 3} slots
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Weekly grid */}
       <div
-        className="rounded-xl border overflow-hidden"
+        className="app-panel rounded-3xl overflow-hidden"
         style={{
           backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border-subtle)",
         }}
       >
         <div
           className="grid grid-cols-[180px_repeat(3,minmax(0,1fr))] border-b"
-          style={{ borderColor: "var(--border-subtle)" }}
+          style={{
+            borderColor: "var(--border-subtle)",
+            backgroundColor: "rgba(255, 255, 255, 0.03)",
+          }}
         >
           <div
             className="p-2 text-xs font-semibold"
@@ -759,39 +760,54 @@ export function TeamScheduleView({
               </span>
               <span className="text-xs">{day.date_label}</span>
               {day.is_past && (
-                <span className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
+                <span
+                  className="text-[10px] mt-1"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   Passed
                 </span>
               )}
               {!day.is_past && day.has_match && (
-                <span className="text-[10px] mt-1" style={{ color: "var(--color-warning)" }}>
+                <span
+                  className="text-[10px] mt-1"
+                  style={{ color: "var(--color-warning)" }}
+                >
                   Match day
                 </span>
               )}
             </div>
             {TIME_SLOTS.map((ts) => {
               const slot = day.slots.find((s) => s.time_slot === ts);
-              if (!slot) return <div key={`${day.day_index}-${ts}`} className="p-1.5" />;
-              const matchedScrim = slot.scrim_id != null
-                ? scrims.find((s) => s.id === slot.scrim_id)
-                : undefined;
+              if (!slot)
+                return <div key={`${day.day_index}-${ts}`} className="p-1.5" />;
+              const matchedScrim =
+                slot.scrim_id != null
+                  ? scrims.find((s) => s.id === slot.scrim_id)
+                  : undefined;
               const scrimResult = matchedScrim
-                ? { homeWins: matchedScrim.home_wins, awayWins: matchedScrim.away_wins, completed: matchedScrim.status === "Completed" }
+                ? {
+                    homeWins: matchedScrim.home_wins,
+                    awayWins: matchedScrim.away_wins,
+                    completed: matchedScrim.status === "Completed",
+                  }
                 : undefined;
-              const blockedReason = slot.entry_type === "free"
-                ? day.is_past
-                  ? "Past"
-                  : day.has_match
-                    ? "Match day"
-                    : undefined
-                : undefined;
+              const blockedReason =
+                slot.entry_type === "free"
+                  ? day.is_past
+                    ? "Past"
+                    : day.has_match
+                      ? "Match day"
+                      : undefined
+                  : undefined;
               return (
                 <div key={`${day.day_index}-${ts}`} className="p-1.5">
                   <SlotCell
                     slot={slot}
                     dayIndex={day.day_index}
                     timeSlot={ts}
-                    onAdd={(d, t) => setAddingSlot({ dayIndex: d, timeSlot: t })}
+                    onAdd={(d, t) =>
+                      setAddingSlot({ dayIndex: d, timeSlot: t })
+                    }
                     onClear={handleClearSlot}
                     scrimResult={scrimResult}
                     blockedReason={blockedReason}
@@ -805,7 +821,7 @@ export function TeamScheduleView({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4">
+      <div className="app-panel rounded-2xl px-4 py-3 flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-1.5">
           <div
             className="w-3 h-3 rounded-sm"
@@ -838,20 +854,22 @@ export function TeamScheduleView({
       {/* Upcoming scrims list */}
       {scrims.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h3
-            className="text-sm font-bold"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Scrims
-          </h3>
+          <div className="flex flex-col gap-1">
+            <span className="app-eyebrow">Practice Queue</span>
+            <h3
+              className="text-sm font-bold"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Scrims
+            </h3>
+          </div>
           <div className="flex flex-col gap-1.5">
             {scrims.map((s) => (
               <div
                 key={s.id}
-                className="flex items-center justify-between p-3 rounded-lg border"
+                className="app-panel flex items-center justify-between p-4 rounded-2xl"
                 style={{
                   backgroundColor: "var(--bg-elevated)",
-                  borderColor: "var(--border-subtle)",
                 }}
               >
                 <div className="flex items-center gap-3">
@@ -870,28 +888,31 @@ export function TeamScheduleView({
                       className="text-xs ml-2"
                       style={{ color: "var(--text-muted)" }}
                     >
-                      Day {s.scheduled_day} · {s.time_slot} · {s.game_count} games
+                      Day {s.scheduled_day} · {s.time_slot} · {s.game_count}{" "}
+                      games
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {s.status === "Completed" && (
                     <span
-                      className="text-xs tabular-nums font-bold px-2 py-0.5 rounded"
+                      className="text-xs tabular-nums font-bold px-2 py-0.5 rounded-full"
                       style={{
-                        backgroundColor: s.home_wins > s.away_wins
-                          ? "rgba(34, 197, 94, 0.15)"
-                          : "rgba(239, 68, 68, 0.15)",
-                        color: s.home_wins > s.away_wins
-                          ? "var(--color-win)"
-                          : "var(--color-loss)",
+                        backgroundColor:
+                          s.home_wins > s.away_wins
+                            ? "rgba(34, 197, 94, 0.15)"
+                            : "rgba(239, 68, 68, 0.15)",
+                        color:
+                          s.home_wins > s.away_wins
+                            ? "var(--color-win)"
+                            : "var(--color-loss)",
                       }}
                     >
                       {s.home_wins}–{s.away_wins}
                     </span>
                   )}
                   <span
-                    className="text-xs tabular-nums px-2 py-0.5 rounded"
+                    className="text-xs tabular-nums px-2 py-0.5 rounded-full"
                     style={{
                       backgroundColor:
                         s.status === "Scheduled"
@@ -912,9 +933,8 @@ export function TeamScheduleView({
                   {s.status === "Scheduled" && (
                     <button
                       onClick={() => handleCancelScrim(s.id)}
-                      className="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none transition-colors"
+                      className="app-icon-button w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer border-none transition-colors"
                       style={{
-                        backgroundColor: "var(--bg-surface)",
                         color: "var(--text-muted)",
                       }}
                       onMouseEnter={(e) => {
@@ -949,7 +969,7 @@ export function TeamScheduleView({
               addingSlot.timeSlot,
               awayIdx,
               gc,
-              dr
+              dr,
             )
           }
           onScheduleSoloQueue={(players, focus) =>
@@ -957,7 +977,7 @@ export function TeamScheduleView({
               addingSlot.dayIndex,
               addingSlot.timeSlot,
               players,
-              focus
+              focus,
             )
           }
         />

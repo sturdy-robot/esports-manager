@@ -17,15 +17,16 @@ interface StandingsProps {
 export function Standings({ entries }: StandingsProps) {
   return (
     <div className="flex flex-col gap-4 animate-fade-in-up">
-      <h2
-        className="text-lg font-bold"
-        style={{ color: "var(--text-primary)" }}
-      >
-        Standings
-      </h2>
+      <div className="flex flex-col gap-1.5">
+        <span className="app-eyebrow">League Table</span>
+        <h2 className="app-page-title">Standings</h2>
+        <p className="app-page-subtitle">
+          Follow placement, map differential, and momentum across the season.
+        </p>
+      </div>
 
       {entries.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 py-16">
+        <div className="app-panel rounded-2xl flex flex-col items-center justify-center gap-3 py-16">
           <Trophy size={48} style={{ color: "var(--text-muted)" }} />
           <p style={{ color: "var(--text-muted)" }}>No standings available</p>
         </div>
@@ -33,10 +34,9 @@ export function Standings({ entries }: StandingsProps) {
 
       {entries.length > 0 && (
         <div
-          className="rounded-lg border overflow-hidden"
+          className="app-data-grid rounded-2xl overflow-hidden"
           style={{
             backgroundColor: "var(--bg-surface)",
-            borderColor: "var(--border-subtle)",
           }}
         >
           <table className="w-full">
@@ -44,7 +44,6 @@ export function Standings({ entries }: StandingsProps) {
               <tr
                 style={{
                   borderBottom: "1px solid var(--border-subtle)",
-                  backgroundColor: "var(--bg-elevated)",
                 }}
               >
                 <th

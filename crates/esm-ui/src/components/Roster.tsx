@@ -80,15 +80,16 @@ function StatBar({ value, label }: { value: number; label: string }) {
 export function Roster({ players }: RosterProps) {
   return (
     <div className="flex flex-col gap-4 animate-fade-in-up">
-      <h2
-        className="text-lg font-bold"
-        style={{ color: "var(--text-primary)" }}
-      >
-        Roster
-      </h2>
+      <div className="flex flex-col gap-1.5">
+        <span className="app-eyebrow">Squad Intelligence</span>
+        <h2 className="app-page-title">Roster</h2>
+        <p className="app-page-subtitle">
+          Monitor core attributes, stamina, and morale across the active lineup.
+        </p>
+      </div>
 
       {players.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 py-16">
+        <div className="app-panel rounded-2xl flex flex-col items-center justify-center gap-3 py-16">
           <Users size={48} style={{ color: "var(--text-muted)" }} />
           <p style={{ color: "var(--text-muted)" }}>No players on the roster</p>
         </div>
@@ -96,10 +97,9 @@ export function Roster({ players }: RosterProps) {
 
       {players.length > 0 && (
         <div
-          className="rounded-lg border overflow-hidden"
+          className="app-data-grid rounded-2xl overflow-hidden"
           style={{
             backgroundColor: "var(--bg-surface)",
-            borderColor: "var(--border-subtle)",
           }}
         >
           <table className="w-full">
@@ -107,7 +107,6 @@ export function Roster({ players }: RosterProps) {
               <tr
                 style={{
                   borderBottom: "1px solid var(--border-subtle)",
-                  backgroundColor: "var(--bg-elevated)",
                 }}
               >
                 <th
@@ -194,7 +193,8 @@ export function Roster({ players }: RosterProps) {
                       className="px-2 py-0.5 rounded text-xs font-semibold"
                       style={{
                         backgroundColor: `${ROLE_COLORS[p.role] || "var(--color-accent-cyan)"}20`,
-                        color: ROLE_COLORS[p.role] || "var(--color-accent-cyan)",
+                        color:
+                          ROLE_COLORS[p.role] || "var(--color-accent-cyan)",
                       }}
                     >
                       {p.role}

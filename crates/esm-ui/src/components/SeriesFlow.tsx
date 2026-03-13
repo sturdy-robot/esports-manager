@@ -81,16 +81,18 @@ export function SeriesFlow({
         className="flex flex-col min-h-screen items-center justify-center"
         style={{ backgroundColor: "var(--bg-base)" }}
       >
-        <div
-          className="w-16 h-16 mx-auto mb-4 rounded-full animate-pulse"
-          style={{
-            background:
-              "linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-emerald))",
-          }}
-        />
-        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          Loading series...
-        </p>
+        <div className="app-panel-strong w-full max-w-md rounded-[28px] p-8 text-center">
+          <div
+            className="w-16 h-16 mx-auto mb-4 rounded-full animate-pulse"
+            style={{
+              background: "var(--accent-gradient)",
+            }}
+          />
+          <div className="app-eyebrow mb-2">Series Control</div>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            Loading series...
+          </p>
+        </div>
       </div>
     );
   }
@@ -154,17 +156,14 @@ function SeriesBanner({
 
   return (
     <div
-      className="flex flex-col items-center gap-2 py-2 border-b"
+      className="flex flex-col items-center gap-2 py-3 border-b"
       style={{
         backgroundColor: "var(--bg-elevated)",
         borderColor: "var(--border-subtle)",
       }}
     >
-      <div className="w-full max-w-5xl flex flex-col items-center gap-2 px-4">
-        <span
-          className="text-xs font-semibold uppercase tracking-wider"
-          style={{ color: "var(--text-muted)" }}
-        >
+      <div className="w-full max-w-5xl flex flex-col items-center gap-3 px-4">
+        <span className="app-eyebrow" style={{ color: "var(--text-muted)" }}>
           {formatBo(series.wins_needed)}
         </span>
 
@@ -181,7 +180,7 @@ function SeriesBanner({
               highlight={series.blue_wins >= series.wins_needed}
             />
             <span
-              className="text-xl font-bold"
+              className="text-xl font-bold font-display"
               style={{ color: "var(--text-muted)" }}
             >
               -
@@ -201,7 +200,7 @@ function SeriesBanner({
 
         <div className="w-full flex items-center justify-center gap-2">
           <span
-            className="text-xs tabular-nums font-semibold px-2 py-0.5 rounded"
+            className="text-xs tabular-nums font-semibold px-2 py-0.5 rounded-full"
             style={{
               backgroundColor: "rgba(6,182,212,0.1)",
               color: "var(--color-accent-cyan)",
@@ -211,7 +210,7 @@ function SeriesBanner({
           </span>
           {status && (
             <span
-              className="text-xs font-semibold tracking-wider rounded px-2 py-0.5"
+              className="text-xs font-semibold tracking-wider rounded-full px-2 py-0.5"
               style={{
                 backgroundColor: status.backgroundColor,
                 color: status.color,
@@ -253,7 +252,7 @@ function getSeriesBannerStatus(matchPhase: MatchPhase | null): {
 function ScoreBox({ value, highlight }: { value: number; highlight: boolean }) {
   return (
     <span
-      className="w-7 h-7 flex items-center justify-center rounded tabular-nums font-black text-xl"
+      className="w-8 h-8 flex items-center justify-center rounded-xl tabular-nums font-black text-xl"
       style={{
         backgroundColor: highlight ? "var(--color-win)" : "var(--bg-surface)",
         color: highlight ? "#fff" : "var(--text-primary)",
@@ -286,14 +285,14 @@ function BetweenGamesPanel({
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div
-        className="w-full max-w-lg p-8 rounded-xl border text-center"
+        className="app-panel-strong w-full max-w-lg p-8 rounded-[28px] text-center"
         style={{
           backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border-subtle)",
         }}
       >
+        <div className="app-eyebrow mb-2">Series Reset</div>
         <h2
-          className="text-2xl font-bold mb-4"
+          className="text-2xl font-bold mb-4 font-display"
           style={{ color: "var(--text-primary)" }}
         >
           Game {series.game_number - 1} Complete
@@ -352,7 +351,7 @@ function BetweenGamesPanel({
               {fearlessBans.map((champ) => (
                 <span
                   key={champ}
-                  className="text-xs px-2 py-0.5 rounded"
+                  className="text-xs px-2 py-0.5 rounded-full"
                   style={{
                     backgroundColor: "rgba(239,68,68,0.1)",
                     color: "var(--color-loss)",
@@ -367,9 +366,9 @@ function BetweenGamesPanel({
 
         <button
           onClick={() => setStep("talks")}
-          className="px-8 py-3 rounded-lg font-bold text-white"
+          className="app-button-primary px-8 py-3 rounded-2xl font-bold text-white"
           style={{
-            background: "linear-gradient(135deg, #10B981, #06B6D4)",
+            background: "var(--accent-gradient)",
           }}
         >
           Talk to Players
@@ -395,14 +394,13 @@ function SeriesCompletePanel({
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div
-        className="w-full max-w-lg p-8 rounded-xl border text-center"
+        className="app-panel-strong w-full max-w-lg p-8 rounded-[28px] text-center"
         style={{
           backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border-subtle)",
         }}
       >
         <div
-          className="text-xs font-semibold uppercase tracking-wider mb-2"
+          className="app-eyebrow mb-2"
           style={{
             color: playerWon ? "var(--color-win)" : "var(--color-loss)",
           }}
@@ -411,7 +409,7 @@ function SeriesCompletePanel({
         </div>
 
         <h2
-          className="text-3xl font-bold mb-4"
+          className="text-3xl font-bold mb-4 font-display"
           style={{ color: "var(--text-primary)" }}
         >
           {winner} Wins!
@@ -456,9 +454,9 @@ function SeriesCompletePanel({
 
         <button
           onClick={onExit}
-          className="px-8 py-3 rounded-lg font-bold text-white"
+          className="app-button-primary px-8 py-3 rounded-2xl font-bold text-white"
           style={{
-            background: "linear-gradient(135deg, #10B981, #06B6D4)",
+            background: "var(--accent-gradient)",
           }}
         >
           Return to Dashboard

@@ -1,29 +1,38 @@
-import { useState } from 'react'
-import { Sun, Moon, Play, Save } from 'lucide-react'
-import { useTheme } from '@/lib/use-theme'
-import { PlayMatchButton } from './PlayMatchButton'
-import type { MatchMode } from './PlayMatchButton'
+import { useState } from "react";
+import { Activity, Play, Save } from "lucide-react";
+import { PlayMatchButton } from "./PlayMatchButton";
+import type { MatchMode } from "./PlayMatchButton";
 
-export type ContinueMode = 'smart' | 'step'
+export type ContinueMode = "smart" | "step";
 
 const MONTH_NAMES = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-]
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 interface TopBarProps {
-  title: string
-  year?: number
-  month?: number
-  day?: number
-  dayOfWeek?: string
-  phase?: string
-  teamName?: string
-  isMatchDay?: boolean
-  continueDisabled?: boolean
-  onSave?: () => void
-  onContinue?: (mode: ContinueMode) => void
-  onPlayMatch?: (mode: MatchMode) => void
+  title: string;
+  year?: number;
+  month?: number;
+  day?: number;
+  dayOfWeek?: string;
+  phase?: string;
+  teamName?: string;
+  isMatchDay?: boolean;
+  continueDisabled?: boolean;
+  onSave?: () => void;
+  onContinue?: (mode: ContinueMode) => void;
+  onPlayMatch?: (mode: MatchMode) => void;
 }
 
 export function TopBar({
@@ -31,8 +40,8 @@ export function TopBar({
   year = 2025,
   month = 1,
   day = 1,
-  dayOfWeek = 'Wed',
-  phase = 'Morning',
+  dayOfWeek = "Wed",
+  phase = "Morning",
   teamName,
   isMatchDay = false,
   continueDisabled = false,
@@ -40,30 +49,37 @@ export function TopBar({
   onContinue,
   onPlayMatch,
 }: TopBarProps) {
-  const { theme, toggleTheme } = useTheme()
-  const monthLabel = MONTH_NAMES[(month - 1) % 12]
-  const [continueMode, setContinueMode] = useState<ContinueMode>('smart')
+  const monthLabel = MONTH_NAMES[(month - 1) % 12];
+  const [continueMode, setContinueMode] = useState<ContinueMode>("smart");
 
   return (
     <header
-      className="flex items-center justify-between h-14 px-6 border-b shrink-0"
+      className="app-panel flex items-center justify-between min-h-18 px-8 shrink-0"
       style={{
-        borderColor: 'var(--border-subtle)',
-        backgroundColor: 'var(--bg-surface)',
+        borderTop: "none",
+        borderLeft: "none",
+        borderRight: "none",
+        borderRadius: 0,
       }}
     >
       {/* Left: title + team badge */}
-      <div className="flex items-center gap-3">
-        <h1 className="text-xl font-bold font-display" style={{ color: 'var(--text-primary)' }}>
-          {title}
-        </h1>
+      <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="app-eyebrow">Operations</span>
+          <h1
+            className="text-[1.75rem] font-bold font-display leading-none"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {title}
+          </h1>
+        </div>
         {teamName && (
           <span
-            className="px-2 py-0.5 rounded text-xs font-semibold"
+            className="px-3 py-1 rounded-full text-xs font-semibold tabular-nums"
             style={{
-              backgroundColor: 'var(--bg-elevated)',
-              color: 'var(--color-accent-cyan)',
-              border: '1px solid var(--border-subtle)',
+              background: "var(--accent-gradient-soft)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border-strong)",
             }}
           >
             {teamName}
@@ -75,20 +91,20 @@ export function TopBar({
       <div className="flex items-center gap-3">
         {/* Game clock */}
         <div
-          className="flex items-center gap-2 px-3 py-1 rounded-md text-sm"
+          className="app-panel flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm"
           style={{
-            backgroundColor: 'var(--bg-elevated)',
-            color: 'var(--text-secondary)',
+            color: "var(--text-secondary)",
           }}
         >
-          <span
-            className="inline-block w-2 h-2 rounded-full animate-live"
-            style={{ backgroundColor: 'var(--color-accent-cyan)' }}
+          <Activity
+            size={14}
+            className="animate-live"
+            style={{ color: "var(--color-accent-cyan)" }}
           />
           <span className="tabular-nums">
             {dayOfWeek}, {monthLabel} {day}, {year}
           </span>
-          <span style={{ color: 'var(--text-muted)' }}>·</span>
+          <span style={{ color: "var(--text-muted)" }}>·</span>
           <span>{phase}</span>
         </div>
 
@@ -96,47 +112,12 @@ export function TopBar({
         {onSave && (
           <button
             onClick={onSave}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-colors"
-            style={{
-              borderColor: 'var(--border-subtle)',
-              backgroundColor: 'transparent',
-              color: 'var(--text-secondary)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--color-accent-cyan)'
-              e.currentTarget.style.color = 'var(--text-primary)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border-subtle)'
-              e.currentTarget.style.color = 'var(--text-secondary)'
-            }}
+            className="app-button-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
           >
             <Save size={12} />
             Save
           </button>
         )}
-
-        {/* Theme toggle */}
-        <button
-          onClick={toggleTheme}
-          className="flex items-center justify-center w-8 h-8 rounded-md cursor-pointer border transition-colors"
-          style={{
-            borderColor: 'var(--border-subtle)',
-            backgroundColor: 'transparent',
-            color: 'var(--text-secondary)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-accent-cyan)'
-            e.currentTarget.style.color = 'var(--text-primary)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--border-subtle)'
-            e.currentTarget.style.color = 'var(--text-secondary)'
-          }}
-          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-        >
-          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
 
         {/* Play Match or Continue — always rightmost */}
         {isMatchDay && onPlayMatch ? (
@@ -147,12 +128,7 @@ export function TopBar({
               aria-label="Continue mode"
               value={continueMode}
               onChange={(e) => setContinueMode(e.target.value as ContinueMode)}
-              className="px-2 py-1.5 rounded-md text-xs font-medium border"
-              style={{
-                borderColor: 'var(--border-subtle)',
-                backgroundColor: 'var(--bg-elevated)',
-                color: 'var(--text-secondary)',
-              }}
+              className="app-select px-3 py-2 rounded-xl text-xs font-semibold"
             >
               <option value="smart">Smart</option>
               <option value="step">Step</option>
@@ -160,13 +136,14 @@ export function TopBar({
             <button
               onClick={() => onContinue(continueMode)}
               disabled={continueDisabled}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold cursor-pointer border-none transition-all"
+              className="app-button-primary flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer border-none"
               style={{
                 background: continueDisabled
-                  ? 'var(--bg-elevated)'
-                  : 'linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))',
-                color: continueDisabled ? 'var(--text-muted)' : '#fff',
-                cursor: continueDisabled ? 'not-allowed' : 'pointer',
+                  ? "rgba(255, 255, 255, 0.05)"
+                  : "var(--accent-gradient)",
+                color: continueDisabled ? "var(--text-muted)" : "#fff",
+                cursor: continueDisabled ? "not-allowed" : "pointer",
+                boxShadow: continueDisabled ? "none" : undefined,
               }}
             >
               <Play size={12} />
@@ -176,5 +153,5 @@ export function TopBar({
         ) : null}
       </div>
     </header>
-  )
+  );
 }

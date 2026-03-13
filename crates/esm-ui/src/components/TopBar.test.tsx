@@ -39,7 +39,9 @@ describe("TopBar", () => {
 
   it("renders the Continue button", () => {
     renderWithProviders(<TopBar {...defaults} />);
-    expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /continue/i }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/continue mode/i)).toBeInTheDocument();
   });
 
@@ -78,23 +80,28 @@ describe("TopBar", () => {
     expect(onSave).toHaveBeenCalledTimes(1);
   });
 
-  it("renders theme toggle button", () => {
-    renderWithProviders(<TopBar {...defaults} />);
-    expect(screen.getByTitle(/switch to/i)).toBeInTheDocument();
-  });
-
   it("renders PlayMatchButton with Participate label on match day", () => {
     const onPlayMatch = vi.fn();
-    renderWithProviders(<TopBar {...defaults} isMatchDay={true} onPlayMatch={onPlayMatch} />);
-    expect(screen.getByRole("button", { name: /participate/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /match options/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /continue/i })).not.toBeInTheDocument();
+    renderWithProviders(
+      <TopBar {...defaults} isMatchDay={true} onPlayMatch={onPlayMatch} />,
+    );
+    expect(
+      screen.getByRole("button", { name: /participate/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /match options/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /continue/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("calls onPlayMatch with mode after confirmation", async () => {
     const user = userEvent.setup();
     const onPlayMatch = vi.fn();
-    renderWithProviders(<TopBar {...defaults} isMatchDay={true} onPlayMatch={onPlayMatch} />);
+    renderWithProviders(
+      <TopBar {...defaults} isMatchDay={true} onPlayMatch={onPlayMatch} />,
+    );
 
     await user.click(screen.getByRole("button", { name: /participate/i }));
     await user.click(screen.getByRole("button", { name: /^confirm$/i }));

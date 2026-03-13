@@ -1,5 +1,4 @@
-import { Gamepad2, FolderOpen, Settings, LogOut, Sun, Moon } from "lucide-react";
-import { useTheme } from "@/lib/use-theme";
+import { Gamepad2, FolderOpen, Settings, LogOut } from "lucide-react";
 
 export type MenuTarget = "new-game" | "load-game" | "settings" | "exit";
 
@@ -18,10 +17,8 @@ function MenuButton({ icon, label, sublabel, onClick }: MenuButtonProps) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-4 w-full px-6 py-4 rounded-lg border text-left cursor-pointer transition-all glow-hover"
+      className="app-panel flex items-center gap-4 w-full px-6 py-4 rounded-2xl text-left cursor-pointer transition-all glow-hover"
       style={{
-        backgroundColor: "var(--bg-surface)",
-        borderColor: "var(--border-subtle)",
         color: "var(--text-primary)",
       }}
       onMouseEnter={(e) => {
@@ -32,17 +29,18 @@ function MenuButton({ icon, label, sublabel, onClick }: MenuButtonProps) {
       }}
     >
       <span
-        className="flex items-center justify-center w-10 h-10 rounded-md"
-        style={{ color: "var(--color-accent-cyan)" }}
+        className="flex items-center justify-center w-11 h-11 rounded-xl"
+        style={{
+          color: "var(--color-accent-cyan)",
+          background: "var(--accent-gradient-soft)",
+          border: "1px solid var(--border-strong)",
+        }}
       >
         {icon}
       </span>
       <div className="flex flex-col">
         <span className="text-base font-semibold">{label}</span>
-        <span
-          className="text-xs"
-          style={{ color: "var(--text-secondary)" }}
-        >
+        <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
           {sublabel}
         </span>
       </div>
@@ -51,74 +49,60 @@ function MenuButton({ icon, label, sublabel, onClick }: MenuButtonProps) {
 }
 
 export function MainMenu({ onNavigate }: MainMenuProps) {
-  const { theme, toggleTheme } = useTheme()
-
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen w-full animate-fade-in-up relative"
+      className="app-shell flex flex-col items-center justify-center min-h-screen w-full animate-fade-in-up relative px-6"
       style={{ backgroundColor: "var(--bg-base)" }}
     >
-      {/* Theme toggle — top right */}
-      <button
-        onClick={toggleTheme}
-        className="absolute top-6 right-6 flex items-center justify-center w-10 h-10 rounded-full cursor-pointer border transition-colors"
-        style={{
-          borderColor: 'var(--border-subtle)',
-          backgroundColor: 'transparent',
-          color: 'var(--text-secondary)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'var(--color-accent-cyan)'
-          e.currentTarget.style.color = 'var(--text-primary)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = 'var(--border-subtle)'
-          e.currentTarget.style.color = 'var(--text-secondary)'
-        }}
-        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-      >
-        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-      </button>
+      <div className="app-panel-strong w-full max-w-lg rounded-lg px-8 py-10">
+        <div className="flex flex-col gap-3 mb-10">
+          <h1 className="app-page-title max-w-2xl">eSports Manager</h1>
 
-      {/* Logo + Title */}
-      <div className="flex flex-col items-center gap-2 mb-12">
-        <h1 className="text-4xl font-bold tracking-tight accent-gradient-text font-display">
-          eSports Manager
-        </h1>
-        <p
-          className="text-sm"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          v0.1.0-alpha
-        </p>
-      </div>
+          <div
+            className="flex items-center gap-3 text-xs"
+            style={{ color: "var(--text-muted)" }}
+          >
+            <span
+              className="px-2.5 py-1 rounded-full"
+              style={{
+                background: "var(--accent-gradient-soft)",
+                border: "1px solid var(--border-strong)",
+                color: "var(--text-primary)",
+              }}
+            >
+              v0.1.0-alpha
+            </span>
+          </div>
+        </div>
 
-      {/* Menu buttons */}
-      <div className="flex flex-col gap-3 w-full max-w-sm">
-        <MenuButton
-          icon={<Gamepad2 size={22} />}
-          label="New Game"
-          sublabel="Start a new career"
-          onClick={() => onNavigate("new-game")}
-        />
-        <MenuButton
-          icon={<FolderOpen size={22} />}
-          label="Load Game"
-          sublabel="Continue a saved career"
-          onClick={() => onNavigate("load-game")}
-        />
-        <MenuButton
-          icon={<Settings size={22} />}
-          label="Settings"
-          sublabel="Configure game options"
-          onClick={() => onNavigate("settings")}
-        />
-        <MenuButton
-          icon={<LogOut size={22} />}
-          label="Exit"
-          sublabel="Quit the game"
-          onClick={() => onNavigate("exit")}
-        />
+        <div className="flex justify-center">
+          <div className="flex w-full max-w-md flex-col gap-3">
+            <MenuButton
+              icon={<Gamepad2 size={22} />}
+              label="New Game"
+              sublabel="Start a new career"
+              onClick={() => onNavigate("new-game")}
+            />
+            <MenuButton
+              icon={<FolderOpen size={22} />}
+              label="Load Game"
+              sublabel="Continue a saved career"
+              onClick={() => onNavigate("load-game")}
+            />
+            <MenuButton
+              icon={<Settings size={22} />}
+              label="Settings"
+              sublabel="Configure game options"
+              onClick={() => onNavigate("settings")}
+            />
+            <MenuButton
+              icon={<LogOut size={22} />}
+              label="Exit"
+              sublabel="Quit the game"
+              onClick={() => onNavigate("exit")}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

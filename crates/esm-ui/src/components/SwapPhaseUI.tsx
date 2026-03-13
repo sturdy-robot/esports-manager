@@ -55,10 +55,9 @@ export function SwapPhaseUI({
   return (
     <div className="flex flex-col items-center justify-center flex-1 gap-4 p-4">
       <div
-        className="w-full max-w-2xl rounded-2xl border overflow-hidden shadow-lg"
+        className="app-panel-strong w-full max-w-2xl rounded-[28px] overflow-hidden shadow-lg"
         style={{
           background: `linear-gradient(180deg, ${bgTint}0.14) 0%, rgba(20,20,31,0.96) 18%, rgba(20,20,31,1) 100%)`,
-          borderColor: "var(--border-subtle)",
           boxShadow: `0 10px 30px ${bgTint}0.16)`,
         }}
       >
@@ -92,7 +91,7 @@ export function SwapPhaseUI({
                   Swap Phase
                 </div>
                 <h2
-                  className="text-lg font-bold"
+                  className="text-lg font-bold font-display"
                   style={{ color: "var(--text-primary)" }}
                 >
                   Champion Swap
@@ -120,10 +119,9 @@ export function SwapPhaseUI({
 
         <div className="p-3">
           <div
-            className="w-full rounded-2xl border overflow-hidden"
+            className="app-panel w-full rounded-3xl overflow-hidden"
             style={{
               backgroundColor: "rgba(255,255,255,0.02)",
-              borderColor: "rgba(255,255,255,0.06)",
             }}
           >
             <div
@@ -276,9 +274,9 @@ export function SwapPhaseUI({
       <button
         onClick={onConfirm}
         disabled={swapping}
-        className="px-8 py-3 rounded-lg font-bold text-white flex items-center gap-2 transition-all duration-150"
+        className="app-button-primary px-8 py-3 rounded-2xl font-bold text-white flex items-center gap-2 transition-all duration-150"
         style={{
-          background: "linear-gradient(135deg, #10B981, #06B6D4)",
+          background: "var(--accent-gradient)",
           boxShadow: "0 0 16px rgba(6,182,212,0.3)",
           opacity: swapping ? 0.5 : 1,
         }}

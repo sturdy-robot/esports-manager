@@ -14,6 +14,7 @@ of the game's roadmap.
 
 First release. The player should be able to create a manager, choose a team from
 a list, and play a number of MOBA games to win the tournament. List of features:
+
 - Player Generation
 - Team Generation
 - Champion Generation
@@ -22,31 +23,27 @@ a list, and play a number of MOBA games to win the tournament. List of features:
 - Picks and Bans with an AI
 - Ending tournament screen
 - Save/Load
+- Implement finances.
+- Implement News.
+- Implement Scrim and SoloQueue Practice options.
+- Implement tournaments and regions.
 
 This is the phase where all the tests are implemented, laying the grounds for CI/CD,
 to be able to accept contributions.
 
 ## 0.2.0-alpha
 
-- Player and Champion attributes and champions should be lane-specific
 - Patch-changing
 - MobaPlayer experience and improvements
 
 ## 0.3.0-alpha
 
-- Implement tournaments and nationalities.
 - Give the player a choice to create their own team.
 - Implement database to hold data and move away from JSON.
 - Implement a Solo Queue talent discovery network feature.
+- Database Editor.
 
 ## 0.4.0-alpha
-
-- Implement finances.
-- Database Editor.
-- Implement News.
-- Implement Scrim and SoloQueue Practice options.
-
-## 0.4.5-alpha
 
 - Improve match simulation.
 - Start implementing RTS and FPS options with their specific match simulation options

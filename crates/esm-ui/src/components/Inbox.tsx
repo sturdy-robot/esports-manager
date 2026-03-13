@@ -15,27 +15,30 @@ interface InboxProps {
   resolvingMsgId?: string | null;
 }
 
-const PRIORITY_STYLES: Record<
-  string,
-  { bg: string; color: string }
-> = {
+const PRIORITY_STYLES: Record<string, { bg: string; color: string }> = {
   Urgent: { bg: "rgba(239, 68, 68, 0.15)", color: "var(--color-loss)" },
   Action: { bg: "rgba(251, 191, 36, 0.15)", color: "var(--color-warning)" },
   Info: { bg: "rgba(96, 165, 250, 0.15)", color: "var(--color-info)" },
 };
 
-export function Inbox({ messages, onResolveMessage, resolvingMsgId }: InboxProps) {
+export function Inbox({
+  messages,
+  onResolveMessage,
+  resolvingMsgId,
+}: InboxProps) {
   return (
     <div className="flex flex-col gap-4 animate-fade-in-up">
-      <h2
-        className="text-lg font-bold"
-        style={{ color: "var(--text-primary)" }}
-      >
-        Inbox
-      </h2>
+      <div className="flex flex-col gap-1.5">
+        <span className="app-eyebrow">Comms</span>
+        <h2 className="app-page-title">Inbox</h2>
+        <p className="app-page-subtitle">
+          Resolve urgent decisions, review team updates, and keep operations
+          moving.
+        </p>
+      </div>
 
       {messages.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 py-16">
+        <div className="app-panel rounded-2xl flex flex-col items-center justify-center gap-3 py-16">
           <Mail size={48} style={{ color: "var(--text-muted)" }} />
           <p style={{ color: "var(--text-muted)" }}>No messages</p>
         </div>
@@ -44,13 +47,14 @@ export function Inbox({ messages, onResolveMessage, resolvingMsgId }: InboxProps
       {messages.length > 0 && (
         <div className="flex flex-col gap-2">
           {messages.map((msg) => {
-            const pStyle = PRIORITY_STYLES[msg.priority] || PRIORITY_STYLES.Info;
+            const pStyle =
+              PRIORITY_STYLES[msg.priority] || PRIORITY_STYLES.Info;
             return (
               <div
                 key={msg.id}
                 data-testid="message-row"
                 data-unread={!msg.read}
-                className="flex items-center gap-4 p-4 rounded-lg border transition-all glow-hover"
+                className="app-panel flex items-center gap-4 p-4 rounded-2xl transition-all glow-hover"
                 style={{
                   backgroundColor: msg.read
                     ? "var(--bg-surface)"
@@ -116,20 +120,28 @@ export function Inbox({ messages, onResolveMessage, resolvingMsgId }: InboxProps
                 )}
 
                 {/* Resolve Action */}
-                {!msg.read && (msg.priority === "Urgent" || msg.priority === "Action") && (
-                  <button
-                    onClick={() => onResolveMessage && onResolveMessage(msg.id, msg.subject)}
-                    disabled={resolvingMsgId === msg.id}
-                    className="ml-4 px-3 py-1.5 text-xs font-semibold rounded transition-colors"
-                    style={{
-                      backgroundColor: "var(--color-accent-cyan)",
-                      color: "var(--bg-base)",
-                      opacity: resolvingMsgId === msg.id ? 0.7 : 1,
-                    }}
-                  >
-                    {resolvingMsgId === msg.id ? "Resolving..." : msg.subject === "Tournament Concluded" ? "View Results" : "Resolve"}
-                  </button>
-                )}
+                {!msg.read &&
+                  (msg.priority === "Urgent" || msg.priority === "Action") && (
+                    <button
+                      onClick={() =>
+                        onResolveMessage &&
+                        onResolveMessage(msg.id, msg.subject)
+                      }
+                      disabled={resolvingMsgId === msg.id}
+                      className="app-button-primary ml-4 px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors"
+                      style={{
+                        background: "var(--accent-gradient)",
+                        color: "#fff",
+                        opacity: resolvingMsgId === msg.id ? 0.7 : 1,
+                      }}
+                    >
+                      {resolvingMsgId === msg.id
+                        ? "Resolving..."
+                        : msg.subject === "Tournament Concluded"
+                          ? "View Results"
+                          : "Resolve"}
+                    </button>
+                  )}
               </div>
             );
           })}

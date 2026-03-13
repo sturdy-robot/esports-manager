@@ -18,22 +18,34 @@ interface ResultsProps {
 }
 
 const MONTH_NAMES = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 export function Results({ results }: ResultsProps) {
   return (
-    <div className="flex flex-col gap-4 animate-fade-in-up">
-      <h2
-        className="text-lg font-bold"
-        style={{ color: "var(--text-primary)" }}
-      >
-        Results
-      </h2>
+    <div className="flex flex-col gap-6 animate-fade-in-up">
+      <div className="flex flex-col gap-1.5">
+        <span className="app-eyebrow">League Archive</span>
+        <h2 className="app-page-title">Results</h2>
+        <p className="app-page-subtitle">
+          Review completed series, track scorelines, and scan recent momentum
+          across the split.
+        </p>
+      </div>
 
       {results.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 py-16">
+        <div className="app-panel rounded-2xl flex flex-col items-center justify-center gap-3 py-16">
           <FileText size={48} style={{ color: "var(--text-muted)" }} />
           <p style={{ color: "var(--text-muted)" }}>No results yet</p>
         </div>
@@ -47,10 +59,9 @@ export function Results({ results }: ResultsProps) {
             return (
               <div
                 key={r.id}
-                className="flex items-center p-4 rounded-lg border glow-hover transition-all"
+                className="app-panel flex items-center p-4 rounded-2xl glow-hover transition-all"
                 style={{
                   backgroundColor: "var(--bg-surface)",
-                  borderColor: "var(--border-subtle)",
                   borderLeftWidth: "3px",
                   borderLeftColor: r.playerTeamWon
                     ? "var(--color-win)"
@@ -76,14 +87,14 @@ export function Results({ results }: ResultsProps) {
                 {/* Teams + score */}
                 <div className="flex-1 flex items-center justify-center gap-4">
                   <span
-                    className="text-sm font-semibold text-right min-w-[100px]"
+                    className="text-sm font-semibold text-right min-w-25"
                     style={{ color: "var(--text-primary)" }}
                   >
                     {r.homeTeam}
                   </span>
 
                   <span
-                    className="text-sm font-bold tabular-nums px-3 py-1 rounded"
+                    className="text-sm font-bold tabular-nums px-3 py-1 rounded-xl"
                     style={{
                       backgroundColor: "var(--bg-elevated)",
                       color: "var(--text-primary)",
@@ -93,7 +104,7 @@ export function Results({ results }: ResultsProps) {
                   </span>
 
                   <span
-                    className="text-sm font-semibold text-left min-w-[100px]"
+                    className="text-sm font-semibold text-left min-w-25"
                     style={{ color: "var(--text-primary)" }}
                   >
                     {r.awayTeam}
@@ -103,7 +114,7 @@ export function Results({ results }: ResultsProps) {
                 {/* Win/Loss badge + format */}
                 <div className="flex items-center gap-3 shrink-0">
                   <span
-                    className="px-2 py-0.5 rounded text-xs font-bold"
+                    className="px-2 py-0.5 rounded-full text-xs font-bold"
                     style={{
                       backgroundColor: r.playerTeamWon
                         ? "rgba(34, 197, 94, 0.15)"
@@ -116,7 +127,7 @@ export function Results({ results }: ResultsProps) {
                     {r.playerTeamWon ? "WIN" : "LOSS"}
                   </span>
                   <span
-                    className="px-2 py-0.5 rounded text-xs tabular-nums"
+                    className="px-2 py-0.5 rounded-full text-xs tabular-nums"
                     style={{
                       backgroundColor: "var(--bg-elevated)",
                       color: "var(--text-secondary)",

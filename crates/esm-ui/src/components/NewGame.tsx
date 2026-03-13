@@ -30,12 +30,18 @@ interface FormFieldProps {
   placeholder?: string;
 }
 
-function FormField({ id, label, value, onChange, placeholder }: FormFieldProps) {
+function FormField({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+}: FormFieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
       <label
         htmlFor={id}
-        className="text-xs font-semibold uppercase tracking-wider"
+        className="app-eyebrow"
         style={{ color: "var(--text-muted)" }}
       >
         {label}
@@ -46,18 +52,7 @@ function FormField({ id, label, value, onChange, placeholder }: FormFieldProps) 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="px-3 py-2 rounded-md text-sm border outline-none transition-colors"
-        style={{
-          backgroundColor: "var(--bg-elevated)",
-          borderColor: "var(--border-subtle)",
-          color: "var(--text-primary)",
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.borderColor = "var(--color-accent-cyan)";
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.borderColor = "var(--border-subtle)";
-        }}
+        className="app-input px-3 py-2.5 rounded-xl text-sm transition-colors"
       />
     </div>
   );
@@ -90,43 +85,35 @@ export function NewGame({ onBack, onStart }: NewGameProps) {
 
   return (
     <div
-      className="flex flex-col min-h-screen w-full animate-fade-in-up"
+      className="app-shell flex flex-col min-h-screen w-full animate-fade-in-up"
       style={{ backgroundColor: "var(--bg-base)" }}
     >
       {/* Header */}
       <header
-        className="flex items-center gap-3 h-14 px-6 border-b shrink-0"
+        className="app-panel flex items-center gap-3 h-18 px-6 shrink-0"
         style={{
-          borderColor: "var(--border-subtle)",
-          backgroundColor: "var(--bg-surface)",
+          borderTop: "none",
+          borderLeft: "none",
+          borderRight: "none",
+          borderRadius: 0,
         }}
       >
         <button
           onClick={onBack}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium cursor-pointer border transition-colors"
-          style={{
-            borderColor: "var(--border-subtle)",
-            backgroundColor: "transparent",
-            color: "var(--text-secondary)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "var(--color-accent-cyan)";
-            e.currentTarget.style.color = "var(--text-primary)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "var(--border-subtle)";
-            e.currentTarget.style.color = "var(--text-secondary)";
-          }}
+          className="app-button-secondary flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium cursor-pointer transition-colors"
         >
           <ArrowLeft size={16} />
           Back
         </button>
-        <h1
-          className="text-xl font-bold"
-          style={{ color: "var(--text-primary)" }}
-        >
-          Manager Creation
-        </h1>
+        <div className="flex flex-col gap-0.5">
+          <span className="app-eyebrow">New Career</span>
+          <h1
+            className="text-xl font-bold font-display"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Manager Creation
+          </h1>
+        </div>
       </header>
 
       {/* Form */}
@@ -134,14 +121,13 @@ export function NewGame({ onBack, onStart }: NewGameProps) {
         <div className="w-full max-w-lg flex flex-col gap-6">
           {/* Identity */}
           <div
-            className="p-6 rounded-lg border"
+            className="app-panel p-6 rounded-2xl"
             style={{
               backgroundColor: "var(--bg-surface)",
-              borderColor: "var(--border-subtle)",
             }}
           >
             <h2
-              className="text-sm font-semibold uppercase tracking-wider mb-4"
+              className="app-eyebrow mb-4"
               style={{ color: "var(--text-muted)" }}
             >
               Identity
@@ -182,19 +168,23 @@ export function NewGame({ onBack, onStart }: NewGameProps) {
 
           {/* eSport Type */}
           <div
-            className="p-6 rounded-lg border"
+            className="app-panel p-6 rounded-2xl"
             style={{
               backgroundColor: "var(--bg-surface)",
-              borderColor: "var(--border-subtle)",
             }}
           >
             <h2
-              className="text-sm font-semibold uppercase tracking-wider mb-4"
+              className="app-eyebrow mb-4"
               style={{ color: "var(--text-muted)" }}
             >
               <label htmlFor="esport-type">Esport Type</label>
             </h2>
-            <div id="esport-type" className="flex gap-3" role="radiogroup" aria-label="Esport Type">
+            <div
+              id="esport-type"
+              className="flex gap-3"
+              role="radiogroup"
+              aria-label="Esport Type"
+            >
               {esportOptions.map((opt) => {
                 const selected = esportType === opt.value;
                 return (
@@ -204,13 +194,13 @@ export function NewGame({ onBack, onStart }: NewGameProps) {
                     role="radio"
                     aria-checked={selected}
                     onClick={() => setEsportType(opt.value)}
-                    className="flex-1 px-4 py-3 rounded-md text-sm font-semibold cursor-pointer border transition-all"
+                    className="flex-1 px-4 py-3 rounded-xl text-sm font-semibold cursor-pointer border transition-all"
                     style={{
-                      backgroundColor: selected
-                        ? "var(--bg-elevated)"
-                        : "transparent",
+                      background: selected
+                        ? "var(--accent-gradient-soft)"
+                        : "rgba(255, 255, 255, 0.02)",
                       borderColor: selected
-                        ? "var(--color-accent-cyan)"
+                        ? "var(--border-strong)"
                         : "var(--border-subtle)",
                       color: selected
                         ? "var(--text-primary)"
@@ -229,10 +219,10 @@ export function NewGame({ onBack, onStart }: NewGameProps) {
           <button
             onClick={handleContinue}
             disabled={!isValid}
-            className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all"
+            className="app-button-primary flex items-center justify-center gap-2 w-full px-6 py-3 rounded-2xl text-sm font-semibold cursor-pointer border-none transition-all"
             style={{
               background: isValid
-                ? "linear-gradient(135deg, var(--color-accent-emerald), var(--color-accent-cyan))"
+                ? "var(--accent-gradient)"
                 : "var(--bg-elevated)",
               color: isValid ? "#fff" : "var(--text-muted)",
               opacity: isValid ? 1 : 0.6,

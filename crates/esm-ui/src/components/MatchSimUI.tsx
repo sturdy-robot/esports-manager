@@ -228,13 +228,12 @@ export function MatchSimUI({
     : null;
 
   return (
-    <div className="relative flex flex-col w-full flex-1 min-h-0 gap-2 p-2">
+    <div className="relative app-shell flex flex-col w-full flex-1 min-h-0 gap-3 p-3">
       {/* Top bar: teams + gold + timer */}
       <div
-        className="flex items-center justify-between px-4 py-2 rounded-xl border shrink-0"
+        className="app-panel-strong flex items-center justify-between px-4 py-3 rounded-3xl shrink-0"
         style={{
           backgroundColor: "var(--bg-surface)",
-          borderColor: "var(--border-subtle)",
         }}
       >
         <TeamHeader name={result.blue_team} gold={blueGold} color="#3B82F6" />
@@ -248,7 +247,7 @@ export function MatchSimUI({
           {allDone && (
             <div
               data-testid="winner-banner"
-              className="text-sm font-bold uppercase tracking-wider px-3 py-1 rounded-md"
+              className="text-sm font-bold uppercase tracking-wider px-3 py-1 rounded-full"
               style={{
                 background:
                   "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.15))",
@@ -265,7 +264,7 @@ export function MatchSimUI({
       </div>
 
       {/* Main area: scoreboard | events | scoreboard */}
-      <div className="flex gap-2 flex-1 min-h-0">
+      <div className="flex gap-3 flex-1 min-h-0">
         {/* Blue scoreboard */}
         <TeamScoreboard
           players={snapshot?.blue_players ?? []}
@@ -294,10 +293,9 @@ export function MatchSimUI({
 
           {/* Controls bar — playback */}
           <div
-            className="flex flex-col items-center gap-3 px-3 py-1.5 rounded-lg border"
+            className="app-panel flex flex-col items-center gap-3 px-3 py-2 rounded-2xl"
             style={{
               backgroundColor: "var(--bg-surface)",
-              borderColor: "var(--border-subtle)",
             }}
           >
             {/* Playback controls */}
@@ -307,10 +305,8 @@ export function MatchSimUI({
                   <>
                     <button
                       onClick={cycleSpeed}
-                      className="px-2.5 py-1 rounded-md border text-sm tabular-nums font-bold cursor-pointer transition-all duration-150 glow-hover"
+                      className="app-button-secondary px-2.5 py-1 rounded-xl text-sm tabular-nums font-bold cursor-pointer transition-all duration-150 glow-hover"
                       style={{
-                        backgroundColor: "var(--bg-elevated)",
-                        borderColor: "var(--border-subtle)",
                         color: "var(--text-primary)",
                       }}
                     >
@@ -318,10 +314,8 @@ export function MatchSimUI({
                     </button>
                     <button
                       onClick={() => setIsPlaying((p) => !p)}
-                      className="p-1.5 rounded-md border cursor-pointer transition-all duration-150 glow-hover"
+                      className="app-icon-button p-1.5 rounded-xl cursor-pointer transition-all duration-150 glow-hover"
                       style={{
-                        backgroundColor: "var(--bg-elevated)",
-                        borderColor: "var(--border-subtle)",
                         color: "var(--text-primary)",
                       }}
                     >
@@ -329,10 +323,8 @@ export function MatchSimUI({
                     </button>
                     <button
                       onClick={handleSkip}
-                      className="p-1.5 rounded-md border cursor-pointer transition-all duration-150 glow-hover"
+                      className="app-icon-button p-1.5 rounded-xl cursor-pointer transition-all duration-150 glow-hover"
                       style={{
-                        backgroundColor: "var(--bg-elevated)",
-                        borderColor: "var(--border-subtle)",
                         color: "var(--text-primary)",
                       }}
                       title="Skip to end"
@@ -343,9 +335,9 @@ export function MatchSimUI({
                 ) : (
                   <button
                     onClick={onComplete}
-                    className="px-5 py-1.5 rounded-md font-bold text-white text-sm flex items-center gap-1.5 transition-all duration-150"
+                    className="app-button-primary px-5 py-1.5 rounded-2xl font-bold text-white text-sm flex items-center gap-1.5 transition-all duration-150"
                     style={{
-                      background: "linear-gradient(135deg, #10B981, #06B6D4)",
+                      background: "var(--accent-gradient)",
                       boxShadow: "0 0 12px rgba(6,182,212,0.3)",
                     }}
                   >
@@ -357,14 +349,11 @@ export function MatchSimUI({
               {tactics && onTacticsChange && !allDone && (
                 <button
                   onClick={openTacticsPanel}
-                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all duration-150 glow-hover"
+                  className="app-panel flex items-center gap-2 px-2.5 py-1.5 rounded-2xl cursor-pointer transition-all duration-150 glow-hover"
                   style={{
                     backgroundColor: isTacticsOpen
                       ? "rgba(6,182,212,0.12)"
                       : "var(--bg-elevated)",
-                    borderColor: isTacticsOpen
-                      ? "rgba(6,182,212,0.4)"
-                      : "var(--border-subtle)",
                     color: "var(--text-primary)",
                   }}
                 >
@@ -407,10 +396,9 @@ export function MatchSimUI({
           {/* Event feed */}
           <div
             ref={feedRef}
-            className="flex-1 rounded-xl border overflow-y-auto p-2"
+            className="app-panel flex-1 rounded-3xl overflow-y-auto p-3"
             style={{
               backgroundColor: "var(--bg-surface)",
-              borderColor: "var(--border-subtle)",
             }}
           >
             <div className="space-y-0.5">
@@ -469,11 +457,11 @@ function TeamHeader({
 }) {
   return (
     <div className="text-center flex-1">
-      <div className="text-sm font-bold" style={{ color }}>
+      <div className="app-eyebrow" style={{ color }}>
         {name}
       </div>
       <div
-        className="text-xl tabular-nums font-black font-display"
+        className="text-2xl tabular-nums font-black font-display"
         style={{ color: "var(--text-primary)" }}
       >
         {formatGoldFull(gold)}
@@ -920,26 +908,25 @@ function TacticsPanel({
       onClick={onClose}
     >
       <div
-        className="absolute inset-0 rounded-2xl"
+        className="absolute inset-0 rounded-3xl"
         style={{
           backgroundColor: "rgba(10,10,15,0.78)",
           backdropFilter: "blur(10px)",
         }}
       />
       <div
-        className="relative w-full max-w-4xl rounded-2xl border p-4 md:p-5"
+        className="relative app-panel-strong w-full max-w-4xl rounded-[28px] p-4 md:p-5"
         onClick={(event) => event.stopPropagation()}
         style={{
           background:
             "linear-gradient(180deg, rgba(20,20,31,0.98) 0%, rgba(14,14,22,0.98) 100%)",
-          borderColor: "rgba(255,255,255,0.08)",
           boxShadow: "0 20px 50px rgba(0,0,0,0.35)",
         }}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div
-              className="text-[0.62rem] font-semibold uppercase"
+              className="app-eyebrow"
               style={{ color: "#06B6D4", letterSpacing: "0.18em" }}
             >
               Match Paused
@@ -959,10 +946,8 @@ function TacticsPanel({
           </div>
           <button
             onClick={onClose}
-            className="h-9 w-9 rounded-lg border flex items-center justify-center cursor-pointer transition-all duration-150 glow-hover"
+            className="app-icon-button h-9 w-9 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-150 glow-hover"
             style={{
-              backgroundColor: "rgba(255,255,255,0.03)",
-              borderColor: "rgba(255,255,255,0.08)",
               color: "var(--text-primary)",
             }}
           >
@@ -971,9 +956,8 @@ function TacticsPanel({
         </div>
         <div className="grid gap-3 md:grid-cols-2 mt-4">
           <div
-            className="rounded-xl border p-3"
+            className="app-panel rounded-2xl p-3"
             style={{
-              borderColor: "rgba(255,255,255,0.08)",
               backgroundColor: "rgba(255,255,255,0.02)",
             }}
           >
@@ -1041,9 +1025,8 @@ function TacticsPanel({
             </div>
           </div>
           <div
-            className="rounded-xl border p-3"
+            className="app-panel rounded-2xl p-3"
             style={{
-              borderColor: "rgba(255,255,255,0.08)",
               backgroundColor: "rgba(255,255,255,0.02)",
             }}
           >
@@ -1137,9 +1120,9 @@ function TacticsPanel({
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg font-bold text-sm text-white cursor-pointer transition-all duration-150"
+            className="app-button-primary px-4 py-2 rounded-2xl font-bold text-sm text-white cursor-pointer transition-all duration-150"
             style={{
-              background: "linear-gradient(135deg, #10B981, #06B6D4)",
+              background: "var(--accent-gradient)",
               boxShadow: "0 0 16px rgba(6,182,212,0.22)",
             }}
           >
@@ -1156,7 +1139,7 @@ function EventRow({ event, isNew }: { event: MatchEventInfo; isNew: boolean }) {
 
   return (
     <div
-      className="flex items-start gap-2 px-2 py-1.5 rounded-lg transition-all duration-300"
+      className="flex items-start gap-2 px-3 py-2 rounded-2xl transition-all duration-300"
       style={{
         backgroundColor: isNew ? `${color}12` : "transparent",
         borderLeft: isNew ? `2px solid ${color}` : "2px solid transparent",
@@ -1171,8 +1154,22 @@ function EventRow({ event, isNew }: { event: MatchEventInfo; isNew: boolean }) {
       <div className="shrink-0 pt-1" style={{ color }}>
         {eventIcon(event.kind)}
       </div>
-      <div className="text-medium flex-1" style={{ color: "var(--text-primary)" }}>
-        {event.commentary ?? event.kind}
+      <div
+        className="flex-1 flex flex-col gap-1"
+        style={{ color: "var(--text-primary)" }}
+      >
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className="px-2 py-0.5 rounded-full text-[0.65rem] font-bold uppercase tracking-[0.12em]"
+            style={{
+              color: phaseBadgeColor(event.phase),
+              backgroundColor: `${phaseBadgeColor(event.phase)}18`,
+            }}
+          >
+            {event.phase}
+          </span>
+        </div>
+        <div className="text-medium">{event.commentary ?? event.kind}</div>
       </div>
     </div>
   );

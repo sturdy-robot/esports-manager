@@ -12,7 +12,15 @@ import { Scouting } from "@/components/Scouting";
 import { Results } from "@/components/Results";
 import { TournamentEnd } from "@/components/TournamentEnd";
 import { MatchLobby } from "@/components/MatchLobby";
-import { useRoster, useInbox, useStandings, useSchedule, useResolveMessage, usePlayMatchDelegate, useTeamSchedule } from "@/lib/use-api";
+import {
+  useRoster,
+  useInbox,
+  useStandings,
+  useSchedule,
+  useResolveMessage,
+  usePlayMatchDelegate,
+  useTeamSchedule,
+} from "@/lib/use-api";
 import type { Transaction } from "@/components/Finances";
 import type { StaffMember } from "@/components/Staff";
 import type { ScoutingTarget } from "@/components/Scouting";
@@ -36,9 +44,39 @@ const pageTitles: Record<string, string> = {
 
 // Placeholder scouting until wired to Tauri backend
 const PLACEHOLDER_SCOUTING: ScoutingTarget[] = [
-  { id: "p1", nickname: "Chovy", role: "Mid", team: "Gen.G", mechanics: 95, vision: 85, teamfighting: 88, estimatedValue: 800000, scoutingAccuracy: 72 },
-  { id: "p2", nickname: "Peyz", role: "Bot", team: "Gen.G", mechanics: 82, vision: 74, teamfighting: 80, estimatedValue: 350000, scoutingAccuracy: 55 },
-  { id: "p3", nickname: "Doran", role: "Top", team: "Hanwha Life", mechanics: 78, vision: 80, teamfighting: 82, estimatedValue: 300000, scoutingAccuracy: 90 },
+  {
+    id: "p1",
+    nickname: "Chovy",
+    role: "Mid",
+    team: "Gen.G",
+    mechanics: 95,
+    vision: 85,
+    teamfighting: 88,
+    estimatedValue: 800000,
+    scoutingAccuracy: 72,
+  },
+  {
+    id: "p2",
+    nickname: "Peyz",
+    role: "Bot",
+    team: "Gen.G",
+    mechanics: 82,
+    vision: 74,
+    teamfighting: 80,
+    estimatedValue: 350000,
+    scoutingAccuracy: 55,
+  },
+  {
+    id: "p3",
+    nickname: "Doran",
+    role: "Top",
+    team: "Hanwha Life",
+    mechanics: 78,
+    vision: 80,
+    teamfighting: 82,
+    estimatedValue: 300000,
+    scoutingAccuracy: 90,
+  },
 ];
 
 // Placeholder staff until wired to Tauri backend
@@ -51,13 +89,35 @@ const PLACEHOLDER_STAFF: StaffMember[] = [
 
 // Placeholder finances until wired to Tauri backend
 const PLACEHOLDER_TRANSACTIONS: Transaction[] = [
-  { id: "t1", description: "Player salary — Faker", amount: -45000, date: "Jan 1", category: "Salary" },
-  { id: "t2", description: "Sponsor payment — TechCorp", amount: 50000, date: "Jan 1", category: "Sponsor" },
-  { id: "t3", description: "Scrim facility rental", amount: -8000, date: "Jan 2", category: "Operations" },
-  { id: "t4", description: "Prize money — LCK Week 1", amount: 25000, date: "Jan 3", category: "Prize" },
+  {
+    id: "t1",
+    description: "Player salary — Faker",
+    amount: -45000,
+    date: "Jan 1",
+    category: "Salary",
+  },
+  {
+    id: "t2",
+    description: "Sponsor payment — TechCorp",
+    amount: 50000,
+    date: "Jan 1",
+    category: "Sponsor",
+  },
+  {
+    id: "t3",
+    description: "Scrim facility rental",
+    amount: -8000,
+    date: "Jan 2",
+    category: "Operations",
+  },
+  {
+    id: "t4",
+    description: "Prize money — LCK Week 1",
+    amount: 25000,
+    date: "Jan 3",
+    category: "Prize",
+  },
 ];
-
-
 
 interface GameShellProps {
   teamName?: string;
@@ -94,11 +154,18 @@ export function GameShell({
   const { resolve } = useResolveMessage();
   const { playMatchDelegate, playing: simulating } = usePlayMatchDelegate();
   const {
-    weekSchedule, scrims, refresh: refreshTeamSchedule,
-    scheduleScrim, cancelScrim, scheduleSoloQueue, clearSlot,
+    weekSchedule,
+    scrims,
+    refresh: refreshTeamSchedule,
+    scheduleScrim,
+    cancelScrim,
+    scheduleSoloQueue,
+    clearSlot,
   } = useTeamSchedule();
   const [resolvingMsgId, setResolvingMsgId] = useState<string | null>(null);
-  const hasUrgentUnread = inboxMessages.some((m) => m.priority === 'Urgent' && !m.read);
+  const hasUrgentUnread = inboxMessages.some(
+    (m) => m.priority === "Urgent" && !m.read,
+  );
 
   // Fetch live data on mount
   useEffect(() => {
@@ -107,25 +174,44 @@ export function GameShell({
     fetchStandings();
     fetchSchedule();
     refreshTeamSchedule();
-  }, [fetchRoster, fetchInbox, fetchStandings, fetchSchedule, refreshTeamSchedule]);
+  }, [
+    fetchRoster,
+    fetchInbox,
+    fetchStandings,
+    fetchSchedule,
+    refreshTeamSchedule,
+  ]);
 
   // Wrap onContinue to also refresh data after advancing
-  const handleContinue = useCallback(async (mode: ContinueMode) => {
-    if (onContinueProp) {
-      await onContinueProp(mode);
-      fetchRoster();
-      fetchInbox();
-      fetchStandings();
-      fetchSchedule();
-      refreshTeamSchedule();
-    }
-  }, [onContinueProp, fetchRoster, fetchInbox, fetchStandings, fetchSchedule, refreshTeamSchedule]);
+  const handleContinue = useCallback(
+    async (mode: ContinueMode) => {
+      if (onContinueProp) {
+        await onContinueProp(mode);
+        fetchRoster();
+        fetchInbox();
+        fetchStandings();
+        fetchSchedule();
+        refreshTeamSchedule();
+      }
+    },
+    [
+      onContinueProp,
+      fetchRoster,
+      fetchInbox,
+      fetchStandings,
+      fetchSchedule,
+      refreshTeamSchedule,
+    ],
+  );
 
-  const handlePlayMatch = useCallback((mode: MatchMode) => {
-    if (onPlayMatchProp) {
-      onPlayMatchProp(mode);
-    }
-  }, [onPlayMatchProp]);
+  const handlePlayMatch = useCallback(
+    (mode: MatchMode) => {
+      if (onPlayMatchProp) {
+        onPlayMatchProp(mode);
+      }
+    },
+    [onPlayMatchProp],
+  );
 
   const handleDelegate = useCallback(async () => {
     const info = await playMatchDelegate();
@@ -137,7 +223,14 @@ export function GameShell({
       await refreshTeamSchedule();
       setActivePage("dashboard");
     }
-  }, [playMatchDelegate, fetchRoster, fetchInbox, fetchSchedule, fetchStandings, refreshTeamSchedule]);
+  }, [
+    playMatchDelegate,
+    fetchRoster,
+    fetchInbox,
+    fetchSchedule,
+    fetchStandings,
+    refreshTeamSchedule,
+  ]);
 
   const handleResolveMessage = async (id: string, subject: string) => {
     setResolvingMsgId(id);
@@ -180,25 +273,36 @@ export function GameShell({
     switch (activePage) {
       case "dashboard": {
         const nextMatch = schedule.find(
-          (m) => (m.blue_team === teamName || m.red_team === teamName) && m.winner === null
+          (m) =>
+            (m.blue_team === teamName || m.red_team === teamName) &&
+            m.winner === null,
         );
-        const todaySlots = weekSchedule?.days.find((d) => d.day_index === day)?.slots;
+        const todaySlots = weekSchedule?.days.find(
+          (d) => d.day_index === day,
+        )?.slots;
         return (
           <Dashboard
             inboxCount={inboxMapped.length}
-            urgentCount={inboxMapped.filter((m) => m.priority === "Urgent").length}
+            urgentCount={
+              inboxMapped.filter((m) => m.priority === "Urgent").length
+            }
             rosterPlayers={rosterPlayers.map((p) => ({
               name: p.nickname,
               role: p.role,
               stamina: p.stamina,
               morale: p.morale,
             }))}
-            nextMatch={nextMatch ? {
-              blueTeam: nextMatch.blue_team,
-              redTeam: nextMatch.red_team,
-              day: nextMatch.scheduled_day,
-              playerSide: nextMatch.blue_team === teamName ? 'blue' : 'red',
-            } : undefined}
+            nextMatch={
+              nextMatch
+                ? {
+                    blueTeam: nextMatch.blue_team,
+                    redTeam: nextMatch.red_team,
+                    day: nextMatch.scheduled_day,
+                    playerSide:
+                      nextMatch.blue_team === teamName ? "blue" : "red",
+                  }
+                : undefined
+            }
             todaySlots={todaySlots}
           />
         );
@@ -213,11 +317,28 @@ export function GameShell({
             rosterNames={rosterPlayers.map((p) => p.nickname)}
             teamNames={standings.map((s) => s.team_name)}
             playerTeamName={teamName}
-            onScheduleScrim={async (dayIndex, timeSlot, awayTeamIndex, gameCount, draftRules) => {
-              await scheduleScrim({ away_team_index: awayTeamIndex, scheduled_day: dayIndex, time_slot: timeSlot, game_count: gameCount, draft_rules: draftRules });
+            onScheduleScrim={async (
+              dayIndex,
+              timeSlot,
+              awayTeamIndex,
+              gameCount,
+              draftRules,
+            ) => {
+              await scheduleScrim({
+                away_team_index: awayTeamIndex,
+                scheduled_day: dayIndex,
+                time_slot: timeSlot,
+                game_count: gameCount,
+                draft_rules: draftRules,
+              });
             }}
             onScheduleSoloQueue={async (dayIndex, timeSlot, players, focus) => {
-              await scheduleSoloQueue({ day_index: dayIndex, time_slot: timeSlot, players, focus });
+              await scheduleSoloQueue({
+                day_index: dayIndex,
+                time_slot: timeSlot,
+                players,
+                focus,
+              });
             }}
             onClearSlot={async (dayIndex, timeSlot) => {
               await clearSlot(dayIndex, timeSlot);
@@ -242,9 +363,22 @@ export function GameShell({
           />
         );
       case "inbox":
-        return <Inbox messages={inboxMapped} onResolveMessage={handleResolveMessage} resolvingMsgId={resolvingMsgId} />;
+        return (
+          <Inbox
+            messages={inboxMapped}
+            onResolveMessage={handleResolveMessage}
+            resolvingMsgId={resolvingMsgId}
+          />
+        );
       case "finances":
-        return <Finances balance={1200000} income={75000} expenses={53000} transactions={PLACEHOLDER_TRANSACTIONS} />;
+        return (
+          <Finances
+            balance={1200000}
+            income={75000}
+            expenses={53000}
+            transactions={PLACEHOLDER_TRANSACTIONS}
+          />
+        );
       case "staff":
         return <Staff members={PLACEHOLDER_STAFF} />;
       case "scouting":
@@ -279,11 +413,21 @@ export function GameShell({
         );
       case "match-lobby": {
         const pMatch = schedule.find(
-          (m) => (m.blue_team === teamName || m.red_team === teamName) && m.winner === null
+          (m) =>
+            (m.blue_team === teamName || m.red_team === teamName) &&
+            m.winner === null,
         );
         return (
           <MatchLobby
-            match={pMatch ? { homeTeam: pMatch.blue_team, awayTeam: pMatch.red_team, day: pMatch.scheduled_day } : undefined}
+            match={
+              pMatch
+                ? {
+                    homeTeam: pMatch.blue_team,
+                    awayTeam: pMatch.red_team,
+                    day: pMatch.scheduled_day,
+                  }
+                : undefined
+            }
             teamName={teamName}
             simulating={simulating}
             onDelegate={handleDelegate}
@@ -302,10 +446,7 @@ export function GameShell({
       default:
         return (
           <div className="flex items-center justify-center h-64">
-            <span
-              className="text-lg"
-              style={{ color: "var(--text-muted)" }}
-            >
+            <span className="text-lg" style={{ color: "var(--text-muted)" }}>
               {pageTitles[activePage]} — Coming soon
             </span>
           </div>
@@ -315,10 +456,14 @@ export function GameShell({
 
   return (
     <div
-      className="flex w-full h-screen"
+      className="app-shell flex w-full h-screen"
       style={{ backgroundColor: "var(--bg-base)" }}
     >
-      <Sidebar activeItem={activePage} onNavigate={setActivePage} onExitToMenu={onExitToMenu} />
+      <Sidebar
+        activeItem={activePage}
+        onNavigate={setActivePage}
+        onExitToMenu={onExitToMenu}
+      />
       <div className="flex flex-col flex-1 min-w-0">
         <TopBar
           title={pageTitles[activePage] || "Dashboard"}
@@ -334,9 +479,7 @@ export function GameShell({
           onPlayMatch={onPlayMatchProp ? handlePlayMatch : undefined}
           continueDisabled={hasUrgentUnread}
         />
-        <main className="flex-1 overflow-y-auto p-6">
-          {renderPage()}
-        </main>
+        <main className="flex-1 overflow-y-auto px-8 py-7">{renderPage()}</main>
       </div>
     </div>
   );

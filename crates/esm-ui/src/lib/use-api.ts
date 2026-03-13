@@ -622,6 +622,29 @@ export function useAdvanceTurn() {
   return { advanceTurn, advancing, error };
 }
 
+export function useGameInfo() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const getGameInfo = useCallback(async (): Promise<GameInfo | null> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const adapter = await getAdapter();
+      return await adapter.getGameInfo();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('useGameInfo error:', msg);
+      setError(msg);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { getGameInfo, loading, error };
+}
+
 export function useLoadDatapack() {
   const [teams, setTeams] = useState<TeamInfo[]>([]);
   const [loading, setLoading] = useState(false);
