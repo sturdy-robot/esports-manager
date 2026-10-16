@@ -70,6 +70,8 @@ export type Failure = {
 export type GameOpened = {
 	file: string,
 	team: string,
+	/**  The team's name message. */
+	teamMessage: string,
 };
 
 /**  One Fluent message with its arguments. */

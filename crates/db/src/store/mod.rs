@@ -22,6 +22,8 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 /// The extension of save files.
 pub const EXTENSION: &str = "esmsave";
 const TEMPORARY: &str = "tmp";
+/// Held while a save is created: `.create.lock` in the folder.
+const CREATION: &str = ".create";
 /// A temporary save's rollback journal: `<temporary>-journal`.
 const TEMPORARY_JOURNAL: &str = "tmp-journal";
 
@@ -116,6 +118,11 @@ impl SaveStore for SqliteSaveStore {
     type Save = SqliteSave;
 
     fn create(&self, save: NewSave<'_>) -> Result<String, SaveError> {
+        // One creation at a time in the folder, from reading the names to
+        // moving the save into place, so two processes can't both take a
+        // free name (SAVE-010). The use case checks names earlier, to report
+        // the problem with the others; this is the check that guarantees it.
+        let _creating = lock::wait(&self.path(CREATION))?;
         let wanted = save.meta.name.to_lowercase();
         if self
             .names()?

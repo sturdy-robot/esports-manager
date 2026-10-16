@@ -117,7 +117,11 @@ function PlayerGroup({ title, players, team, sort }: PlayerGroupProps) {
   const navigate = useNavigate();
   const sorted = sortPlayers(players, sort, name, new Intl.Collator(document.documentElement.lang));
   const teamSearch = team === undefined ? {} : { team };
-  const profile = (player: RosterPlayer): ProfileSearch => ({ id: player.id, ...sortSearch(sort) });
+  const profile = (player: RosterPlayer): ProfileSearch => ({
+    id: player.id,
+    ...teamSearch,
+    ...sortSearch(sort),
+  });
   return (
     <div className="flex flex-col gap-2">
       <h3 className="font-semibold text-lg">{title}</h3>
@@ -145,9 +149,10 @@ function PlayerGroup({ title, players, team, sort }: PlayerGroupProps) {
                 >
                   {column.label}
                 </button>
-                {sort.key === column.key && (
-                  <span aria-hidden="true">{sort.order === "ascending" ? " ▲" : " ▼"}</span>
-                )}
+                {/* Every header shows it sorts, not only on hover. */}
+                <span aria-hidden="true">
+                  {sort.key !== column.key ? " ↕" : sort.order === "ascending" ? " ▲" : " ▼"}
+                </span>
               </th>
             ))}
           </tr>
@@ -192,7 +197,7 @@ function PlayerGroup({ title, players, team, sort }: PlayerGroupProps) {
   );
 }
 
-type ProfileSearch = { id: string } & SortSearch;
+type ProfileSearch = { id: string; team?: string } & SortSearch;
 
 function PlayerLink({ player, search }: { player: RosterPlayer; search: ProfileSearch }) {
   const { l10n } = useLocalization();

@@ -134,8 +134,9 @@ export function checkUsage(
  * function returns) also counts as a use.
  *
  * Only shipped code uses a message: test files (`tests/`, `*_tests.rs`) and
- * everything from a file's first `#[cfg(test)]` on are still checked for
- * unknown ids, but don't keep a message alive.
+ * everything from a file's inline test module (`#[cfg(test)] mod … {`) on
+ * are still checked for unknown ids, but don't keep a message alive. A
+ * `#[cfg(test)] mod drift;` line elsewhere doesn't end the shipped code.
  */
 export function findRustUsage(
   file: string,
@@ -145,7 +146,7 @@ export function findRustUsage(
   const ids = new Set<string>();
   const violations: string[] = [];
   const lineOf = (offset: number) => source.slice(0, offset).split("\n").length;
-  const testsStart = isRustTestFile(file) ? 0 : source.indexOf("#[cfg(test)]");
+  const testsStart = isRustTestFile(file) ? 0 : (source.match(RUST_TEST_MODULE)?.index ?? -1);
   const shipped = testsStart === -1 ? source : source.slice(0, testsStart);
   for (const match of source.matchAll(/Message::new\(\s*"([^"]*)"/g)) {
     const id = match[1] ?? "";
@@ -166,6 +167,9 @@ export function findRustUsage(
   }
   return { ids: [...ids], violations };
 }
+
+/** `#[cfg(test)]`, any other attributes, then an inline `mod name {`. */
+const RUST_TEST_MODULE = /#\[cfg\(test\)\]\s*(?:#\[[^\]]*\]\s*)*mod\s+\w+\s*\{/;
 
 function isRustTestFile(file: string): boolean {
   const parts = file.split(/[\\/]/);

@@ -312,6 +312,39 @@ fn creation_takes_a_free_file_and_leaves_other_files_alone() {
 }
 
 #[test]
+fn two_creations_at_once_never_share_a_name() {
+    // spec: SAVE-010
+    // Given two creations of "Tigers" racing in one folder, many times over
+    for round in 0..10 {
+        let dir = folder(&format!("race-{round}"));
+        let (world, texts) = (world(42), texts());
+        // When both run at once
+        let results: Vec<Result<String, SaveError>> = std::thread::scope(|scope| {
+            let racers: Vec<_> = (0..2)
+                .map(|_| {
+                    let (dir, world, texts) = (&dir, &world, &texts);
+                    scope.spawn(move || {
+                        SqliteSaveStore::new(dir.clone()).create(new_save(
+                            &meta("Tigers", 100),
+                            world,
+                            texts,
+                        ))
+                    })
+                })
+                .collect();
+            racers
+                .into_iter()
+                .map(|racer| racer.join().unwrap())
+                .collect()
+        });
+        // Then exactly one has the name; the other is told it's taken
+        let created: Vec<&String> = results.iter().filter_map(|r| r.as_ref().ok()).collect();
+        assert_eq!(created, [&"tigers.esmsave".to_owned()], "{results:?}");
+        assert!(results.contains(&Err(SaveError::NameTaken("Tigers".to_owned()))));
+    }
+}
+
+#[test]
 fn an_open_save_cannot_be_opened_twice() {
     // spec: SAVE-020
     // Given

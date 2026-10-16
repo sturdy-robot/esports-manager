@@ -13,17 +13,31 @@ import { DEFAULT_SORT, type RosterSort, sortSearch } from "./rosterSort";
 
 /**
  * One player: identity, overall, and attributes by group; hidden ones are
- * unknown. `sort` is the roster's, kept for the way back.
+ * unknown. `team` and `sort` are the roster's, kept for the way back.
  */
-export function Player({ id, sort = DEFAULT_SORT }: { id: string; sort?: RosterSort }) {
+export function Player({
+  id,
+  team: rosterTeam,
+  sort = DEFAULT_SORT,
+}: {
+  id: string;
+  /** The roster this profile was opened from, when it wasn't the user's team. */
+  team?: string | undefined;
+  sort?: RosterSort;
+}) {
   const { l10n } = useLocalization();
   const profile = usePlayer(id);
   const name = usePersonName();
+  // Back goes to the roster the profile came from, before the profile loads too.
+  const back = (team: string | undefined) => ({
+    ...(team === undefined ? {} : { team }),
+    ...sortSearch(sort),
+  });
   if (profile.isError) {
     return (
       <section className="mx-auto flex max-w-3xl flex-col gap-4">
         <Localized id="profile-back">
-          <Link to="/roster" search={sortSearch(sort)} className={backLink} />
+          <Link to="/roster" search={back(rosterTeam)} className={backLink} />
         </Localized>
         <FailureList
           heading={l10n.getString("app-backend-error")}
@@ -36,7 +50,7 @@ export function Player({ id, sort = DEFAULT_SORT }: { id: string; sort?: RosterS
     return (
       <section className="mx-auto flex max-w-3xl flex-col gap-4">
         <Localized id="profile-back">
-          <Link to="/roster" search={sortSearch(sort)} className={backLink} />
+          <Link to="/roster" search={back(rosterTeam)} className={backLink} />
         </Localized>
         <Localized id="app-loading">
           <p className="text-muted" />
@@ -48,7 +62,7 @@ export function Player({ id, sort = DEFAULT_SORT }: { id: string; sort?: RosterS
   return (
     <section className="mx-auto flex max-w-3xl flex-col gap-4">
       <Localized id="profile-back">
-        <Link to="/roster" search={{ team: team.id, ...sortSearch(sort) }} className={backLink} />
+        <Link to="/roster" search={back(team.id)} className={backLink} />
       </Localized>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-semibold text-2xl">{player.nickname}</h2>

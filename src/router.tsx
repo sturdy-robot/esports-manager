@@ -49,13 +49,17 @@ const rosterRoute = createRoute({
 const playerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/player",
-  validateSearch: (search: Record<string, unknown>): { id: string } & SortSearch => ({
-    id: text(search.id) ?? "",
-    ...sortFrom(search),
-  }),
+  validateSearch: (search: Record<string, unknown>): { id: string; team?: string } & SortSearch => {
+    const team = text(search.team);
+    return {
+      id: text(search.id) ?? "",
+      ...(team === undefined ? {} : { team }),
+      ...sortFrom(search),
+    };
+  },
   component: function PlayerRoute() {
-    const { id, sort, order } = playerRoute.useSearch();
-    return <Player id={id} sort={parseSort(sort, order)} />;
+    const { id, team, sort, order } = playerRoute.useSearch();
+    return <Player id={id} team={team} sort={parseSort(sort, order)} />;
   },
 });
 

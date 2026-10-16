@@ -147,7 +147,11 @@ fn text(
         Ok(source) => parsed.texts.push(ContentText {
             locale: locale.to_owned(),
             file: path.to_owned(),
-            source,
+            // Fluent doesn't expect the byte-order mark some editors add.
+            source: source
+                .strip_prefix('\u{feff}')
+                .unwrap_or(&source)
+                .to_owned(),
         }),
         Err(_) => errors.push(PackageError::new(path, "", Problem::NotUtf8)),
     }

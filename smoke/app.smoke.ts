@@ -60,15 +60,20 @@ async function main(): Promise<void> {
   // binaries in portable mode.
   rmSync(portableMarker, { force: true });
   rmSync(scratchData, { recursive: true, force: true });
-  // spec: SAVE-007
-  // Given a save the CLI made without --data-dir, in this environment
-  const created = spawnSync(
-    cli,
-    ["new-game", "--manager", "Ana", "--team", "team:azure_tigers", "--save", "Smoke Save"],
-    { env: { ...process.env, XDG_DATA_HOME: scratchData }, encoding: "utf8" },
-  );
-  if (created.status !== 0) {
-    throw new Error(`esm new-game failed: ${created.stderr}`);
+  // The OS data folder can only be pointed elsewhere on Linux (XDG_DATA_HOME);
+  // elsewhere the CLI would write into the real one, so the check is skipped.
+  const sharedFolderCheck = process.platform === "linux";
+  if (sharedFolderCheck) {
+    // spec: SAVE-007
+    // Given a save the CLI made without --data-dir, in this environment
+    const created = spawnSync(
+      cli,
+      ["new-game", "--manager", "Ana", "--team", "team:azure_tigers", "--save", "Smoke Save"],
+      { env: { ...process.env, XDG_DATA_HOME: scratchData }, encoding: "utf8" },
+    );
+    if (created.status !== 0) {
+      throw new Error(`esm new-game failed: ${created.stderr}`);
+    }
   }
   const driver: ChildProcess = spawn("tauri-driver", ["--port", String(DRIVER_PORT)], {
     stdio: "inherit",
@@ -98,12 +103,16 @@ async function main(): Promise<void> {
       if (!existsSync(join(scratchData, "esports-manager", "saves"))) {
         throw new Error(`the app did not create its saves folder under ${scratchData}`);
       }
-      // When the desktop app, in the same environment, lists its saves
-      await (await browser.$("a=Load Game")).click();
-      // Then it finds the CLI's save: both resolved the same data folder
-      const save = await browser.$("button*=Smoke Save");
-      await save.waitForDisplayed({ timeout: 20_000 });
-      console.log(`smoke test passed: "${title}" ${text}, and the CLI's save is listed`);
+      if (sharedFolderCheck) {
+        // When the desktop app, in the same environment, lists its saves
+        await (await browser.$("a=Load Game")).click();
+        // Then it finds the CLI's save: both resolved the same data folder
+        const save = await browser.$("button*=Smoke Save");
+        await save.waitForDisplayed({ timeout: 20_000 });
+      }
+      console.log(
+        `smoke test passed: "${title}" ${text}, shared data folder checked: ${sharedFolderCheck}`,
+      );
     } finally {
       await browser.deleteSession();
     }

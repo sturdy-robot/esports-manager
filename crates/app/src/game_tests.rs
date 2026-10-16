@@ -513,6 +513,21 @@ fn a_blank_seed_uses_the_random_one_and_ids_are_trimmed() {
 #[test]
 fn invisible_characters_are_refused() {
     let store = Store::default();
+    // Joiners are part of real names and emoji, so they pass.
+    let family = "Ana \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}";
+    assert!(
+        new_game(
+            &content(),
+            &store,
+            &request(
+                family,
+                "team:a",
+                "Persian \u{0645}\u{06CC}\u{200C}\u{062E}\u{0648}\u{0627}\u{0645}",
+                1
+            )
+        )
+        .is_ok()
+    );
     let zero_width = new_game(&content(), &store, &request("Ana", "team:a", "\u{200B}", 1));
     assert_eq!(
         zero_width,

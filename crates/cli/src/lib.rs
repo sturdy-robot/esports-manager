@@ -188,7 +188,7 @@ fn new_game(
     }
     let line = Message::new("cli-new-game-created")
         .text("file", opened.file.clone())
-        .message("team", opened.team.replace(':', "-"));
+        .message("team", opened.team_message.clone());
     print(out, &Text::new(&cli.locale, &package.texts).render(&line))
 }
 
@@ -408,8 +408,6 @@ fn store(cli: &Cli) -> Result<SqliteSaveStore, Failed> {
     Ok(SqliteSaveStore::new(locations.saves()))
 }
 
-/// The save a `--save` argument names: a save's name (ignoring case) or its
-/// file.
 /// The save a `--save` argument names: its file, or its name ignoring case.
 fn open(store: &SqliteSaveStore, wanted: &str) -> Result<db::SqliteSave, Failed> {
     let file = game::find_save(store, wanted).map_err(|e| Failed::from(game::query_message(&e)))?;

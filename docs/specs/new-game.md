@@ -27,6 +27,7 @@ The front door of the game. The main menu leads to New Game or Load Game. New Ga
 
 - **Manager name:** trimmed, 1 to 32 characters, with no control characters.
 - **Save name:** trimmed, 1 to 48 characters, with no control characters, unique among saves ignoring case. It defaults to the team's name in the UI.
+- "Control characters" includes invisible ones that hide or reorder text: zero-width spaces, bidirectional controls and the byte-order mark. The zero-width joiner and non-joiner are allowed, since names in some scripts and emoji need them. A name with no visible character is empty.
 - **Team:** must exist in the loaded content.
 - **Characters** are Unicode scalar values (Rust's `chars()`), never bytes, so "Ana Júlia" is 9 characters. The UI doesn't count them itself, and sets no `maxlength`; it shows the backend's errors.
 - Every error is reported, not just the first, and nothing is written.

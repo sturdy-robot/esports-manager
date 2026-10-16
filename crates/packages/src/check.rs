@@ -477,13 +477,8 @@ fn nickname_pool(
     let pinned_nicknames = content
         .players
         .iter()
+        // A pinned player on an unknown team is reported on its own.
         .filter(|p| p.value.nickname.is_some())
-        .filter(|p| {
-            content
-                .teams
-                .iter()
-                .any(|team| team.value.id == p.value.team)
-        })
         .count();
     let generated = places.saturating_sub(pinned_nicknames);
     let factor = usize::try_from(generation.nickname_pool_factor).unwrap_or(usize::MAX);
