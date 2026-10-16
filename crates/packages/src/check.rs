@@ -495,3 +495,18 @@ fn nickname_pool(
         ));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    /// Caught before parsing, so fluent-syntax never panics: the loader's
+    /// `catch_unwind` is only a backstop.
+    #[test]
+    fn cut_short_escapes_are_found_before_parsing() {
+        assert!(super::broken_escape("a = { \"\\u00é\" }").is_some());
+        assert!(super::broken_escape("a = { \"\\U0001é\" }").is_some());
+        assert_eq!(
+            super::broken_escape("a = { \"\\u00e9 \\U01F600\" } é"),
+            None
+        );
+    }
+}
