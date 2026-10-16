@@ -3,7 +3,8 @@
 use std::collections::BTreeMap;
 use std::fs::File;
 
-use app::saves::{ContentText, OpenSave, SaveError, SaveMeta};
+use app::content::ContentText;
+use app::saves::{OpenSave, SaveError, SaveMeta};
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use domain::id::ContentId;

@@ -1,54 +1,55 @@
 {
+  "$defs": {
+    "RegionDef": {
+      "additionalProperties": false,
+      "description": "A region, in `regions/`.",
+      "properties": {
+        "$schema": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "pattern": "^[a-z_]+:[a-z0-9_]+$",
+          "type": "string"
+        },
+        "level": {
+          "description": "Added to every team's mean strength in this region.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "nationalities": {
+          "additionalProperties": {
+            "format": "uint32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "description": "Nationality ids and their weights. The total must be positive.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "level",
+        "nationalities"
+      ],
+      "type": "object"
+    }
+  },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "OneOrMany",
-  "description": "What a content file holds: one entity, or a list of them. Used only to\ngenerate the schemas.",
   "anyOf": [
     {
       "$ref": "#/$defs/RegionDef"
     },
     {
-      "type": "array",
       "items": {
         "$ref": "#/$defs/RegionDef"
-      }
+      },
+      "type": "array"
     }
   ],
-  "$defs": {
-    "RegionDef": {
-      "description": "A region, in `regions/`.",
-      "type": "object",
-      "properties": {
-        "$schema": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "default": null
-        },
-        "id": {
-          "type": "string"
-        },
-        "level": {
-          "description": "Added to every team's mean strength in this region.",
-          "type": "integer",
-          "format": "int32"
-        },
-        "nationalities": {
-          "description": "Nationality ids and their weights. The total must be positive.",
-          "type": "object",
-          "additionalProperties": {
-            "type": "integer",
-            "format": "uint32",
-            "minimum": 0
-          }
-        }
-      },
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "level",
-        "nationalities"
-      ]
-    }
-  }
+  "description": "A region, in `regions/`.",
+  "title": "RegionDef"
 }

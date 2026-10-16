@@ -1,164 +1,150 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "OneOrMany",
-  "description": "What a content file holds: one entity, or a list of them. Used only to\ngenerate the schemas.",
-  "anyOf": [
-    {
-      "$ref": "#/$defs/PlayerDef"
-    },
-    {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/PlayerDef"
-      }
-    }
-  ],
   "$defs": {
     "PinnedAttributesDef": {
+      "additionalProperties": false,
       "description": "Attributes pinned on a player, in whole points from 1 to 99.",
-      "type": "object",
       "properties": {
         "aggression": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "awareness": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "champion_pool_breadth": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "composure": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "consistency": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "game_sense": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "laning": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "mechanics": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "positioning": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "potential": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "shotcalling": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "teamwork": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         },
         "work_ethic": {
+          "format": "uint32",
+          "maximum": 99,
+          "minimum": 1,
           "type": [
             "integer",
             "null"
-          ],
-          "format": "uint32",
-          "maximum": 99,
-          "minimum": 1
+          ]
         }
       },
-      "additionalProperties": false
+      "type": "object"
     },
     "PlayerDef": {
+      "additionalProperties": false,
       "description": "A player pinned by hand, in `players/`. Every field left out is\ngenerated.",
-      "type": "object",
       "properties": {
         "$schema": {
+          "default": null,
           "type": [
             "string",
             "null"
-          ],
-          "default": null
+          ]
         },
         "attributes": {
           "$ref": "#/$defs/PinnedAttributesDef"
         },
         "birth_date": {
           "description": "`YYYY-MM-DD`.",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
           "type": [
             "string",
             "null"
-          ],
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          ]
         },
         "family_name": {
           "type": [
@@ -173,6 +159,7 @@
           ]
         },
         "id": {
+          "pattern": "^[a-z_]+:[a-z0-9_]+$",
           "type": "string"
         },
         "nationality": {
@@ -194,12 +181,26 @@
           "type": "string"
         }
       },
-      "additionalProperties": false,
       "required": [
         "id",
         "team",
         "role"
-      ]
+      ],
+      "type": "object"
     }
-  }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/PlayerDef"
+    },
+    {
+      "items": {
+        "$ref": "#/$defs/PlayerDef"
+      },
+      "type": "array"
+    }
+  ],
+  "description": "A player pinned by hand, in `players/`. Every field left out is\ngenerated.",
+  "title": "PlayerDef"
 }

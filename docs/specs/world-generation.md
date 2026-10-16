@@ -86,7 +86,7 @@ A pinned player in `players/` keeps every field it sets, exactly. Every field it
 A package that fails any of these is rejected before generation, so New Game never fails part-way:
 
 - Every region's nationality mix has non-negative weights with a positive total.
-- Every nationality a region can draw has non-empty given-name and family-name pools.
+- Every nationality a region can draw, or a pinned player names, has non-empty given-name and family-name pools. A pinned player draws names too, even with both pinned, so pinning never shifts another draw.
 - The role set is non-empty with no duplicates, and `subs` doesn't exceed its size.
 - Pinned nicknames are unique, ignoring case.
 - The nickname pool has at least three times as many distinct entries (ignoring case), after pinned nicknames are removed, as there are generated players.

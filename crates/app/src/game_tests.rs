@@ -8,8 +8,9 @@ use esports::moba::fixtures::{id, template};
 use esports::moba::world::World;
 
 use super::*;
+use crate::content::ContentText;
 use crate::content::{Manifest, Problem};
-use crate::saves::{ContentText, SaveListing};
+use crate::saves::SaveListing;
 
 /// Content that loads the fixture template, or fails with fixed problems.
 struct Content(Result<Package, Vec<PackageError>>);

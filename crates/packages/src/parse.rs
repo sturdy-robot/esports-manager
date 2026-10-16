@@ -2,9 +2,9 @@
 //! [`defs`](crate::defs) type. Every problem is collected; nothing stops at
 //! the first error.
 
-use app::saves::ContentText;
+use app::content::ContentText;
 use serde::de::DeserializeOwned;
-use serde_json::Value;
+use serde_json::value::RawValue;
 
 use crate::defs::{
     CompetitionDef, GenerationDef, ManifestDef, NamePoolDef, NationalityDef, NicknamePoolDef,
@@ -64,6 +64,8 @@ pub struct Parsed {
     pub role_sets: Vec<Entry<RoleSetDef>>,
     pub teams: Vec<Entry<TeamDef>>,
     pub texts: Vec<ContentText>,
+    /// The required root files that exist, whether or not they parsed.
+    pub present: Vec<&'static str>,
 }
 
 pub fn parse(files: &PackageFiles, errors: &mut Vec<PackageError>) -> Parsed {
@@ -72,8 +74,14 @@ pub fn parse(files: &PackageFiles, errors: &mut Vec<PackageError>) -> Parsed {
     for (path, contents) in files.iter() {
         let (folder, rest) = path.split_once('/').unwrap_or(("", path));
         match folder {
-            "" if path == MANIFEST => parsed.manifest = single(path, contents, errors),
-            "" if path == WORLD => parsed.world = single(path, contents, errors),
+            "" if path == MANIFEST => {
+                parsed.present.push(MANIFEST);
+                parsed.manifest = single(path, contents, errors);
+            }
+            "" if path == WORLD => {
+                parsed.present.push(WORLD);
+                parsed.world = single(path, contents, errors);
+            }
             "" => errors.push(PackageError::new(path, "", Problem::UnexpectedFile)),
             LOCALES => text(path, rest, contents, &mut parsed, errors),
             _ if FOLDERS.iter().any(|(name, _)| *name == folder) => {
@@ -141,13 +149,7 @@ fn text(
             file: path.to_owned(),
             source,
         }),
-        Err(_) => errors.push(PackageError::new(
-            path,
-            "",
-            Problem::InvalidValue {
-                detail: "the file is not UTF-8".to_owned(),
-            },
-        )),
+        Err(_) => errors.push(PackageError::new(path, "", Problem::NotUtf8)),
     }
 }
 
@@ -158,19 +160,31 @@ fn has_extension(path: &str, extension: &str) -> bool {
         .is_some_and(|found| found == extension)
 }
 
-fn json(path: &str, contents: &[u8], errors: &mut Vec<PackageError>) -> Option<Value> {
-    serde_json::from_slice(contents)
-        .map_err(|error| {
-            errors.push(PackageError::new(
-                path,
-                "",
-                Problem::Syntax {
-                    line: error.line(),
-                    column: error.column(),
-                },
-            ));
-        })
-        .ok()
+/// The text of a JSON file, without the byte-order mark some editors add.
+fn json_text<'a>(
+    path: &str,
+    contents: &'a [u8],
+    errors: &mut Vec<PackageError>,
+) -> Option<&'a str> {
+    let Ok(text) = std::str::from_utf8(contents) else {
+        errors.push(PackageError::new(path, "", Problem::NotUtf8));
+        return None;
+    };
+    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
+    // Syntax first, for the whole file, so a list with a broken element is
+    // reported once, with its position.
+    if let Err(error) = serde_json::from_str::<serde::de::IgnoredAny>(text) {
+        errors.push(PackageError::new(
+            path,
+            "",
+            Problem::Syntax {
+                line: error.line(),
+                column: error.column(),
+            },
+        ));
+        return None;
+    }
+    Some(text)
 }
 
 /// A file that must hold one object, such as the manifest.
@@ -179,12 +193,12 @@ fn single<T: DeserializeOwned>(
     contents: &[u8],
     errors: &mut Vec<PackageError>,
 ) -> Option<Entry<T>> {
-    let value = json(path, contents, errors)?;
-    if !value.is_object() {
+    let text = json_text(path, contents, errors)?;
+    if !text.trim_start().starts_with('{') {
         errors.push(PackageError::new(path, "", Problem::NotAnEntity));
         return None;
     }
-    entity(path, String::new(), value, errors)
+    entity(path, String::new(), text, errors)
 }
 
 /// A content file: one object, or a list of them.
@@ -193,19 +207,24 @@ fn entities<T: DeserializeOwned>(
     contents: &[u8],
     errors: &mut Vec<PackageError>,
 ) -> Vec<Entry<T>> {
-    let Some(value) = json(path, contents, errors) else {
+    let Some(text) = json_text(path, contents, errors) else {
         return Vec::new();
     };
-    match value {
-        Value::Object(_) => entity(path, String::new(), value, errors)
+    match text.trim_start().chars().next() {
+        Some('{') => entity(path, String::new(), text, errors)
             .into_iter()
             .collect(),
-        Value::Array(items) => items
-            .into_iter()
-            .enumerate()
-            .filter_map(|(index, item)| entity(path, format!("[{index}]"), item, errors))
-            .collect(),
-        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => {
+        Some('[') => {
+            // Each element is typed from its own text, not from a parsed
+            // value, so a key repeated inside it is reported, not collapsed.
+            let items: Vec<Box<RawValue>> = serde_json::from_str(text).unwrap_or_default();
+            items
+                .iter()
+                .enumerate()
+                .filter_map(|(index, item)| entity(path, format!("[{index}]"), item.get(), errors))
+                .collect()
+        }
+        _ => {
             errors.push(PackageError::new(path, "", Problem::NotAnEntity));
             Vec::new()
         }
@@ -215,10 +234,11 @@ fn entities<T: DeserializeOwned>(
 fn entity<T: DeserializeOwned>(
     path: &str,
     prefix: String,
-    value: Value,
+    text: &str,
     errors: &mut Vec<PackageError>,
 ) -> Option<Entry<T>> {
-    match serde_path_to_error::deserialize::<_, T>(value) {
+    let mut deserializer = serde_json::Deserializer::from_str(text);
+    match serde_path_to_error::deserialize::<_, T>(&mut deserializer) {
         Ok(def) => Some(Entry {
             file: path.to_owned(),
             path: prefix,
@@ -248,6 +268,8 @@ fn classify(error: &serde_json::Error) -> Problem {
     };
     if let Some(field) = quoted("unknown field `") {
         Problem::UnknownField { field }
+    } else if let Some(field) = quoted("duplicate field `") {
+        Problem::DuplicateField { field }
     } else if let Some(field) = quoted("missing field `") {
         Problem::MissingField { field }
     } else {
@@ -349,7 +371,6 @@ mod tests {
 
     #[test]
     fn schema_pointers_are_accepted_on_single_objects() {
-        // spec: PKG-013
         // Given
         let contents = TEAM.replacen('{', r#"{"$schema": "../schemas/team.schema.json", "#, 1);
         // When
@@ -446,7 +467,7 @@ mod tests {
         files.insert("locales/en/a.ftl", vec![0xff, 0xfe]);
         let mut errors = Vec::new();
         parse(&files, &mut errors);
-        assert!(matches!(errors[0].problem, Problem::InvalidValue { .. }));
+        assert_eq!(errors[0].problem, Problem::NotUtf8);
     }
 
     #[test]

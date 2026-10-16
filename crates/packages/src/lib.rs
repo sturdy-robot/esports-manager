@@ -21,7 +21,7 @@ pub use app::content::{Manifest, NameKind, Package, PackageError, Problem};
 pub use files::PackageFiles;
 
 use convert::Located;
-use parse::{Entry, MANIFEST, WORLD};
+use parse::{Entry, MANIFEST, Parsed, WORLD};
 
 /// Loads the package in the directory `root`.
 ///
@@ -29,15 +29,23 @@ use parse::{Entry, MANIFEST, WORLD};
 ///
 /// Every problem found, sorted by file.
 pub fn load(root: &Path) -> Result<Package, Vec<PackageError>> {
-    let files = PackageFiles::read_dir(root).map_err(|error| {
-        vec![PackageError::new(
-            "",
+    let unreadable = |file: String, error: &std::io::Error| {
+        PackageError::new(
+            file,
             "",
             Problem::Unreadable {
                 reason: error.to_string(),
             },
-        )]
-    })?;
+        )
+    };
+    let (files, problems) = PackageFiles::read_dir_reporting(root)
+        .map_err(|error| vec![unreadable(root.display().to_string(), &error)])?;
+    if !problems.is_empty() {
+        return Err(problems
+            .iter()
+            .map(|(file, error)| unreadable(file.clone(), error))
+            .collect());
+    }
     load_files(&files)
 }
 
@@ -50,9 +58,9 @@ pub fn load_files(files: &PackageFiles) -> Result<Package, Vec<PackageError>> {
     let mut errors = Vec::new();
     let parsed = parse::parse(files, &mut errors);
 
-    let manifest = required(parsed.manifest.as_ref(), MANIFEST, &mut errors)
+    let manifest = required(&parsed, parsed.manifest.as_ref(), MANIFEST, &mut errors)
         .and_then(|entry| convert::manifest(entry, &mut errors));
-    let world = required(parsed.world.as_ref(), WORLD, &mut errors)
+    let world = required(&parsed, parsed.world.as_ref(), WORLD, &mut errors)
         .and_then(|entry| convert::world(entry, &mut errors));
     let regions = convert::all(&parsed.regions, &mut errors, convert::region);
     let nationalities = convert::all(&parsed.nationalities, &mut errors, convert::nationality);
@@ -64,14 +72,12 @@ pub fn load_files(files: &PackageFiles) -> Result<Package, Vec<PackageError>> {
     let roles = exactly_one(
         &parsed.role_sets,
         "roles/",
-        "role_set",
         convert::all(&parsed.role_sets, &mut errors, convert::role_set),
         &mut errors,
     );
     let generation = exactly_one(
         &parsed.generations,
         "generation/",
-        "generation",
         convert::all(&parsed.generations, &mut errors, convert::generation),
         &mut errors,
     );
@@ -88,8 +94,8 @@ pub fn load_files(files: &PackageFiles) -> Result<Package, Vec<PackageError>> {
             players: &players,
             roles: roles.as_ref(),
             generation: generation.as_ref(),
+            start_date: world.map(|world| world.start_date),
         },
-        manifest.as_ref(),
         &mut errors,
     );
 
@@ -120,12 +126,15 @@ pub fn load_files(files: &PackageFiles) -> Result<Package, Vec<PackageError>> {
     })
 }
 
+/// A required root file. It is missing only if the package has no such
+/// file; one that is there but broken has already been reported.
 fn required<'a, T>(
+    parsed: &Parsed,
     entry: Option<&'a Entry<T>>,
-    file: &str,
+    file: &'static str,
     errors: &mut Vec<PackageError>,
 ) -> Option<&'a Entry<T>> {
-    if entry.is_none() {
+    if entry.is_none() && !parsed.present.contains(&file) {
         errors.push(PackageError::new(file, "", Problem::MissingFile));
     }
     entry
@@ -135,7 +144,6 @@ fn required<'a, T>(
 fn exactly_one<D, V>(
     entries: &[Entry<D>],
     folder: &str,
-    kind: &str,
     converted: Vec<Located<V>>,
     errors: &mut Vec<PackageError>,
 ) -> Option<Located<V>> {
@@ -145,7 +153,7 @@ fn exactly_one<D, V>(
             file,
             "",
             Problem::WrongCount {
-                kind: kind.to_owned(),
+                folder: folder.to_owned(),
                 count: entries.len(),
             },
         ));

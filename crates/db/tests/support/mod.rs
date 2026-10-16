@@ -8,7 +8,8 @@
 
 use std::path::PathBuf;
 
-use app::saves::{ContentText, NewSave, PackageRecord, SaveMeta, Timestamp};
+use app::content::ContentText;
+use app::saves::{NewSave, PackageRecord, SaveMeta, Timestamp};
 use domain::rng::WorldSeed;
 use esports::Genre;
 use esports::moba::world::World;

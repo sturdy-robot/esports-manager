@@ -52,6 +52,7 @@ pub struct RegionDef {
     /// Added to every team's mean strength in this region.
     pub level: i32,
     /// Nationality ids and their weights. The total must be positive.
+    #[serde(deserialize_with = "unique_keys")]
     pub nationalities: BTreeMap<String, u32>,
 }
 
@@ -199,6 +200,7 @@ pub enum WeightKey {
 pub struct RoleDef {
     pub id: String,
     /// The weight of every attribute that counts toward overall.
+    #[serde(deserialize_with = "unique_keys")]
     pub weights: BTreeMap<WeightKey, u32>,
 }
 
@@ -227,28 +229,77 @@ pub struct GenerationDef {
     pub mu_per_reputation: f64,
     pub sigma_base: f64,
     pub sigma_per_reputation: f64,
+    #[schemars(range(min = 0.0))]
     pub sigma_min: f64,
+    #[schemars(range(min = 0.0))]
     pub attribute_spread: f64,
     pub bias_scale: f64,
     pub style_mean: f64,
+    #[schemars(range(min = 0.0))]
     pub style_spread: f64,
     pub consistency_mean: f64,
+    #[schemars(range(min = 0.0))]
     pub consistency_spread: f64,
     pub potential_peak_age: f64,
     pub potential_per_year: f64,
+    #[schemars(range(min = 0.0))]
     pub potential_spread: f64,
     pub age_mean: f64,
+    #[schemars(range(min = 0.0))]
     pub age_spread: f64,
     pub age_min: u8,
     pub age_max: u8,
+    #[schemars(range(min = 1))]
     pub nickname_pool_factor: u32,
 }
 
-/// What a content file holds: one entity, or a list of them. Used only to
-/// generate the schemas.
+/// What a content file holds: one entity, or a list of them. Only its
+/// schema is used; the loader reads the two shapes itself.
 #[derive(JsonSchema)]
 #[serde(untagged)]
 pub enum OneOrMany<T> {
     One(T),
     Many(Vec<T>),
+}
+
+/// A JSON object as a map that refuses a key given twice. Serde's own maps
+/// keep the last value silently; the loader never silently falls back.
+fn unique_keys<'de, D, K, V>(deserializer: D) -> Result<BTreeMap<K, V>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    K: Deserialize<'de> + Ord,
+    V: Deserialize<'de>,
+{
+    struct UniqueKeys<K, V>(std::marker::PhantomData<(K, V)>);
+
+    impl<'de, K, V> serde::de::Visitor<'de> for UniqueKeys<K, V>
+    where
+        K: Deserialize<'de> + Ord,
+        V: Deserialize<'de>,
+    {
+        type Value = BTreeMap<K, V>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("an object")
+        }
+
+        fn visit_map<A: serde::de::MapAccess<'de>>(
+            self,
+            mut map: A,
+        ) -> Result<Self::Value, A::Error> {
+            use serde::de::{Error, IntoDeserializer};
+            let mut values = BTreeMap::new();
+            while let Some(text) = map.next_key::<String>()? {
+                let key = K::deserialize(text.clone().into_deserializer())?;
+                let value = map.next_value()?;
+                if values.insert(key, value).is_some() {
+                    // The loader reads this wording as `DuplicateField`.
+                    return Err(A::Error::custom(format!("duplicate field `{text}`")));
+                }
+            }
+            Ok(values)
+        }
+    }
+
+    deserializer.deserialize_map(UniqueKeys(std::marker::PhantomData))
 }

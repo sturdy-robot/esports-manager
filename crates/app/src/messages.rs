@@ -93,7 +93,6 @@ pub fn package_error(error: &PackageError) -> Message {
 }
 
 fn problem(problem: &Problem) -> Message {
-    use esports::moba::roles::RoleSetError;
     match problem {
         Problem::Unreadable { reason } => {
             Message::new("problem-unreadable").text("reason", reason.clone())
@@ -105,8 +104,13 @@ fn problem(problem: &Problem) -> Message {
             .number("line", count(*line))
             .number("column", count(*column)),
         Problem::NotAnEntity => Message::new("problem-not-an-entity"),
+        Problem::NotUtf8 => Message::new("problem-not-utf8"),
+        Problem::Empty => Message::new("problem-empty"),
         Problem::UnknownField { field } => {
             Message::new("problem-unknown-field").text("field", field.clone())
+        }
+        Problem::DuplicateField { field } => {
+            Message::new("problem-duplicate-field").text("field", field.clone())
         }
         Problem::MissingField { field } => {
             Message::new("problem-missing-field").text("field", field.clone())
@@ -126,8 +130,11 @@ fn problem(problem: &Problem) -> Message {
         Problem::UnresolvedReference { field, id } => Message::new("problem-unresolved-reference")
             .text("field", field.clone())
             .text("id", id.clone()),
-        Problem::WrongCount { kind, count: found } => Message::new("problem-wrong-count")
-            .text("kind", kind.clone())
+        Problem::WrongCount {
+            folder,
+            count: found,
+        } => Message::new("problem-wrong-count")
+            .text("folder", folder.clone())
             .number("count", count(*found)),
         Problem::UnsupportedGenre { genre } => {
             Message::new("problem-unsupported-genre").text("genre", genre.clone())
@@ -144,36 +151,23 @@ fn problem(problem: &Problem) -> Message {
         Problem::InvalidMix { region } => {
             Message::new("problem-invalid-mix").text("region", region.to_string())
         }
-        Problem::EmptyNamePool {
-            nationality,
-            names: NameKind::Given,
-        } => Message::new("problem-empty-given-names").text("nationality", nationality.to_string()),
-        Problem::EmptyNamePool {
-            nationality,
-            names: NameKind::Family,
-        } => {
-            Message::new("problem-empty-family-names").text("nationality", nationality.to_string())
-        }
-        Problem::RoleSet(RoleSetError::Empty) => Message::new("problem-no-roles"),
-        Problem::RoleSet(RoleSetError::DuplicateRole(role)) => {
-            Message::new("problem-duplicate-role").text("role", role.to_string())
-        }
-        Problem::RoleSet(RoleSetError::MissingWeight { role, attribute }) => {
-            Message::new("problem-missing-weight")
-                .text("role", role.to_string())
-                .message("attribute", crate::views::attribute_message(*attribute))
-        }
-        Problem::RoleSet(RoleSetError::ZeroWeights(role)) => {
-            Message::new("problem-zero-weights").text("role", role.to_string())
-        }
+        Problem::EmptyNamePool { nationality, names } => Message::new(match names {
+            NameKind::Given => "problem-empty-given-names",
+            NameKind::Family => "problem-empty-family-names",
+        })
+        .text("nationality", nationality.to_string()),
+        Problem::RoleSet(error) => role_set_problem(error),
         Problem::TooManySubs { subs, roles } => Message::new("problem-too-many-subs")
             .number("subs", i64::from(*subs))
             .number("roles", count(*roles)),
-        Problem::DuplicateNickname { nickname, other } => {
-            Message::new("problem-duplicate-nickname")
-                .text("nickname", nickname.clone())
-                .text("other", other.to_string())
-        }
+        Problem::DuplicateNickname {
+            nickname,
+            player,
+            other,
+        } => Message::new("problem-duplicate-nickname")
+            .text("player", player.to_string())
+            .text("nickname", nickname.clone())
+            .text("other", other.to_string()),
         Problem::NicknamePoolTooSmall { distinct, needed } => Message::new("problem-nickname-pool")
             .number("distinct", count(*distinct))
             .number("needed", count(*needed)),
@@ -190,6 +184,22 @@ fn problem(problem: &Problem) -> Message {
                     .collect::<Vec<_>>()
                     .join(", "),
             ),
+    }
+}
+
+fn role_set_problem(error: &esports::moba::roles::RoleSetError) -> Message {
+    use esports::moba::roles::RoleSetError;
+    match error {
+        RoleSetError::Empty => Message::new("problem-no-roles"),
+        RoleSetError::DuplicateRole(role) => {
+            Message::new("problem-duplicate-role").text("role", role.to_string())
+        }
+        RoleSetError::MissingWeight { role, attribute } => Message::new("problem-missing-weight")
+            .text("role", role.to_string())
+            .message("attribute", crate::views::attribute_message(*attribute)),
+        RoleSetError::ZeroWeights(role) => {
+            Message::new("problem-zero-weights").text("role", role.to_string())
+        }
     }
 }
 
@@ -261,6 +271,9 @@ mod tests {
             Problem::UnexpectedFile,
             Problem::Syntax { line: 1, column: 2 },
             Problem::NotAnEntity,
+            Problem::NotUtf8,
+            Problem::Empty,
+            Problem::DuplicateField { field: "id".into() },
             Problem::UnknownField { field: "f".into() },
             Problem::MissingField { field: "f".into() },
             Problem::InvalidValue { detail: "d".into() },
@@ -280,7 +293,7 @@ mod tests {
                 id: "x".into(),
             },
             Problem::WrongCount {
-                kind: "k".into(),
+                folder: "roles/".into(),
                 count: 2,
             },
             Problem::UnsupportedGenre { genre: "g".into() },
@@ -313,6 +326,7 @@ mod tests {
             Problem::TooManySubs { subs: 6, roles: 5 },
             Problem::DuplicateNickname {
                 nickname: "n".into(),
+                player: id("player:b"),
                 other: id("player:a"),
             },
             Problem::NicknamePoolTooSmall {
@@ -327,7 +341,7 @@ mod tests {
         let ids: std::collections::BTreeSet<String> =
             problems.iter().map(|p| problem(p).id).collect();
         assert_eq!(ids.len(), problems.len());
-        let roster = problem(&problems[30]);
+        let roster = problem(problems.last().unwrap());
         assert_eq!(
             roster.args[1].value,
             ArgValue::Text("role:a, role:b".to_owned())

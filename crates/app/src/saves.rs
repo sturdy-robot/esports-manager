@@ -9,6 +9,8 @@ use esports::Genre;
 use esports::moba::roles::RoleSet;
 use esports::moba::world::{Player, World};
 
+use crate::content::ContentText;
+
 /// Real time, in whole seconds since the Unix epoch. Only adapters read the
 /// clock; the domain never sees this (ADR 0003).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -20,17 +22,6 @@ pub struct PackageRecord {
     pub id: String,
     pub version: String,
     pub content_hash: [u8; 32],
-}
-
-/// A `.ftl` file of a package's own text, copied into the save. The UI
-/// loads it into its Fluent bundles.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct ContentText {
-    pub locale: String,
-    /// Its path inside the package, such as `locales/en/teams.ftl`.
-    pub file: String,
-    pub source: String,
 }
 
 /// What every save records about itself (`save_meta`).

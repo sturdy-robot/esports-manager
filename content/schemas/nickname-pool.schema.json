@@ -1,45 +1,46 @@
 {
+  "$defs": {
+    "NicknamePoolDef": {
+      "additionalProperties": false,
+      "description": "Nicknames, in `nicknames/`. All pools are merged into one.",
+      "properties": {
+        "$schema": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "pattern": "^[a-z_]+:[a-z0-9_]+$",
+          "type": "string"
+        },
+        "nicknames": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "nicknames"
+      ],
+      "type": "object"
+    }
+  },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "OneOrMany",
-  "description": "What a content file holds: one entity, or a list of them. Used only to\ngenerate the schemas.",
   "anyOf": [
     {
       "$ref": "#/$defs/NicknamePoolDef"
     },
     {
-      "type": "array",
       "items": {
         "$ref": "#/$defs/NicknamePoolDef"
-      }
+      },
+      "type": "array"
     }
   ],
-  "$defs": {
-    "NicknamePoolDef": {
-      "description": "Nicknames, in `nicknames/`. All pools are merged into one.",
-      "type": "object",
-      "properties": {
-        "$schema": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "default": null
-        },
-        "id": {
-          "type": "string"
-        },
-        "nicknames": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "nicknames"
-      ]
-    }
-  }
+  "description": "Nicknames, in `nicknames/`. All pools are merged into one.",
+  "title": "NicknamePoolDef"
 }

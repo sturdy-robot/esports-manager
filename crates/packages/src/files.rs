@@ -31,9 +31,28 @@ impl PackageFiles {
     ///
     /// When a directory or file can't be read, or a path isn't UTF-8.
     pub fn read_dir(root: &Path) -> std::io::Result<Self> {
+        let (files, unreadable) = Self::read_dir_reporting(root)?;
+        match unreadable.into_iter().next() {
+            Some((_, error)) => Err(error),
+            None => Ok(files),
+        }
+    }
+
+    /// Reads every file under `root` it can, and reports each file or folder
+    /// it can't, by its path relative to the root. Symbolic links are
+    /// followed.
+    ///
+    /// # Errors
+    ///
+    /// When `root` itself can't be read.
+    pub fn read_dir_reporting(
+        root: &Path,
+    ) -> std::io::Result<(Self, Vec<(String, std::io::Error)>)> {
         let mut files = Self::new();
-        read_into(root, "", &mut files)?;
-        Ok(files)
+        let mut unreadable = Vec::new();
+        let entries = std::fs::read_dir(root)?;
+        read_into(entries, root, "", &mut files, &mut unreadable);
+        Ok((files, unreadable))
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&str, &[u8])> {
@@ -57,23 +76,45 @@ impl PackageFiles {
     }
 }
 
-fn read_into(dir: &Path, prefix: &str, files: &mut PackageFiles) -> std::io::Result<()> {
-    for entry in std::fs::read_dir(dir)? {
-        let entry = entry?;
-        let name = entry.file_name().into_string().map_err(|name| {
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                format!("{} is not a UTF-8 file name", name.to_string_lossy()),
-            )
-        })?;
+fn read_into(
+    entries: std::fs::ReadDir,
+    dir: &Path,
+    prefix: &str,
+    files: &mut PackageFiles,
+    unreadable: &mut Vec<(String, std::io::Error)>,
+) {
+    for entry in entries {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(error) => {
+                unreadable.push((prefix.to_owned(), error));
+                continue;
+            }
+        };
+        let name = match entry.file_name().into_string() {
+            Ok(name) => name,
+            Err(name) => {
+                let error =
+                    std::io::Error::new(std::io::ErrorKind::InvalidData, "not a UTF-8 file name");
+                unreadable.push((format!("{prefix}{}", name.to_string_lossy()), error));
+                continue;
+            }
+        };
         let relative = format!("{prefix}{name}");
-        if entry.file_type()?.is_dir() {
-            read_into(&entry.path(), &format!("{relative}/"), files)?;
-        } else {
-            files.insert(relative, std::fs::read(entry.path())?);
+        let path = dir.join(&name);
+        // `metadata` follows symbolic links, so a linked folder is read too.
+        match std::fs::metadata(&path) {
+            Ok(metadata) if metadata.is_dir() => match std::fs::read_dir(&path) {
+                Ok(inner) => read_into(inner, &path, &format!("{relative}/"), files, unreadable),
+                Err(error) => unreadable.push((format!("{relative}/"), error)),
+            },
+            Ok(_) => match std::fs::read(&path) {
+                Ok(contents) => files.insert(relative, contents),
+                Err(error) => unreadable.push((relative, error)),
+            },
+            Err(error) => unreadable.push((relative, error)),
         }
     }
-    Ok(())
 }
 
 #[cfg(test)]

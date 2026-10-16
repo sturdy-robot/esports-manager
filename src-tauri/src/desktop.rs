@@ -5,10 +5,11 @@
 
 use std::path::{Path, PathBuf};
 
+use app::content::ContentText;
 use app::game::{self, NewGameRequest};
 use app::locations::DataLocations;
 use app::messages::{Message, package_error};
-use app::saves::{ContentText, OpenSave, SaveStore, Timestamp};
+use app::saves::{OpenSave, SaveStore, Timestamp};
 use app::views::{Failure, NewGameOptions, PlayerProfile, RosterView, SaveSummary};
 use db::{SqliteSave, SqliteSaveStore};
 use packages::PackageDir;

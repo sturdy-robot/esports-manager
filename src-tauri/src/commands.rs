@@ -9,8 +9,9 @@
 
 use std::sync::{Mutex, MutexGuard};
 
+use app::content::ContentText;
 use app::messages::Message;
-use app::saves::{ContentText, Timestamp};
+use app::saves::Timestamp;
 use app::views::{Failure, NewGameOptions, PlayerProfile, RosterView, SaveSummary};
 use tauri::State;
 

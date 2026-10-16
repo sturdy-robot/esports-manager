@@ -73,6 +73,12 @@ impl ContentId {
         ))
     }
 
+    /// Whether `text` is a slug as packages write them: `a-z`, `0-9` and `_`.
+    #[must_use]
+    pub fn is_slug(text: &str) -> bool {
+        is_slug(text)
+    }
+
     fn from_parts(kind: &str, slug: &str) -> Self {
         Self {
             text: format!("{kind}:{slug}"),

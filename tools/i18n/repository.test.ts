@@ -49,9 +49,14 @@ describe("i18n gates", () => {
   });
 
   it("the core package's text covers every locale, with the same variables", () => {
+    // The package's own manifest says which locales it covers, and its first
+    // locale is the reference the others must match.
+    const manifest = JSON.parse(readFileSync(join(root, "content/core/manifest.json"), "utf8")) as {
+      locales: string[];
+    };
     const core = loadCatalogs(join(root, "content/core/locales"));
-    expect([...core.keys()]).toEqual(["en", "pt-BR"]);
-    expect(checkParity(DEFAULT_LOCALE, core)).toEqual([]);
+    expect([...core.keys()].sort()).toEqual([...manifest.locales].sort());
+    expect(checkParity(manifest.locales[0] ?? DEFAULT_LOCALE, core)).toEqual([]);
   });
 
   it("UI code shows no text that bypasses Fluent, and UI and Rust code use every message", () => {

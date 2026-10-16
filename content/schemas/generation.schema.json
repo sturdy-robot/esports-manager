@@ -1,116 +1,108 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "OneOrMany",
-  "description": "What a content file holds: one entity, or a list of them. Used only to\ngenerate the schemas.",
-  "anyOf": [
-    {
-      "$ref": "#/$defs/GenerationDef"
-    },
-    {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/GenerationDef"
-      }
-    }
-  ],
   "$defs": {
     "GenerationDef": {
+      "additionalProperties": false,
       "description": "The generator's constants, in `generation/`. A package defines exactly\none. See the world generation spec for what each one does.",
-      "type": "object",
       "properties": {
         "$schema": {
+          "default": null,
           "type": [
             "string",
             "null"
-          ],
-          "default": null
+          ]
         },
         "age_max": {
-          "type": "integer",
           "format": "uint8",
           "maximum": 255,
-          "minimum": 0
+          "minimum": 0,
+          "type": "integer"
         },
         "age_mean": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         },
         "age_min": {
-          "type": "integer",
           "format": "uint8",
           "maximum": 255,
-          "minimum": 0
+          "minimum": 0,
+          "type": "integer"
         },
         "age_spread": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "minimum": 0.0,
+          "type": "number"
         },
         "attribute_spread": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "minimum": 0.0,
+          "type": "number"
         },
         "bias_scale": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         },
         "consistency_mean": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         },
         "consistency_spread": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "minimum": 0.0,
+          "type": "number"
         },
         "id": {
+          "pattern": "^[a-z_]+:[a-z0-9_]+$",
           "type": "string"
         },
         "mu_base": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         },
         "mu_per_reputation": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         },
         "nickname_pool_factor": {
-          "type": "integer",
           "format": "uint32",
-          "minimum": 0
+          "minimum": 1,
+          "type": "integer"
         },
         "potential_peak_age": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         },
         "potential_per_year": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         },
         "potential_spread": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "minimum": 0.0,
+          "type": "number"
         },
         "sigma_base": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         },
         "sigma_min": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "minimum": 0.0,
+          "type": "number"
         },
         "sigma_per_reputation": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         },
         "style_mean": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         },
         "style_spread": {
-          "type": "number",
-          "format": "double"
+          "format": "double",
+          "minimum": 0.0,
+          "type": "number"
         }
       },
-      "additionalProperties": false,
       "required": [
         "id",
         "mu_base",
@@ -132,7 +124,22 @@
         "age_min",
         "age_max",
         "nickname_pool_factor"
-      ]
+      ],
+      "type": "object"
     }
-  }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/GenerationDef"
+    },
+    {
+      "items": {
+        "$ref": "#/$defs/GenerationDef"
+      },
+      "type": "array"
+    }
+  ],
+  "description": "The generator's constants, in `generation/`. A package defines exactly\none. See the world generation spec for what each one does.",
+  "title": "GenerationDef"
 }
