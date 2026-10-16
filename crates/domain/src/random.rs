@@ -31,11 +31,12 @@ pub fn normal(rng: &mut impl Rng, mean: f64, std_dev: f64) -> f64 {
 }
 
 /// Rounds `value` to the nearest integer, ties away from zero, and clamps it
-/// to `min..=max`. A NaN becomes `min`.
+/// to `min..=max`. A NaN becomes `min`, and so does any value when the range
+/// is empty (`min > max`).
 #[must_use]
 pub fn round_clamped(value: f64, min: i32, max: i32) -> i32 {
     let rounded = value.round();
-    if rounded.is_nan() {
+    if rounded.is_nan() || min > max {
         return min;
     }
     let bounded = rounded.clamp(f64::from(min), f64::from(max));
@@ -47,16 +48,16 @@ pub fn round_clamped(value: f64, min: i32, max: i32) -> i32 {
     whole
 }
 
-/// A uniform index into `0..len` without repeating any of `taken`, which
-/// must be sorted and within range. `None` when every index is taken.
+/// A uniform index into `0..len` that `taken` doesn't hold. Entries of
+/// `taken` at `len` or beyond are ignored. `None` when every index is taken.
 pub fn index_excluding(
     rng: &mut impl Rng,
     len: usize,
     taken: &std::collections::BTreeSet<usize>,
 ) -> Option<usize> {
-    let free = len.checked_sub(taken.len())?;
+    let free = len.checked_sub(taken.range(..len).count())?;
     let mut choice = index(rng, free)?;
-    for &used in taken {
+    for &used in taken.range(..len) {
         if used <= choice {
             choice += 1;
         } else {
@@ -294,6 +295,22 @@ mod tests {
             index_excluding(&mut stream(), 1, &std::collections::BTreeSet::from([0, 1])),
             None
         );
+    }
+
+    #[test]
+    fn index_excluding_ignores_taken_entries_out_of_range() {
+        let taken = std::collections::BTreeSet::from([5]);
+        let mut seen = std::collections::BTreeSet::new();
+        let mut rng = stream();
+        for _ in 0..100 {
+            seen.insert(index_excluding(&mut rng, 3, &taken).unwrap());
+        }
+        assert_eq!(seen, std::collections::BTreeSet::from([0, 1, 2]));
+    }
+
+    #[test]
+    fn round_clamped_handles_an_empty_range() {
+        assert_eq!(round_clamped(20.0, 30, 17), 30);
     }
 
     #[test]

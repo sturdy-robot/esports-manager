@@ -2,8 +2,8 @@
   "starters": [
     {
       "age": 21,
-      "familyName": "Yoo",
-      "givenName": "Su-a",
+      "familyName": "Noh",
+      "givenName": "Tae-yang",
       "id": "player:azure_tigers.1",
       "nameOrder": "familyFirst",
       "nationality": {
@@ -11,15 +11,15 @@
         "id": "nationality:kr",
         "nameMessage": "nationality-kr"
       },
-      "nickname": "Akimbo",
+      "nickname": "Pulsar",
       "overall": 85,
       "roleId": "role:top",
       "roleMessage": "role-top"
     },
     {
       "age": 21,
-      "familyName": "Yoon",
-      "givenName": "Sang-woo",
+      "familyName": "Hong",
+      "givenName": "Min-seo",
       "id": "player:azure_tigers.2",
       "nameOrder": "familyFirst",
       "nationality": {
@@ -27,7 +27,7 @@
         "id": "nationality:kr",
         "nameMessage": "nationality-kr"
       },
-      "nickname": "Visor",
+      "nickname": "Cedar",
       "overall": 82,
       "roleId": "role:jungle",
       "roleMessage": "role-jungle"
@@ -50,8 +50,8 @@
     },
     {
       "age": 26,
-      "familyName": "Nam",
-      "givenName": "Hae-won",
+      "familyName": "Yoo",
+      "givenName": "Seung-min",
       "id": "player:azure_tigers.3",
       "nameOrder": "familyFirst",
       "nationality": {
@@ -59,15 +59,15 @@
         "id": "nationality:kr",
         "nameMessage": "nationality-kr"
       },
-      "nickname": "Mirage",
+      "nickname": "Pick",
       "overall": 84,
       "roleId": "role:bot",
       "roleMessage": "role-bot"
     },
     {
       "age": 21,
-      "familyName": "Choi",
-      "givenName": "Min-seo",
+      "familyName": "Cho",
+      "givenName": "Ye-eun",
       "id": "player:azure_tigers.4",
       "nameOrder": "familyFirst",
       "nationality": {
@@ -75,7 +75,7 @@
         "id": "nationality:kr",
         "nameMessage": "nationality-kr"
       },
-      "nickname": "Poise",
+      "nickname": "Torque",
       "overall": 72,
       "roleId": "role:support",
       "roleMessage": "role-support"
@@ -84,8 +84,8 @@
   "subs": [
     {
       "age": 22,
-      "familyName": "Kim",
-      "givenName": "Young-jae",
+      "familyName": "Ahn",
+      "givenName": "Seo-jun",
       "id": "player:azure_tigers.5",
       "nameOrder": "familyFirst",
       "nationality": {
@@ -93,15 +93,15 @@
         "id": "nationality:kr",
         "nameMessage": "nationality-kr"
       },
-      "nickname": "Lattice",
+      "nickname": "Dagger",
       "overall": 73,
       "roleId": "role:top",
       "roleMessage": "role-top"
     },
     {
       "age": 26,
-      "familyName": "Jeon",
-      "givenName": "Woo-jin",
+      "familyName": "Moon",
+      "givenName": "Jae-won",
       "id": "player:azure_tigers.6",
       "nameOrder": "familyFirst",
       "nationality": {
@@ -109,7 +109,7 @@
         "id": "nationality:kr",
         "nameMessage": "nationality-kr"
       },
-      "nickname": "Kelp",
+      "nickname": "Visor",
       "overall": 83,
       "roleId": "role:mid",
       "roleMessage": "role-mid"

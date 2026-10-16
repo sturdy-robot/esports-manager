@@ -75,7 +75,8 @@ All ratings are clamped to 1–99, never folded with `abs()`. Folding is what pi
 
 - A player's nationality is drawn from their region's weighted `nationalities` mix.
 - **Given and family names** come from that nationality's pools. They are displayed in the nationality's `name_order`.
-- **Nicknames** come from one shared pool and are unique in the world, ignoring case. Each player's draw picks from the pool entries that are still unused, so generation always terminates. Pinned nicknames are taken out of the pool first.
+- **Nicknames** come from one shared pool and are unique in the world, ignoring case. Each player draws from the whole pool with their own stream and redraws while the nickname is taken; after 32 tries they draw among the unused entries, so generation always terminates. Another team's players can change a nickname only by taking the very one drawn. Pinned nicknames are taken out of the pool first.
+- **Name and nickname pools are sorted before any draw**, so how a package splits them across files never changes the world (packages spec: file names carry no meaning).
 
 ### Pinned players (`esports::moba`)
 

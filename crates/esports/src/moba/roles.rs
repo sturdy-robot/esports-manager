@@ -11,13 +11,17 @@ use domain::rating::{Rating, weighted_mean};
 
 use super::attributes::{MobaAttributes, OverallAttribute};
 
+/// How many attributes count toward overall, for the role's mean weight.
+const ATTRIBUTE_COUNT: f64 = 9.0;
+
 /// One role and the weight it gives each attribute that counts toward
 /// overall.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Role {
     id: ContentId,
     weights: [u32; 9],
-    total: u32,
+    /// The sum of the weights, in `u64` so large weights can't saturate it.
+    total: u64,
 }
 
 /// The roles of a world, in display order.
@@ -102,9 +106,7 @@ impl Role {
                 }),
             }
         }
-        let total = row
-            .iter()
-            .fold(0_u32, |sum, &weight| sum.saturating_add(weight));
+        let total: u64 = row.iter().map(|&weight| u64::from(weight)).sum();
         if errors.is_empty() && total == 0 {
             errors.push(RoleSetError::ZeroWeights(id.clone()));
         }
@@ -144,8 +146,12 @@ impl Role {
     /// role's mean weight. Attributes the role values more come out higher.
     #[must_use]
     pub fn bias(&self, attribute: OverallAttribute, scale: f64) -> f64 {
-        let count = f64::from(u8::try_from(OverallAttribute::ALL.len()).unwrap_or(u8::MAX));
-        let mean = f64::from(self.total) / count;
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "a sum of nine u32 weights is far below 2^53, so an f64 holds it exactly"
+        )]
+        let total = self.total as f64;
+        let mean = total / ATTRIBUTE_COUNT;
         scale * (f64::from(self.weight(attribute)) - mean) / mean
     }
 }
@@ -206,6 +212,12 @@ mod tests {
             }
         }
         attributes
+    }
+
+    #[test]
+    fn the_attribute_count_matches_the_attributes() {
+        assert!((ATTRIBUTE_COUNT - 9.0).abs() < f64::EPSILON);
+        assert_eq!(OverallAttribute::ALL.len(), 9);
     }
 
     #[test]
