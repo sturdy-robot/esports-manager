@@ -4,7 +4,7 @@ A spec describes one feature or system: what it does, its rules, its data, its U
 
 ## Status
 
-- **Draft:** a design document under discussion. It has no numbered scenarios yet and isn't checked by traceability.
+- **Draft:** a design document under discussion. It may already list proposed scenarios for review, but isn't checked by traceability.
 - **Accepted:** has numbered scenarios. Every scenario must have a test.
 - **Implemented:** every scenario has a passing test, and the feature has shipped.
 
@@ -45,3 +45,8 @@ fn rest_restores_stamina_overnight() {
 | [Attributes and overall](attributes.md) | `ATTR` | Draft |
 | [Champions and mastery](champions-and-mastery.md) | `CHAMP`, `MAST` | Draft |
 | [Competitions](competitions.md) | `COMP` | Draft |
+| [Content packages](packages.md) | `PKG` | Draft |
+| [World generation](world-generation.md) | `GEN` | Draft |
+| [Saves and data locations](saves.md) | `SAVE` | Draft |
+| [New Game, Load Game and the main menu](new-game.md) | `NEWG` | Draft |
+| [Roster and player profile](roster.md) | `ROST` | Draft |

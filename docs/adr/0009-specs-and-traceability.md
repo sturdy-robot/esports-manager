@@ -21,7 +21,7 @@ We plan before we code: every feature is specified before it's implemented, and 
   4. `just check` green
   5. review
   6. PR
-- A spec without numbered scenarios is a design document (status *Draft*). It becomes traceable when its scenarios are added, which happens in the PR that implements them.
+- A *Draft* spec is a design document. It may list proposed scenarios so they can be reviewed before any code, but it isn't traced. It becomes *Accepted*, and traceable, in the PR that implements its scenarios.
 
 ## Alternatives considered
 

@@ -4,8 +4,8 @@ The MVP is the smallest thing that is a game: one MOBA split, played from New Ga
 
 ## In scope
 
-- **New Game:** enter a manager name, pick a team in **one region with one league of 8 to 10 teams**. The world is built from the core package plus the generator.
-- **One split:** a round-robin regular season, then a playoff bracket. One qualification link from the regular season to the playoffs.
+- **New Game:** enter a manager name, pick a team in either of **two regions, each with one league** (10 and 8 teams in the core world). The world is built from the core package plus the generator. Starting with two regions keeps "the user's league" from being hard-coded anywhere, which Openfoot Manager found costly to undo later.
+- **One split in each league:** a round-robin regular season, then a playoff bracket, with one qualification link from the regular season to the playoffs. The other league's matches run on the same engine in instant mode.
 - **Roster and people:** roster view, player profiles, attributes, condition, champion pools and mastery tiers.
 - **Calendar:** day by day with three slots per day, plus an inbox that can block "Continue" until it is handled.
 - **Activities:**
@@ -31,10 +31,10 @@ The MVP is the smallest thing that is a game: one MOBA split, played from New Ga
 
 ## Out of scope
 
-Transfers and contract negotiation, finances, staff beyond a fixed-competence assistant, the solo-queue talent-discovery network, streaming, VOD review, patches, multiple regions and international events, season rollover, the World Editor, the minimap, MCP play-testing, Android.
+Transfers and contract negotiation, finances, staff beyond a fixed-competence assistant, the solo-queue talent-discovery network, streaming, VOD review, patches, more than two regions, international events, season rollover, the World Editor, the minimap, MCP play-testing, Android.
 
 ## Milestones toward it
 
 1. **Milestone 0, foundation:** the repository, tooling, CI, ADRs and draft specs.
-2. **Walking skeleton:** New Game → load core package → generate world → write SQLite save → show my roster, in both the CLI and the UI.
+2. **Walking skeleton:** New Game → load core package → generate world → write SQLite save → show my roster and player profiles, in both the CLI and the UI. Specs: [packages](../specs/packages.md), [world generation](../specs/world-generation.md), [attributes](../specs/attributes.md), [saves](../specs/saves.md), [new game](../specs/new-game.md), [roster](../specs/roster.md); content: [core world](core-world.md).
 3. **Match simulation design** (a dedicated session, prototyped in sim-bench), then the vertical features above, one spec at a time.

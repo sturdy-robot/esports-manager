@@ -16,7 +16,7 @@ The game is being rewritten in Rust + Tauri + React/TypeScript. The Python imple
 
 ## Walking skeleton
 
-New Game → load the core package → generate the world → write a SQLite save → show my roster, in the CLI and the UI.
+New Game → load the core package → generate a two-region world → write a SQLite save → show my roster and player profiles, in the CLI and the UI. Saves live in the OS data folder, or next to the executable in a portable build (Windows, Linux).
 
 ## 0.1.0: MVP
 
@@ -29,7 +29,7 @@ One MOBA split from New Game to the end-of-split evaluation. See [MVP scope](gam
 - Staff with attributes; streaming, VOD review and individual practice
 - Patches (from packages and from a generated balance team) and a world-discovered meta rating
 - Finances, sponsors and facilities; board firing
-- Multiple regions and international competitions
+- More than two regions, and international competitions
 - Schematic minimap in the match view
 - World Editor
 - MCP adapter for AI play-testing
