@@ -10,10 +10,10 @@ use app::game::{self, NewGameRequest};
 use app::locations::DataLocations;
 use app::messages::{Message, package_error};
 use app::saves::{OpenSave, SaveStore, Timestamp};
-use app::views::{Failure, NewGameOptions, PlayerProfile, RosterView, SaveSummary};
+use app::views::{Failure, GameOpened, NewGameOptions, PlayerProfile, RosterView, SaveSummary};
 use db::{SqliteSave, SqliteSaveStore};
 use packages::PackageDir;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 /// What New Game sends. The seed is text because a `u64` doesn't survive a
 /// JavaScript number.
@@ -24,14 +24,6 @@ pub struct NewGameInput {
     pub team: String,
     pub save_name: String,
     pub seed: Option<String>,
-}
-
-/// The save that is now open.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct GameOpened {
-    pub file: String,
-    pub team: String,
 }
 
 pub struct Desktop {
@@ -91,21 +83,15 @@ impl Desktop {
     pub fn start_new_game(
         &mut self,
         input: NewGameInput,
-        seed: u64,
+        random_seed: u64,
         now: Timestamp,
     ) -> Result<GameOpened, Failure> {
-        let seed = match &input.seed {
-            Some(text) if !text.trim().is_empty() => text
-                .trim()
-                .parse()
-                .map_err(|_| fail(Message::new("error-invalid-seed").text("seed", text.clone())))?,
-            _ => seed,
-        };
         let request = NewGameRequest {
             manager_name: input.manager_name,
             team: input.team,
             save_name: input.save_name,
-            seed,
+            seed: input.seed,
+            random_seed,
             now,
         };
         let created =

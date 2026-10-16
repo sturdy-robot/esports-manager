@@ -268,4 +268,56 @@ mod tests {
             "update CATALOGS in crates/cli/src/text.rs"
         );
     }
+
+    /// Every message of every catalog formats without a Fluent error in
+    /// every locale, given a value for each variable it names, with the core
+    /// package's text loaded for the names it refers to.
+    #[test]
+    fn every_message_formats_without_errors() {
+        let core =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/core/locales");
+        let mut texts = Vec::new();
+        for locale in LOCALES {
+            for file in std::fs::read_dir(core.join(locale)).unwrap() {
+                let path = file.unwrap().path();
+                texts.push(content(locale, &std::fs::read_to_string(path).unwrap()));
+            }
+        }
+        let mut problems = Vec::new();
+        for locale in LOCALES {
+            let bundle = bundle(locale, &texts);
+            for (_, file, source) in CATALOGS.iter().filter(|(l, _, _)| *l == locale) {
+                // Every `$name` in the file gets a value; a number suits both
+                // text and selectors.
+                let mut args = FluentArgs::new();
+                for name in source.split('$').skip(1) {
+                    let name: String = name
+                        .chars()
+                        .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+                        .collect();
+                    args.set(name, FluentValue::from(1));
+                }
+                let resource = FluentResource::try_new((*source).to_owned()).unwrap();
+                for entry in resource.entries() {
+                    let fluent_syntax::ast::Entry::Message(message) = entry else {
+                        continue;
+                    };
+                    let found = bundle.get_message(message.id.name).unwrap();
+                    let patterns = found
+                        .value()
+                        .into_iter()
+                        .chain(found.attributes().map(|a| a.value()));
+                    for pattern in patterns {
+                        let mut errors = Vec::new();
+                        let _ = bundle.format_pattern(pattern, Some(&args), &mut errors);
+                        if !errors.is_empty() {
+                            problems
+                                .push(format!("{locale}/{file}: {}: {errors:?}", message.id.name));
+                        }
+                    }
+                }
+            }
+        }
+        assert!(problems.is_empty(), "{problems:#?}");
+    }
 }

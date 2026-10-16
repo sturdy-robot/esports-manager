@@ -15,7 +15,7 @@
     "familyName": "Han",
     "givenName": "Do-yun",
     "id": "player:kairos",
-    "nameOrder": "familyFirst",
+    "nameOrder": "family-first",
     "nationality": {
       "code": "KR",
       "id": "nationality:kr",

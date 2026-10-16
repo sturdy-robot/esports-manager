@@ -19,7 +19,7 @@ use crate::saves::{
     Damage, NewSave, OpenSave, PackageRecord, SaveError, SaveMeta, SaveStore, Timestamp,
 };
 use crate::views::{
-    AttributeView, Crest, DamageView, NameOrderView, NationalityView, NewGameOptions,
+    AttributeView, Crest, DamageView, GameOpened, NameOrderView, NationalityView, NewGameOptions,
     PlayerProfile, RegionOption, RosterPlayer, RosterView, SaveSummary, TeamHeader, TeamOption,
     hidden_message, name_message, skill_message, strength_stars, trait_message,
 };
@@ -69,8 +69,11 @@ pub struct NewGameRequest {
     pub manager_name: String,
     pub team: String,
     pub save_name: String,
-    /// Drawn by the adapter from OS entropy, unless the user gave one.
-    pub seed: u64,
+    /// The seed the user typed, if any: a whole number, or blank.
+    pub seed: Option<String>,
+    /// The seed to use when the user gave none, drawn by the adapter from OS
+    /// entropy (the domain never draws one).
+    pub random_seed: u64,
     pub now: Timestamp,
 }
 
@@ -81,8 +84,20 @@ pub enum RequestProblem {
     ManagerNameTooLong,
     EmptySaveName,
     SaveNameTooLong,
-    ControlCharacters { field: &'static str },
-    UnknownTeam { team: String },
+    /// Control or invisible formatting characters, such as a right-to-left
+    /// override.
+    ControlCharacters {
+        field: &'static str,
+    },
+    UnknownTeam {
+        team: String,
+    },
+    SaveNameTaken {
+        name: String,
+    },
+    InvalidSeed {
+        seed: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -91,13 +106,6 @@ pub enum NewGameError {
     Package(Vec<PackageError>),
     Generation(GenerationError),
     Save(SaveError),
-}
-
-/// The new save.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NewGameCreated {
-    pub file: String,
-    pub team: ContentId,
 }
 
 /// Builds a world from the content and writes it as a new save.
@@ -110,21 +118,28 @@ pub fn new_game(
     content: &impl ContentSource,
     store: &impl SaveStore,
     request: &NewGameRequest,
-) -> Result<NewGameCreated, NewGameError> {
+) -> Result<GameOpened, NewGameError> {
     let package = content.load().map_err(NewGameError::Package)?;
-    let (manager_name, save_name, team) =
-        validate(request, &package).map_err(NewGameError::Invalid)?;
-    let world = generate(
-        &package.template,
-        &RngProvider::new(WorldSeed::new(request.seed)),
-    )
-    .map_err(NewGameError::Generation)?;
+    let taken: Vec<String> = store
+        .list()
+        .map_err(NewGameError::Save)?
+        .into_iter()
+        .filter_map(|listing| listing.save.ok().map(|meta| meta.name))
+        .collect();
+    let Valid {
+        manager_name,
+        save_name,
+        team,
+        seed,
+    } = validate(request, &package, &taken).map_err(NewGameError::Invalid)?;
+    let world = generate(&package.template, &RngProvider::new(WorldSeed::new(seed)))
+        .map_err(NewGameError::Generation)?;
     let meta = SaveMeta {
         name: save_name,
         manager_name,
         team: team.clone(),
         genre: package.manifest.genre,
-        seed: WorldSeed::new(request.seed),
+        seed: WorldSeed::new(seed),
         game_version: crate::about().version,
         game_date: package.template.settings.start_date,
         created_at: request.now,
@@ -142,24 +157,49 @@ pub fn new_game(
             texts: &package.texts,
         })
         .map_err(NewGameError::Save)?;
-    Ok(NewGameCreated { file, team })
+    Ok(GameOpened {
+        file,
+        team: team.to_string(),
+    })
+}
+
+/// A request that passed validation.
+struct Valid {
+    manager_name: String,
+    save_name: String,
+    team: ContentId,
+    seed: u64,
+}
+
+/// Characters that are invisible or change how text around them is laid
+/// out: zero-width spaces and joiners, bidirectional controls, the
+/// byte-order mark. Rust's `char::is_control` doesn't cover them.
+fn is_invisible_format(c: char) -> bool {
+    matches!(c, '\u{00AD}' | '\u{061C}' | '\u{180E}' | '\u{200B}'..='\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2060}'..='\u{2064}' | '\u{2066}'..='\u{206F}' | '\u{FEFF}')
 }
 
 fn validate(
     request: &NewGameRequest,
     package: &Package,
-) -> Result<(String, String, ContentId), Vec<RequestProblem>> {
+    taken: &[String],
+) -> Result<Valid, Vec<RequestProblem>> {
     let mut problems = Vec::new();
     let manager = request.manager_name.trim();
     let save = request.save_name.trim();
     let mut check = |text: &str, field: &'static str, empty, long, max: u8| {
-        let length = text.chars().count();
-        if length == 0 {
+        // A name made only of invisible characters is as empty as a blank one.
+        if text
+            .chars()
+            .all(|c| c.is_whitespace() || is_invisible_format(c))
+        {
             problems.push(empty);
-        } else if length > usize::from(max) {
+        } else if text.chars().count() > usize::from(max) {
             problems.push(long);
         }
-        if text.chars().any(char::is_control) {
+        if text
+            .chars()
+            .any(|c| c.is_control() || is_invisible_format(c))
+        {
             problems.push(RequestProblem::ControlCharacters { field });
         }
     };
@@ -177,17 +217,63 @@ fn validate(
         RequestProblem::SaveNameTooLong,
         SAVE_NAME_MAX,
     );
-    let team = ContentId::parse(&request.team)
+    let wanted = save.to_lowercase();
+    if !save.is_empty() && taken.iter().any(|name| name.to_lowercase() == wanted) {
+        problems.push(RequestProblem::SaveNameTaken {
+            name: save.to_owned(),
+        });
+    }
+    let team_text = request.team.trim();
+    let team = ContentId::parse(team_text)
         .ok()
         .filter(|id| package.template.teams.iter().any(|team| &team.id == id));
     if team.is_none() {
         problems.push(RequestProblem::UnknownTeam {
-            team: request.team.clone(),
+            team: team_text.to_owned(),
         });
     }
-    match team {
-        Some(team) if problems.is_empty() => Ok((manager.to_owned(), save.to_owned(), team)),
+    let seed = match request.seed.as_deref().map(str::trim) {
+        None | Some("") => Some(request.random_seed),
+        Some(text) => text.parse().ok(),
+    };
+    if seed.is_none() {
+        problems.push(RequestProblem::InvalidSeed {
+            seed: request.seed.clone().unwrap_or_default(),
+        });
+    }
+    match (team, seed) {
+        (Some(team), Some(seed)) if problems.is_empty() => Ok(Valid {
+            manager_name: manager.to_owned(),
+            save_name: save.to_owned(),
+            team,
+            seed,
+        }),
         _ => Err(problems),
+    }
+}
+
+/// The save a name or file names: a file name matches exactly first, then
+/// a save's name, ignoring case.
+///
+/// # Errors
+///
+/// When nothing matches, or several saves share the name.
+pub fn find_save(store: &impl SaveStore, wanted: &str) -> Result<String, QueryError> {
+    let listings = store.list()?;
+    if listings.iter().any(|listing| listing.file == wanted) {
+        return Ok(wanted.to_owned());
+    }
+    let lowered = wanted.to_lowercase();
+    let mut named = listings.iter().filter(|listing| {
+        listing
+            .save
+            .as_ref()
+            .is_ok_and(|meta| meta.name.to_lowercase() == lowered)
+    });
+    match (named.next(), named.next()) {
+        (Some(only), None) => Ok(only.file.clone()),
+        (Some(_), Some(_)) => Err(QueryError::AmbiguousSave(wanted.to_owned())),
+        (None, _) => Err(QueryError::Save(SaveError::NotFound(wanted.to_owned()))),
     }
 }
 
@@ -235,6 +321,8 @@ const fn damage_view(damage: Damage) -> DamageView {
 pub enum QueryError {
     UnknownTeam(String),
     UnknownPlayer(String),
+    /// Several saves have this name.
+    AmbiguousSave(String),
     Save(SaveError),
 }
 
@@ -414,6 +502,12 @@ fn request_message(problem: &RequestProblem) -> Message {
         RequestProblem::UnknownTeam { team } => {
             Message::new("error-unknown-team").text("team", team.clone())
         }
+        RequestProblem::SaveNameTaken { name } => {
+            Message::new("error-save-name-taken").text("name", name.clone())
+        }
+        RequestProblem::InvalidSeed { seed } => {
+            Message::new("error-invalid-seed").text("seed", seed.clone())
+        }
     }
 }
 
@@ -440,6 +534,9 @@ pub fn query_message(error: &QueryError) -> Message {
     match error {
         QueryError::UnknownTeam(team) => {
             Message::new("error-unknown-team").text("team", team.clone())
+        }
+        QueryError::AmbiguousSave(name) => {
+            Message::new("error-save-ambiguous").text("name", name.clone())
         }
         QueryError::UnknownPlayer(player) => {
             Message::new("error-unknown-player").text("player", player.clone())

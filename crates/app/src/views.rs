@@ -61,11 +61,24 @@ pub struct NewGameOptions {
     pub regions: Vec<RegionOption>,
 }
 
+/// Serialized as the selector key `person-full-name` expects, so the UI and
+/// the CLI pass it to Fluent as it is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "kebab-case")]
 pub enum NameOrderView {
     GivenFirst,
     FamilyFirst,
+}
+
+impl NameOrderView {
+    /// The `$order` value of the `person-full-name` message.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::GivenFirst => "given-first",
+            Self::FamilyFirst => "family-first",
+        }
+    }
 }
 
 impl From<NameOrder> for NameOrderView {
@@ -168,6 +181,14 @@ pub enum SaveSummary {
     },
     #[serde(rename_all = "camelCase")]
     Damaged { file: String, damage: DamageView },
+}
+
+/// The save that is now open: the result of New Game and Load Game.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct GameOpened {
+    pub file: String,
+    pub team: String,
 }
 
 /// A use case's failure, as messages an adapter can show.

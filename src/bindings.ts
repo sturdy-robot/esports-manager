@@ -66,7 +66,7 @@ export type Failure = {
 	messages: Message[],
 };
 
-/**  The save that is now open. */
+/**  The save that is now open: the result of New Game and Load Game. */
 export type GameOpened = {
 	file: string,
 	team: string,
@@ -83,7 +83,11 @@ export type MessageArg = {
 	value: ArgValue,
 };
 
-export type NameOrderView = "givenFirst" | "familyFirst";
+/**
+ *  Serialized as the selector key `person-full-name` expects, so the UI and
+ *  the CLI pass it to Fluent as it is.
+ */
+export type NameOrderView = "given-first" | "family-first";
 
 export type NationalityView = {
 	id: string,

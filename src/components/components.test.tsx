@@ -31,8 +31,8 @@ describe("PersonName", () => {
   it("follows the nationality's name order", () => {
     // spec: ROST-003
     // Given a Korean player Han Do-yun and a Brazilian player Caio Ribeiro
-    const korean = player("Do-yun", "Han", "familyFirst");
-    const brazilian = player("Caio", "Ribeiro", "givenFirst");
+    const korean = player("Do-yun", "Han", "family-first");
+    const brazilian = player("Caio", "Ribeiro", "given-first");
     // When their full names are shown
     renderWithProviders(
       <>

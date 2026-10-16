@@ -46,6 +46,14 @@ pub struct Package {
     pub texts: Vec<ContentText>,
 }
 
+/// A package already loaded is its own content source, so an adapter that
+/// needs its text too loads it once.
+impl ContentSource for Package {
+    fn load(&self) -> Result<Package, Vec<PackageError>> {
+        Ok(self.clone())
+    }
+}
+
 /// Where the game's content comes from.
 pub trait ContentSource {
     /// Loads and checks the content.

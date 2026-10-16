@@ -18,6 +18,8 @@ thiserror.workspace = true
 
 [dev-dependencies]
 esports = { workspace = true, features = ["test-support"] }
+fluent-bundle.workspace = true
+unic-langid.workspace = true
 
 [lints]
 workspace = true

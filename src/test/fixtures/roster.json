@@ -5,7 +5,7 @@
       "familyName": "Noh",
       "givenName": "Tae-yang",
       "id": "player:azure_tigers.1",
-      "nameOrder": "familyFirst",
+      "nameOrder": "family-first",
       "nationality": {
         "code": "KR",
         "id": "nationality:kr",
@@ -21,7 +21,7 @@
       "familyName": "Hong",
       "givenName": "Min-seo",
       "id": "player:azure_tigers.2",
-      "nameOrder": "familyFirst",
+      "nameOrder": "family-first",
       "nationality": {
         "code": "KR",
         "id": "nationality:kr",
@@ -37,7 +37,7 @@
       "familyName": "Han",
       "givenName": "Do-yun",
       "id": "player:kairos",
-      "nameOrder": "familyFirst",
+      "nameOrder": "family-first",
       "nationality": {
         "code": "KR",
         "id": "nationality:kr",
@@ -53,7 +53,7 @@
       "familyName": "Yoo",
       "givenName": "Seung-min",
       "id": "player:azure_tigers.3",
-      "nameOrder": "familyFirst",
+      "nameOrder": "family-first",
       "nationality": {
         "code": "KR",
         "id": "nationality:kr",
@@ -69,7 +69,7 @@
       "familyName": "Cho",
       "givenName": "Ye-eun",
       "id": "player:azure_tigers.4",
-      "nameOrder": "familyFirst",
+      "nameOrder": "family-first",
       "nationality": {
         "code": "KR",
         "id": "nationality:kr",
@@ -87,7 +87,7 @@
       "familyName": "Ahn",
       "givenName": "Seo-jun",
       "id": "player:azure_tigers.5",
-      "nameOrder": "familyFirst",
+      "nameOrder": "family-first",
       "nationality": {
         "code": "KR",
         "id": "nationality:kr",
@@ -103,7 +103,7 @@
       "familyName": "Moon",
       "givenName": "Jae-won",
       "id": "player:azure_tigers.6",
-      "nameOrder": "familyFirst",
+      "nameOrder": "family-first",
       "nationality": {
         "code": "KR",
         "id": "nationality:kr",
