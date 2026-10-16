@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OneOrMany",
+  "description": "What a content file holds: one entity, or a list of them. Used only to\ngenerate the schemas.",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/GenerationDef"
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/GenerationDef"
+      }
+    }
+  ],
+  "$defs": {
+    "GenerationDef": {
+      "description": "The generator's constants, in `generation/`. A package defines exactly\none. See the world generation spec for what each one does.",
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "age_max": {
+          "type": "integer",
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "age_mean": {
+          "type": "number",
+          "format": "double"
+        },
+        "age_min": {
+          "type": "integer",
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "age_spread": {
+          "type": "number",
+          "format": "double"
+        },
+        "attribute_spread": {
+          "type": "number",
+          "format": "double"
+        },
+        "bias_scale": {
+          "type": "number",
+          "format": "double"
+        },
+        "consistency_mean": {
+          "type": "number",
+          "format": "double"
+        },
+        "consistency_spread": {
+          "type": "number",
+          "format": "double"
+        },
+        "id": {
+          "type": "string"
+        },
+        "mu_base": {
+          "type": "number",
+          "format": "double"
+        },
+        "mu_per_reputation": {
+          "type": "number",
+          "format": "double"
+        },
+        "nickname_pool_factor": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "potential_peak_age": {
+          "type": "number",
+          "format": "double"
+        },
+        "potential_per_year": {
+          "type": "number",
+          "format": "double"
+        },
+        "potential_spread": {
+          "type": "number",
+          "format": "double"
+        },
+        "sigma_base": {
+          "type": "number",
+          "format": "double"
+        },
+        "sigma_min": {
+          "type": "number",
+          "format": "double"
+        },
+        "sigma_per_reputation": {
+          "type": "number",
+          "format": "double"
+        },
+        "style_mean": {
+          "type": "number",
+          "format": "double"
+        },
+        "style_spread": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "mu_base",
+        "mu_per_reputation",
+        "sigma_base",
+        "sigma_per_reputation",
+        "sigma_min",
+        "attribute_spread",
+        "bias_scale",
+        "style_mean",
+        "style_spread",
+        "consistency_mean",
+        "consistency_spread",
+        "potential_peak_age",
+        "potential_per_year",
+        "potential_spread",
+        "age_mean",
+        "age_spread",
+        "age_min",
+        "age_max",
+        "nickname_pool_factor"
+      ]
+    }
+  }
+}

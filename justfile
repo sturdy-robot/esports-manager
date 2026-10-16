@@ -13,7 +13,7 @@ default:
 check: rust-check frontend-check e2e smoke reuse mutants
 
 # Rust gates.
-rust-check: fmt-check clippy arch vocab trace coverage deny machete
+rust-check: fmt-check clippy arch vocab trace rest-patterns coverage deny machete
 
 # Frontend gates.
 frontend-check: typecheck lint knip coverage-frontend
@@ -33,6 +33,10 @@ dev:
 # Regenerate src/bindings.ts from the Tauri commands (ADR 0006).
 bindings:
     UPDATE_BINDINGS=1 cargo test --locked -p esports-manager typescript_bindings_are_up_to_date
+
+# Regenerates the package JSON Schemas in content/schemas from the Rust types (ADR 0005).
+schemas:
+    UPDATE_SCHEMAS=1 cargo test --locked -p packages json_schemas_are_up_to_date
 
 # Format all Rust and frontend code.
 fmt:
@@ -60,6 +64,10 @@ vocab:
 # Every scenario in an accepted spec has a test (ADR 0009).
 trace:
     cargo xtask trace
+
+# No rest patterns in package conversion modules (ADR 0005).
+rest-patterns:
+    cargo xtask rest-patterns
 
 # Runs the tests with coverage and checks each crate's minimum (quality.toml).
 coverage:

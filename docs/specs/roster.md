@@ -34,7 +34,7 @@ The roster is the first screen of a game: who is on the team, in which roles, an
 - **Nationality:** a badge with the uppercase country code (`KR`). Its accessible name is the country's name. The profile shows the name in full. Flag art comes later as package assets.
 - **Crest:** a monogram of the team tag on the team's first colour, bordered in its second (ADR 0010). The view also carries the monogram's text colour, which Rust picks (black or white) so the contrast against the first colour meets WCAG AA.
 - **Overall:** a whole number ([attributes](attributes.md)).
-- **Role names, attribute names and their groups** are UI messages. **Team, region and country names** are package messages.
+- **Attribute names and their groups** are UI messages, because attributes are defined in code. **Role, team, region and country names** are package messages, because the package defines them.
 
 ## UI
 

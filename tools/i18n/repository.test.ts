@@ -32,6 +32,12 @@ describe("i18n gates", () => {
     expect(checkParity(DEFAULT_LOCALE, catalogs)).toEqual([]);
   });
 
+  it("the core package's text covers every locale, with the same variables", () => {
+    const core = loadCatalogs(join(root, "content/core/locales"));
+    expect([...core.keys()]).toEqual(["en", "pt-BR"]);
+    expect(checkParity(DEFAULT_LOCALE, core)).toEqual([]);
+  });
+
   it("UI code shows no text that bypasses Fluent, and uses every message", () => {
     const used = new Set<string>();
     const violations: string[] = [];

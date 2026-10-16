@@ -17,14 +17,16 @@ A package is a directory. Its root holds `manifest.json`, and each **top-level f
 ```
 content/core/
   manifest.json
-  world.json                      start date and season label
+  world.json                      start date
   regions/          *.json        regions and their nationality mix
   nationalities/    *.json        countries, codes, name order
-  name-pools/       *.json        given and family names per nationality; nicknames
+  name-pools/       *.json        given and family names per nationality
+  nicknames/        *.json        nickname pools, merged into one
   competitions/     *.json        leagues (stages come with the competitions spec)
   teams/            **/*.json     teams
   players/          **/*.json     pinned players (any subset of fields)
-  rules/            *.json        role set, overall weights, generator constants
+  roles/            *.json        the role set with its overall weights, and the roster's subs
+  generation/       *.json        the generator's constants
   locales/en/       *.ftl         the package's own text
   locales/pt-BR/    *.ftl
 ```
@@ -33,7 +35,7 @@ content/core/
 - **A file holds one entity or a list of entities** of its folder's type.
 - **Files are read in sorted path order** (byte order of the path relative to the package root), so the loaded order and the order of reported errors are the same on every OS.
 - **An unknown top-level folder is an error**, so a typo like `team/` is reported instead of silently ignored. `locales/` is the only folder that doesn't hold JSON.
-- Genre-specific types (`rules/` today, `champions/` later) are defined by the genre module named in the manifest (`esports::moba`). Generic types (`regions/`, `teams/`, …) are defined in `packages` and converted into `domain` types.
+- Genre-specific types (`roles/`, `generation/` and `players/` today, `champions/` later) are defined by the genre module named in the manifest (`esports::moba`). Generic types (`regions/`, `teams/`, …) are defined in `packages` and converted into `domain` types.
 
 ### Ids (`packages`)
 
@@ -55,35 +57,38 @@ content/core/
 
 ### Text (`packages`, rendered by the UI)
 
-- **Names that can be translated are Fluent messages** in the package's `locales/<locale>/*.ftl`: regions, competitions, teams and nationalities. Each one's message id is derived from its entity id by one rule: replace `:` with `-` (`team:azure_tigers` → `team-azure_tigers`).
+- **Names that can be translated are Fluent messages** in the package's `locales/<locale>/*.ftl`: regions, competitions, teams, nationalities and roles. Each one's message id is derived from its entity id by one rule: replace `:` with `-` (`team:azure_tigers` → `team-azure_tigers`).
 - **People's names are data**, written in the JSON or drawn from name pools. They are proper nouns and are never translated.
 - A package declares the locales it supports in its manifest. Every derived message must exist in the package's first declared locale; a missing one is an error. A message missing in another locale falls back to that first locale when shown.
 - At New Game, the package's `.ftl` text is copied into the save, so a save keeps working if the package is later removed. The UI loads it from the save with its own catalogs.
 
 ### Manifest (`packages`)
 
-`manifest.json` declares `id`, `version` (semver), `title`, `license` (SPDX expression), `authors`, `genre` (`moba`), `locales`, and `dependencies` (empty for `core`). ADR 0005 also lists load order. That field is added with user packages, when something reads it: while only core loads it would be validated and then ignored, which ADR 0005 exists to prevent.
+`manifest.json` declares `id`, `version` (`major.minor.patch`), `title`, `license` (SPDX expression), `authors`, `genre` (`moba`) and `locales`. ADR 0005 also lists dependencies and load order. Those fields are added with user packages, when something reads them: while only core loads they would be validated and then ignored, which ADR 0005 exists to prevent.
+
+A package defines exactly one world, one role set and one set of generator constants.
 
 ### Schemas (`packages`)
 
 JSON Schemas are generated from the Rust package types with `schemars` and committed under `content/schemas/`. Each content type's schema accepts one entity or a list.
 
 - **A file that holds one object** may carry a top-level `$schema` field pointing at its schema. The loader accepts and skips it: it is editor metadata, not content. It is the only field allowed besides the type's own.
-- **A file that holds a list** can't carry `$schema`, because its top level is an array. Editors associate schemas by path instead: the repository's `.vscode/settings.json` maps `content/*/teams/**/*.json` and the other type folders to their schemas.
+- **A file that holds a list** can't carry `$schema`, because its top level is an array. An editor can still associate the schema by path (for example VS Code's `json.schemas` setting mapping `teams/**/*.json` to `team.schema.json`). Every file in `content/core` holds one object and carries `$schema`.
 
 ## Data
 
 | Type | Folder | Key fields (all moddable) |
 |---|---|---|
-| World | `world.json` | `start_date`, `season_label` |
+| World | `world.json` | `start_date` |
 | Region | `regions/` | `id`, `level` (strength offset), `nationalities` (weighted mix) |
 | Nationality | `nationalities/` | `id`, `code` (ISO 3166-1 alpha-2), `name_order` (`given_first` / `family_first`) |
-| Name pool | `name-pools/` | `nationality`, `given`, `family`; one shared `nicknames` pool |
+| Name pool | `name-pools/` | `nationality`, `given`, `family` |
+| Nickname pool | `nicknames/` | `nicknames`; every pool is merged into one |
 | Competition | `competitions/` | `id`, `region`, `teams` |
 | Team | `teams/` | `id`, `region`, `tag` (3 characters), `colours` (two hex colours), `reputation` (1–100) |
 | Player (pinned) | `players/` | `id`, `team`, then any subset of the generated fields |
-| Role set and weights | `rules/` | roles in display order; overall weights per role (see [attributes](attributes.md)) |
-| Generator constants | `rules/` | see [world generation](world-generation.md) |
+| Role set | `roles/` | roles in display order, each with its overall weights (see [attributes](attributes.md)); `subs` |
+| Generator constants | `generation/` | see [world generation](world-generation.md) |
 
 ## Scenarios
 

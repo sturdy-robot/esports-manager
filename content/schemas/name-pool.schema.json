@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OneOrMany",
+  "description": "What a content file holds: one entity, or a list of them. Used only to\ngenerate the schemas.",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/NamePoolDef"
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NamePoolDef"
+      }
+    }
+  ],
+  "$defs": {
+    "NamePoolDef": {
+      "description": "Given and family names of one nationality, in `name-pools/`.",
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "family": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "given": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "type": "string"
+        },
+        "nationality": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "nationality",
+        "given",
+        "family"
+      ]
+    }
+  }
+}

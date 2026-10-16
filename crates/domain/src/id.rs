@@ -100,6 +100,14 @@ impl ContentId {
     pub fn as_str(&self) -> &str {
         &self.text
     }
+
+    /// The Fluent message holding this content's translatable name:
+    /// `team:azure_tigers` → `team-azure_tigers` (packages spec). Only
+    /// package content has one; generated ids don't.
+    #[must_use]
+    pub fn message_id(&self) -> String {
+        format!("{}-{}", self.kind(), self.slug())
+    }
 }
 
 impl fmt::Display for ContentId {
@@ -224,6 +232,12 @@ mod tests {
         ] {
             assert!(ContentId::parse_stored(text).is_err(), "{text}");
         }
+    }
+
+    #[test]
+    fn message_ids_replace_the_colon_with_a_dash() {
+        assert_eq!(id("team:azure_tigers").message_id(), "team-azure_tigers");
+        assert_eq!(id("name_pool:kr").message_id(), "name_pool-kr");
     }
 
     #[test]

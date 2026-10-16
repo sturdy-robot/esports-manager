@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OneOrMany",
+  "description": "What a content file holds: one entity, or a list of them. Used only to\ngenerate the schemas.",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/TeamDef"
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TeamDef"
+      }
+    }
+  ],
+  "$defs": {
+    "TeamDef": {
+      "description": "A team, in `teams/`.",
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "colours": {
+          "description": "Two `#RRGGBB` colours: the crest's fill and its border.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        },
+        "id": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        },
+        "reputation": {
+          "description": "1 to 100.",
+          "type": "integer",
+          "format": "uint32",
+          "maximum": 100,
+          "minimum": 1
+        },
+        "tag": {
+          "description": "Three uppercase letters or digits.",
+          "type": "string",
+          "pattern": "^[A-Z0-9]{3}$"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "region",
+        "tag",
+        "colours",
+        "reputation"
+      ]
+    }
+  }
+}

@@ -7,6 +7,7 @@ mod arch;
 mod config;
 mod coverage;
 mod files;
+mod rest;
 mod trace;
 mod vocab;
 mod workspace;
@@ -16,7 +17,8 @@ use std::process::ExitCode;
 
 use anyhow::{Context, Result, bail};
 
-const USAGE: &str = "usage: cargo xtask <arch | vocab | trace | coverage <llvm-cov.json>>";
+const USAGE: &str =
+    "usage: cargo xtask <arch | vocab | trace | rest-patterns | coverage <llvm-cov.json>>";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -43,6 +45,7 @@ fn run(args: &[String]) -> Result<Vec<String>> {
         [check] if check == "arch" => arch::run(&root, &quality.architecture),
         [check] if check == "vocab" => vocab::run(&root, &quality.vocabulary),
         [check] if check == "trace" => trace::run(&root),
+        [check] if check == "rest-patterns" => rest::run(&root, &quality.packages.conversion),
         [check, report] if check == "coverage" => {
             coverage::run(&root, &quality.coverage, Path::new(report))
         }
