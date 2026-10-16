@@ -19,6 +19,8 @@ profile-skills = Skills
 profile-traits = Traits
 profile-hidden = Hidden
 profile-unknown = ?
+# What screen readers say for profile-unknown.
+profile-unknown-label = unknown
 attribute-mechanics = Mechanics
 attribute-laning = Laning
 attribute-game-sense = Game Sense

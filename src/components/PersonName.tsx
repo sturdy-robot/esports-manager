@@ -1,0 +1,13 @@
+import { useLocalization } from "@fluent/react";
+import type { RosterPlayer } from "../bindings";
+
+/** A player's full name, in their nationality's name order (roster spec). */
+export function usePersonName(): (player: RosterPlayer) => string {
+  const { l10n } = useLocalization();
+  return (player) =>
+    l10n.getString("person-full-name", {
+      order: player.nameOrder === "familyFirst" ? "family-first" : "given-first",
+      given: player.givenName,
+      family: player.familyName,
+    });
+}

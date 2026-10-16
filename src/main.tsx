@@ -4,7 +4,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { DEFAULT_LOCALE, negotiateLocales } from "./lib/i18n/locales";
-import { createLocalization } from "./lib/i18n/localization";
 
 async function start(root: HTMLElement): Promise<void> {
   if (import.meta.env.MODE === "e2e") {
@@ -14,12 +13,15 @@ async function start(root: HTMLElement): Promise<void> {
     installIpcMocks();
   }
 
+  // The backend is in the same process: a failure won't fix itself by
+  // retrying, and the user should see it at once.
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const locales = negotiateLocales(navigator.languages);
   document.documentElement.lang = locales[0] ?? DEFAULT_LOCALE;
 
   createRoot(root).render(
     <StrictMode>
-      <App l10n={createLocalization(locales)} queryClient={new QueryClient()} />
+      <App locales={locales} queryClient={queryClient} />
     </StrictMode>,
   );
 }

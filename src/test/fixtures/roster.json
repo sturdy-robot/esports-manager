@@ -1,0 +1,130 @@
+{
+  "starters": [
+    {
+      "age": 21,
+      "familyName": "Yoo",
+      "givenName": "Su-a",
+      "id": "player:azure_tigers.1",
+      "nameOrder": "familyFirst",
+      "nationality": {
+        "code": "KR",
+        "id": "nationality:kr",
+        "nameMessage": "nationality-kr"
+      },
+      "nickname": "Akimbo",
+      "overall": 85,
+      "roleId": "role:top",
+      "roleMessage": "role-top"
+    },
+    {
+      "age": 21,
+      "familyName": "Yoon",
+      "givenName": "Sang-woo",
+      "id": "player:azure_tigers.2",
+      "nameOrder": "familyFirst",
+      "nationality": {
+        "code": "KR",
+        "id": "nationality:kr",
+        "nameMessage": "nationality-kr"
+      },
+      "nickname": "Visor",
+      "overall": 82,
+      "roleId": "role:jungle",
+      "roleMessage": "role-jungle"
+    },
+    {
+      "age": 29,
+      "familyName": "Han",
+      "givenName": "Do-yun",
+      "id": "player:kairos",
+      "nameOrder": "familyFirst",
+      "nationality": {
+        "code": "KR",
+        "id": "nationality:kr",
+        "nameMessage": "nationality-kr"
+      },
+      "nickname": "Kairos",
+      "overall": 83,
+      "roleId": "role:mid",
+      "roleMessage": "role-mid"
+    },
+    {
+      "age": 26,
+      "familyName": "Nam",
+      "givenName": "Hae-won",
+      "id": "player:azure_tigers.3",
+      "nameOrder": "familyFirst",
+      "nationality": {
+        "code": "KR",
+        "id": "nationality:kr",
+        "nameMessage": "nationality-kr"
+      },
+      "nickname": "Mirage",
+      "overall": 84,
+      "roleId": "role:bot",
+      "roleMessage": "role-bot"
+    },
+    {
+      "age": 21,
+      "familyName": "Choi",
+      "givenName": "Min-seo",
+      "id": "player:azure_tigers.4",
+      "nameOrder": "familyFirst",
+      "nationality": {
+        "code": "KR",
+        "id": "nationality:kr",
+        "nameMessage": "nationality-kr"
+      },
+      "nickname": "Poise",
+      "overall": 72,
+      "roleId": "role:support",
+      "roleMessage": "role-support"
+    }
+  ],
+  "subs": [
+    {
+      "age": 22,
+      "familyName": "Kim",
+      "givenName": "Young-jae",
+      "id": "player:azure_tigers.5",
+      "nameOrder": "familyFirst",
+      "nationality": {
+        "code": "KR",
+        "id": "nationality:kr",
+        "nameMessage": "nationality-kr"
+      },
+      "nickname": "Lattice",
+      "overall": 73,
+      "roleId": "role:top",
+      "roleMessage": "role-top"
+    },
+    {
+      "age": 26,
+      "familyName": "Jeon",
+      "givenName": "Woo-jin",
+      "id": "player:azure_tigers.6",
+      "nameOrder": "familyFirst",
+      "nationality": {
+        "code": "KR",
+        "id": "nationality:kr",
+        "nameMessage": "nationality-kr"
+      },
+      "nickname": "Kelp",
+      "overall": 83,
+      "roleId": "role:mid",
+      "roleMessage": "role-mid"
+    }
+  ],
+  "team": {
+    "crest": {
+      "border": "#F2C14E",
+      "fill": "#1E5AA8",
+      "tag": "AZT",
+      "text": "#FFFFFF"
+    },
+    "id": "team:azure_tigers",
+    "leagueMessage": "competition-spl",
+    "nameMessage": "team-azure_tigers",
+    "regionMessage": "region-seorabeol"
+  }
+}

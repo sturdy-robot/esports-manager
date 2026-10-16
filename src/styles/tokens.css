@@ -17,6 +17,8 @@
   --text-primary: #e2e8f0;
   --text-muted: #a3b2c6;
   --text-accent: #7cb4fb;
+  /* Text on --accent-strong buttons (4.9:1). */
+  --text-on-accent: #ffffff;
 
   --accent: #3b82f6;
   --accent-strong: #2563eb;
