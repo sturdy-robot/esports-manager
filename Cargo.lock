@@ -1064,6 +1064,11 @@ name = "esports-manager"
 version = "0.0.0"
 dependencies = [
  "app",
+ "db",
+ "getrandom 0.4.3",
+ "packages",
+ "serde",
+ "serde_json",
  "specta",
  "specta-typescript",
  "tauri",

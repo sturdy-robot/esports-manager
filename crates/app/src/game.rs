@@ -201,20 +201,26 @@ pub fn list_saves(store: &impl SaveStore) -> Result<Vec<SaveSummary>, SaveError>
         .list()?
         .into_iter()
         .map(|listing| match listing.save {
-            Ok(meta) => SaveSummary::Ready {
-                file: listing.file,
-                name: meta.name,
-                manager_name: meta.manager_name,
-                team_message: name_message(&meta.team),
-                game_date: meta.game_date.to_string(),
-                last_played_at: meta.last_played_at.0,
-            },
+            Ok(meta) => summary(listing.file, &meta),
             Err(damage) => SaveSummary::Damaged {
                 file: listing.file,
                 damage: damage_view(damage),
             },
         })
         .collect())
+}
+
+/// The Load Game entry of a readable save.
+#[must_use]
+pub fn summary(file: String, meta: &SaveMeta) -> SaveSummary {
+    SaveSummary::Ready {
+        file,
+        name: meta.name.clone(),
+        manager_name: meta.manager_name.clone(),
+        team_message: name_message(&meta.team),
+        game_date: meta.game_date.to_string(),
+        last_played_at: meta.last_played_at.0,
+    }
 }
 
 const fn damage_view(damage: Damage) -> DamageView {

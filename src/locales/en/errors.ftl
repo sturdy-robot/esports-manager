@@ -11,6 +11,8 @@ error-control-characters = { $field ->
 } can't contain control characters.
 error-unknown-team = There is no team "{ $team }".
 error-unknown-player = There is no player "{ $player }".
+error-no-save-open = Open or start a game first.
+error-invalid-seed = "{ $seed }" is not a seed: use a whole number.
 error-generation = The world couldn't be generated from this package.
 error-save-name-taken = A save named "{ $name }" already exists.
 error-save-not-found = There is no save "{ $file }".

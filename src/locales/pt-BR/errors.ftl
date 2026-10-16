@@ -11,6 +11,8 @@ error-control-characters = { $field ->
 } não pode ter caracteres de controle.
 error-unknown-team = Não existe o time "{ $team }".
 error-unknown-player = Não existe o jogador "{ $player }".
+error-no-save-open = Abra ou comece um jogo primeiro.
+error-invalid-seed = "{ $seed }" não é uma semente: use um número inteiro.
 error-generation = Não foi possível gerar o mundo a partir deste pacote.
 error-save-name-taken = Já existe um jogo salvo chamado "{ $name }".
 error-save-not-found = Não existe o jogo salvo "{ $file }".

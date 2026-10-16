@@ -25,7 +25,7 @@ function uiSources(dir = join(root, "src")): string[] {
   });
 }
 
-/** Rust sources of the workspace crates, where adapters name messages. */
+/** Rust sources under `dir`: the workspace crates and the desktop adapter. */
 function rustSources(dir = join(root, "crates")): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -60,7 +60,7 @@ describe("i18n gates", () => {
       violations.push(...usage.violations);
     }
     const catalogIds = new Set(catalogs.get(DEFAULT_LOCALE)?.catalog.keys());
-    for (const file of rustSources()) {
+    for (const file of [...rustSources(), ...rustSources(join(root, "src-tauri/src"))]) {
       const usage = findRustUsage(relative(root, file), readFileSync(file, "utf8"), catalogIds);
       for (const id of usage.ids) {
         used.add(id);

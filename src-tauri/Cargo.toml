@@ -18,10 +18,18 @@ tauri-build.workspace = true
 
 [dependencies]
 app.workspace = true
+db.workspace = true
+getrandom.workspace = true
+packages.workspace = true
+serde.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
 tauri.workspace = true
 tauri-specta.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tauri = { workspace = true, features = ["test"] }
 
 [lints]
 workspace = true

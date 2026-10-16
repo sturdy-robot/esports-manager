@@ -22,8 +22,10 @@ pub struct PackageRecord {
     pub content_hash: [u8; 32],
 }
 
-/// A `.ftl` file of a package's own text, copied into the save.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// A `.ftl` file of a package's own text, copied into the save. The UI
+/// loads it into its Fluent bundles.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct ContentText {
     pub locale: String,
     /// Its path inside the package, such as `locales/en/teams.ftl`.
