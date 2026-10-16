@@ -73,4 +73,18 @@ describe("findRustUsage", () => {
     expect(usage.ids).toEqual(["attribute-mechanics"]);
     expect(usage.violations).toEqual([]);
   });
+
+  it("ignores ids that only tests use, but still checks them", () => {
+    const shipped = 'fn a() -> &str { "attribute-mechanics" }\n';
+    const tests =
+      '#[cfg(test)]\nmod tests { const B: &str = "error-storage"; fn c() { Message::new("error-gone"); } }\n';
+    const usage = findRustUsage("crates/a/src/lib.rs", shipped + tests, catalog);
+    expect(usage.ids).toEqual(["attribute-mechanics"]);
+    expect(usage.violations).toEqual([
+      'crates/a/src/lib.rs:3: message "error-gone" is not defined in the en catalog',
+    ]);
+    for (const file of ["crates/a/tests/e2e.rs", "crates/a/src/game_tests.rs"]) {
+      expect(findRustUsage(file, 'const A: &str = "error-storage";', catalog).ids).toEqual([]);
+    }
+  });
 });

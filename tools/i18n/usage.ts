@@ -132,6 +132,10 @@ export function checkUsage(
  * names a message as `Message::new("…")`, which must exist; any other string
  * literal that happens to be a catalog id (such as the `attribute-…` ids a
  * function returns) also counts as a use.
+ *
+ * Only shipped code uses a message: test files (`tests/`, `*_tests.rs`) and
+ * everything from a file's first `#[cfg(test)]` on are still checked for
+ * unknown ids, but don't keep a message alive.
  */
 export function findRustUsage(
   file: string,
@@ -141,20 +145,29 @@ export function findRustUsage(
   const ids = new Set<string>();
   const violations: string[] = [];
   const lineOf = (offset: number) => source.slice(0, offset).split("\n").length;
+  const testsStart = isRustTestFile(file) ? 0 : source.indexOf("#[cfg(test)]");
+  const shipped = testsStart === -1 ? source : source.slice(0, testsStart);
   for (const match of source.matchAll(/Message::new\(\s*"([^"]*)"/g)) {
     const id = match[1] ?? "";
-    ids.add(id);
+    if (match.index < shipped.length) {
+      ids.add(id);
+    }
     if (!catalogIds.has(id)) {
       violations.push(
         `${file}:${lineOf(match.index)}: message "${id}" is not defined in the en catalog`,
       );
     }
   }
-  for (const match of source.matchAll(/"([a-z][a-z0-9]*(?:-[a-z0-9]+)+)"/g)) {
+  for (const match of shipped.matchAll(/"([a-z][a-z0-9]*(?:-[a-z0-9]+)+)"/g)) {
     const id = match[1] ?? "";
     if (catalogIds.has(id)) {
       ids.add(id);
     }
   }
   return { ids: [...ids], violations };
+}
+
+function isRustTestFile(file: string): boolean {
+  const parts = file.split(/[\\/]/);
+  return parts.includes("tests") || (parts.at(-1) ?? "").endsWith("_tests.rs");
 }
