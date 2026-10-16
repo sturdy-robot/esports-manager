@@ -8,8 +8,6 @@
 
 A save is one SQLite file, and it is the world (ADR 0004). This spec fixes where the game keeps its files, including a **portable mode** where everything lives in one folder next to the executable, and how saves are created, listed and opened. The CLI and the desktop app find the same folder, so a save made in one can be played in the other.
 
-Items marked *(Proposed)* came from review and aren't confirmed yet.
-
 ## Rules
 
 ### Data folder (`app` resolves it, `db` gathers the environment)
@@ -69,7 +67,7 @@ How the folder is picked is decided in one pure function in `app`. Its inputs ar
 
 ### Opening
 
-- **One process at a time.** An open save is held exclusively by the process that opened it. Opening a save that the CLI or another window already has open is refused with a save-in-use error. This also means two processes never interleave writes to one world. *(Proposed.)*
+- **One process at a time.** An open save is held exclusively by the process that opened it. Opening a save that the CLI or another window already has open is refused with a save-in-use error. This also means two processes never interleave writes to one world.
 - Opening a save sets `last_played_at`.
 - A save whose schema version is newer than the game's is refused with an error saying it was made by a newer version. Older saves are migrated (ADR 0004); there are none yet.
 - Deleting and renaming saves come later.
