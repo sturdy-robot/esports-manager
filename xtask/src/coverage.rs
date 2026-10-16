@@ -2,12 +2,13 @@
 //! report.
 
 use std::collections::BTreeMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
 use crate::files;
+use crate::workspace::{self, TOOLING};
 
 #[derive(Debug, Deserialize)]
 struct Report {
@@ -37,38 +38,48 @@ pub struct Lines {
 }
 
 pub fn run(root: &Path, thresholds: &BTreeMap<String, u32>, report: &Path) -> Result<Vec<String>> {
-    let report: Report =
-        serde_json::from_str(&files::read(report)?).context("parsing the llvm-cov JSON report")?;
-    let entries = report
-        .data
-        .iter()
-        .flat_map(|export| &export.files)
-        .map(|file| (file.filename.as_str(), file.summary.lines));
-    let totals = per_crate(root, entries);
-    let (lines, violations) = check(thresholds, &totals);
+    let mut dirs = workspace::member_dirs(&workspace::metadata(root)?);
+    dirs.retain(|name, _| !TOOLING.contains(&name.as_str()));
+    let (lines, violations) = evaluate(&dirs, thresholds, &files::read(report)?)?;
     for line in lines {
         println!("{line}");
     }
     Ok(violations)
 }
 
-/// Sums line counts per crate for files under `<root>/crates/<crate>/`.
+/// Reads an llvm-cov JSON report and checks it against the thresholds.
+fn evaluate(
+    dirs: &BTreeMap<String, PathBuf>,
+    thresholds: &BTreeMap<String, u32>,
+    report: &str,
+) -> Result<(Vec<String>, Vec<String>)> {
+    let report: Report =
+        serde_json::from_str(report).context("parsing the llvm-cov JSON report")?;
+    let entries = report
+        .data
+        .iter()
+        .flat_map(|export| &export.files)
+        .map(|file| (file.filename.as_str(), file.summary.lines));
+    Ok(check(thresholds, &per_crate(dirs, entries)))
+}
+
+/// Sums line counts per workspace package. A file belongs to the package
+/// whose directory is the deepest one containing it; files outside every
+/// package (dependencies, tooling) are ignored.
 pub fn per_crate<'a>(
-    root: &Path,
+    dirs: &BTreeMap<String, PathBuf>,
     files: impl IntoIterator<Item = (&'a str, Lines)>,
 ) -> BTreeMap<String, Lines> {
-    let crates_dir = root.join("crates");
     let mut totals: BTreeMap<String, Lines> = BTreeMap::new();
     for (filename, lines) in files {
-        let Ok(relative) = Path::new(filename).strip_prefix(&crates_dir) else {
+        let owner = dirs
+            .iter()
+            .filter(|(_, dir)| Path::new(filename).starts_with(dir))
+            .max_by_key(|(_, dir)| dir.components().count());
+        let Some((name, _)) = owner else {
             continue;
         };
-        let Some(crate_name) = relative.components().next() else {
-            continue;
-        };
-        let total = totals
-            .entry(crate_name.as_os_str().to_string_lossy().into_owned())
-            .or_default();
+        let total = totals.entry(name.clone()).or_default();
         total.count += lines.count;
         total.covered += lines.covered;
     }
@@ -119,15 +130,26 @@ mod tests {
         Lines { count, covered }
     }
 
+    fn dirs() -> BTreeMap<String, PathBuf> {
+        BTreeMap::from([
+            ("app".to_owned(), PathBuf::from("/repo/crates/app")),
+            ("domain".to_owned(), PathBuf::from("/repo/crates/domain")),
+            (
+                "esports-manager".to_owned(),
+                PathBuf::from("/repo/src-tauri"),
+            ),
+        ])
+    }
+
     #[test]
-    fn sums_files_per_crate_and_ignores_files_elsewhere() {
-        let root = Path::new("/repo");
+    fn sums_files_per_package_and_ignores_files_elsewhere() {
         let totals = per_crate(
-            root,
+            &dirs(),
             [
                 ("/repo/crates/domain/src/a.rs", lines(10, 9)),
                 ("/repo/crates/domain/src/b.rs", lines(10, 10)),
                 ("/repo/crates/app/src/lib.rs", lines(4, 1)),
+                ("/repo/src-tauri/src/lib.rs", lines(8, 6)),
                 ("/repo/xtask/src/main.rs", lines(50, 0)),
                 ("/home/user/.cargo/registry/x.rs", lines(5, 0)),
             ],
@@ -137,8 +159,29 @@ mod tests {
             BTreeMap::from([
                 ("app".to_owned(), lines(4, 1)),
                 ("domain".to_owned(), lines(20, 19)),
+                ("esports-manager".to_owned(), lines(8, 6)),
             ])
         );
+    }
+
+    #[test]
+    fn a_file_belongs_to_the_deepest_package_containing_it() {
+        let dirs = BTreeMap::from([
+            ("outer".to_owned(), PathBuf::from("/repo/a")),
+            ("inner".to_owned(), PathBuf::from("/repo/a/b")),
+        ]);
+        let totals = per_crate(&dirs, [("/repo/a/b/src/lib.rs", lines(1, 1))]);
+        assert_eq!(totals, BTreeMap::from([("inner".to_owned(), lines(1, 1))]));
+    }
+
+    #[test]
+    fn sibling_directories_sharing_a_prefix_are_not_confused() {
+        let dirs = BTreeMap::from([("app".to_owned(), PathBuf::from("/repo/crates/app"))]);
+        let totals = per_crate(
+            &dirs,
+            [("/repo/crates/application/src/lib.rs", lines(1, 1))],
+        );
+        assert_eq!(totals, BTreeMap::new());
     }
 
     #[test]
@@ -180,25 +223,22 @@ mod tests {
     }
 
     #[test]
-    fn reads_an_llvm_cov_report() {
-        let dir = std::env::temp_dir().join(format!("xtask-coverage-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let report = dir.join("report.json");
-        std::fs::write(
-            &report,
-            r#"{"data":[{"files":[
-                {"filename":"/repo/crates/domain/src/lib.rs","summary":{"lines":{"count":10,"covered":5,"percent":50.0}}}
-            ]}]}"#,
-        )
-        .unwrap();
+    fn evaluates_an_llvm_cov_report() {
+        let report = r#"{"data":[{"files":[
+            {"filename":"/repo/crates/domain/src/lib.rs","summary":{"lines":{"count":10,"covered":5,"percent":50.0}}}
+        ]}]}"#;
         let thresholds = BTreeMap::from([("domain".to_owned(), 90)]);
 
-        let violations = run(Path::new("/repo"), &thresholds, &report).unwrap();
+        let (_, violations) = evaluate(&dirs(), &thresholds, report).unwrap();
 
-        std::fs::remove_dir_all(&dir).unwrap();
         assert_eq!(
             violations,
             ["crate `domain` has 50% line coverage, below its 90% minimum"]
         );
+    }
+
+    #[test]
+    fn a_malformed_report_is_an_error() {
+        assert!(evaluate(&dirs(), &BTreeMap::new(), "{}").is_err());
     }
 }

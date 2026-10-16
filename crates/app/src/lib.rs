@@ -2,4 +2,7 @@
 //!
 //! Adapters (the CLI, the desktop app) call use cases here and nothing else.
 
+mod about;
 pub mod rng;
+
+pub use about::{About, about};

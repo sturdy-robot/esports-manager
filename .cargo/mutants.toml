@@ -1,4 +1,8 @@
 # cargo-mutants configuration (ADR 0008).
-# xtask is development tooling, gated by its own tests but not by mutation.
-exclude_globs = ["xtask/**"]
 test_tool = "cargo"
+
+# - xtask is development tooling, gated by its own tests but not by mutation.
+# - The desktop entry points start a GUI event loop, which tests can't run.
+#   Each is one call; everything they call is tested elsewhere.
+exclude_globs = ["xtask/**", "src-tauri/src/main.rs"]
+exclude_re = ['src-tauri/src/lib\.rs.*replace run -> ']

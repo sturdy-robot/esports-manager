@@ -4,12 +4,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use cargo_metadata::{DependencyKind, MetadataCommand, PackageId};
+use cargo_metadata::{DependencyKind, PackageId};
 
 use crate::config::Architecture;
-
-/// Workspace members that are tooling, not part of the game's architecture.
-const TOOLING: [&str; 1] = ["xtask"];
+use crate::workspace::{self, TOOLING};
 
 /// What the check needs to know about one workspace crate.
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -21,12 +19,7 @@ pub struct CrateDeps {
 }
 
 pub fn run(root: &Path, config: &Architecture) -> Result<Vec<String>> {
-    let metadata = MetadataCommand::new()
-        .manifest_path(root.join("Cargo.toml"))
-        .other_options(vec!["--locked".to_owned()])
-        .exec()
-        .context("running cargo metadata")?;
-    Ok(check(config, &graph(&metadata)?))
+    Ok(check(config, &graph(&workspace::metadata(root)?)?))
 }
 
 fn graph(metadata: &cargo_metadata::Metadata) -> Result<BTreeMap<String, CrateDeps>> {

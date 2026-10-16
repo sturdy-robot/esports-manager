@@ -11,6 +11,8 @@ publish.workspace = true
 domain.workspace = true
 rand_chacha.workspace = true
 rand_core.workspace = true
+serde.workspace = true
+specta.workspace = true
 
 [lints]
 workspace = true
