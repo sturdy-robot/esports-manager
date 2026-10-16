@@ -159,6 +159,14 @@ mod tests {
     }
 
     #[test]
+    fn slugs_are_lowercase_letters_digits_and_underscores() {
+        assert!(ContentId::is_slug("azure_tigers_2"));
+        for text in ["", "Azure", "azure-tigers", "a.b", "a:b"] {
+            assert!(!ContentId::is_slug(text), "{text}");
+        }
+    }
+
+    #[test]
     fn a_package_id_has_a_kind_and_a_slug() {
         let team = id("team:azure_tigers");
         assert_eq!(team.kind(), "team");

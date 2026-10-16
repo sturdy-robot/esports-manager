@@ -1124,6 +1124,43 @@ fn a_broken_unicode_escape_is_a_syntax_error_not_a_crash() {
 }
 
 #[test]
+fn a_broken_long_unicode_escape_is_a_syntax_error_too() {
+    let mut fixture = Fixture::new();
+    fixture.text("locales/pt-BR/broken.ftl", "a = { \"\\U0001é\" }\n");
+    assert_eq!(
+        fixture.errors(),
+        [error(
+            "locales/pt-BR/broken.ftl",
+            "",
+            Problem::TextSyntax { line: 1 }
+        )]
+    );
+}
+
+#[test]
+fn a_map_field_that_is_not_an_object_says_what_it_expects() {
+    let fixture = Fixture::new();
+    let mut files = fixture.files();
+    files.insert(
+        "regions/r.json",
+        r#"{"id": "region:r", "level": 0, "nationalities": 5}"#,
+    );
+    let detail = load_files(&files)
+        .unwrap_err()
+        .into_iter()
+        .filter(|e| e.file == "regions/r.json")
+        .find_map(|e| {
+            if let Problem::InvalidValue { detail } = e.problem {
+                Some(detail)
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert!(detail.contains("expected an object"), "{detail}");
+}
+
+#[test]
 fn a_repeated_key_is_an_error_in_maps_too() {
     let fixture = Fixture::new();
     let mut files = fixture.files();
@@ -1193,7 +1230,15 @@ fn a_byte_order_mark_is_accepted_and_other_encodings_are_reported() {
     let mut files = fixture.files();
     let team = team("a").to_string();
     files.insert("teams/a.json", format!("\u{feff}{team}"));
-    assert!(load_files(&files).is_ok());
+    let text = format!("\u{feff}{}", fixture.texts["locales/en/names.ftl"]);
+    files.insert("locales/en/names.ftl", text);
+    let package = load_files(&files).unwrap();
+    assert!(
+        package
+            .texts
+            .iter()
+            .all(|text| !text.source.starts_with('\u{feff}'))
+    );
     files.insert("teams/a.json", vec![0xff, 0xfe, b'{', b'}']);
     assert!(
         load_files(&files)

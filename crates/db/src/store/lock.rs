@@ -19,16 +19,32 @@ pub(super) fn lock_path(path: &Path) -> PathBuf {
     PathBuf::from(name)
 }
 
-/// Takes the lock of `path`, or fails with `InUse` if another holder has it.
-/// The lock lasts as long as the returned file.
-pub(super) fn acquire(path: &Path) -> Result<File, SaveError> {
-    let file = File::options()
+/// How often, and how far apart, `acquire` tries before calling a save in
+/// use: another process may be checking the lock (`is_held`) for a moment.
+const TRIES: u32 = 10;
+const PAUSE: std::time::Duration = std::time::Duration::from_millis(20);
+
+fn open(path: &Path) -> Result<File, SaveError> {
+    File::options()
         .read(true)
         .write(true)
         .create(true)
         .truncate(false)
         .open(lock_path(path))
-        .map_err(|e| SaveError::Storage(e.to_string()))?;
+        .map_err(|e| SaveError::Storage(e.to_string()))
+}
+
+/// Takes the lock of `path`, or fails with `InUse` if another holder keeps
+/// it. The lock lasts as long as the returned file.
+pub(super) fn acquire(path: &Path) -> Result<File, SaveError> {
+    let file = open(path)?;
+    for _ in 1..TRIES {
+        match file.try_lock() {
+            Ok(()) => return Ok(file),
+            Err(TryLockError::WouldBlock) => std::thread::sleep(PAUSE),
+            Err(TryLockError::Error(error)) => return Err(SaveError::Storage(error.to_string())),
+        }
+    }
     match file.try_lock() {
         Ok(()) => Ok(file),
         Err(TryLockError::WouldBlock) => Err(SaveError::InUse),
@@ -36,11 +52,19 @@ pub(super) fn acquire(path: &Path) -> Result<File, SaveError> {
     }
 }
 
+/// Takes the lock of `path`, waiting for any other holder to let go.
+pub(super) fn wait(path: &Path) -> Result<File, SaveError> {
+    let file = open(path)?;
+    file.lock().map_err(|e| SaveError::Storage(e.to_string()))?;
+    Ok(file)
+}
+
 /// Whether someone holds the lock of `path`, this process included. A save
-/// without a lock file was never opened, so it isn't in use.
+/// without a lock file was never opened, so it isn't in use. The check takes
+/// a shared lock, so two processes checking never block each other.
 pub(super) fn is_held(path: &Path) -> bool {
     let Ok(file) = File::options().read(true).write(true).open(lock_path(path)) else {
         return false;
     };
-    matches!(file.try_lock(), Err(TryLockError::WouldBlock))
+    matches!(file.try_lock_shared(), Err(TryLockError::WouldBlock))
 }

@@ -113,6 +113,7 @@ dependencies = [
  "rand_chacha",
  "rand_core",
  "serde",
+ "serde_json",
  "specta",
  "thiserror 2.0.21",
  "unic-langid",

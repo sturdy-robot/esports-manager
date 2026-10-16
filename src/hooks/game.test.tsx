@@ -73,8 +73,12 @@ describe("the game's queries", () => {
 
 describe("the game's mutations", () => {
   it("refresh everything that depends on the open save", async () => {
-    vi.mocked(commands.startNewGame).mockReturnValue(ok({ file: "a.esmsave", team: "team:a" }));
-    vi.mocked(commands.openSave).mockReturnValue(ok({ file: "a.esmsave", team: "team:a" }));
+    vi.mocked(commands.startNewGame).mockReturnValue(
+      ok({ file: "a.esmsave", team: "team:a", teamMessage: "team-a" }),
+    );
+    vi.mocked(commands.openSave).mockReturnValue(
+      ok({ file: "a.esmsave", team: "team:a", teamMessage: "team-a" }),
+    );
     const { client, wrapper: w } = wrapper();
     const invalidate = vi.spyOn(client, "invalidateQueries");
     const start = renderHook(() => useStartNewGame(), { wrapper: w }).result;
@@ -90,7 +94,9 @@ describe("the game's mutations", () => {
 
   it("drop the previous save's rosters and profiles, even when nothing shows them", async () => {
     // Given a roster and a profile cached from one save, and no screen showing them
-    vi.mocked(commands.openSave).mockReturnValue(ok({ file: "b.esmsave", team: "team:b" }));
+    vi.mocked(commands.openSave).mockReturnValue(
+      ok({ file: "b.esmsave", team: "team:b", teamMessage: "team-b" }),
+    );
     const { client, wrapper: w } = wrapper();
     client.setQueryData(["roster", null], { stale: true });
     client.setQueryData(["player", "player:kairos"], { stale: true });

@@ -3,8 +3,8 @@
 //! Everything after this works on [`PackageFiles`], so the loader's rules are
 //! tested without touching the filesystem.
 
-use std::collections::BTreeMap;
-use std::path::Path;
+use std::collections::{BTreeMap, BTreeSet};
+use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
@@ -40,7 +40,10 @@ impl PackageFiles {
 
     /// Reads every file under `root` it can, and reports each file or folder
     /// it can't, by its path relative to the root. Symbolic links are
-    /// followed.
+    /// followed, so a package can link in a folder kept elsewhere. A link to
+    /// the package's own folder or one above it (`..`, `~`, `/`), or to a
+    /// folder already read, is reported instead, so a link can't make the
+    /// loader loop or read the whole disk.
     ///
     /// # Errors
     ///
@@ -51,7 +54,14 @@ impl PackageFiles {
         let mut files = Self::new();
         let mut unreadable = Vec::new();
         let entries = std::fs::read_dir(root)?;
-        read_into(entries, root, "", &mut files, &mut unreadable);
+        let real_root = std::fs::canonicalize(root)?;
+        let mut walk = Walk {
+            root: real_root.clone(),
+            visited: BTreeSet::from([real_root]),
+            files: &mut files,
+            unreadable: &mut unreadable,
+        };
+        walk.read(entries, root, "");
         Ok((files, unreadable))
     }
 
@@ -76,43 +86,76 @@ impl PackageFiles {
     }
 }
 
-fn read_into(
-    entries: std::fs::ReadDir,
-    dir: &Path,
-    prefix: &str,
-    files: &mut PackageFiles,
-    unreadable: &mut Vec<(String, std::io::Error)>,
-) {
-    for entry in entries {
-        let entry = match entry {
-            Ok(entry) => entry,
-            Err(error) => {
-                unreadable.push((prefix.to_owned(), error));
-                continue;
+/// One reading of a package folder.
+struct Walk<'a> {
+    /// The package root, with links resolved.
+    root: PathBuf,
+    /// Every folder read so far, with links resolved.
+    visited: BTreeSet<PathBuf>,
+    files: &'a mut PackageFiles,
+    unreadable: &'a mut Vec<(String, std::io::Error)>,
+}
+
+impl Walk<'_> {
+    fn read(&mut self, entries: std::fs::ReadDir, dir: &Path, prefix: &str) {
+        // Sorted, so problems are reported in the same order on every OS.
+        let mut entries: Vec<_> = entries.collect();
+        entries.sort_by_key(|entry| entry.as_ref().map(std::fs::DirEntry::file_name).ok());
+        for entry in entries {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(error) => {
+                    self.unreadable.push((prefix.to_owned(), error));
+                    continue;
+                }
+            };
+            let name = match entry.file_name().into_string() {
+                Ok(name) => name,
+                Err(name) => {
+                    let error = std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "not a UTF-8 file name",
+                    );
+                    self.unreadable
+                        .push((format!("{prefix}{}", name.to_string_lossy()), error));
+                    continue;
+                }
+            };
+            let relative = format!("{prefix}{name}");
+            let path = dir.join(&name);
+            // `metadata` follows symbolic links, so a linked folder is read too.
+            match std::fs::metadata(&path) {
+                Ok(metadata) if metadata.is_dir() => self.folder(&path, &format!("{relative}/")),
+                Ok(_) => match std::fs::read(&path) {
+                    Ok(contents) => self.files.insert(relative, contents),
+                    Err(error) => self.unreadable.push((relative, error)),
+                },
+                Err(error) => self.unreadable.push((relative, error)),
             }
+        }
+    }
+
+    fn folder(&mut self, path: &Path, relative: &str) {
+        let refuse = |reason: &str| std::io::Error::new(std::io::ErrorKind::InvalidInput, reason);
+        let real = match std::fs::canonicalize(path) {
+            Ok(real) => real,
+            Err(error) => return self.unreadable.push((relative.to_owned(), error)),
         };
-        let name = match entry.file_name().into_string() {
-            Ok(name) => name,
-            Err(name) => {
-                let error =
-                    std::io::Error::new(std::io::ErrorKind::InvalidData, "not a UTF-8 file name");
-                unreadable.push((format!("{prefix}{}", name.to_string_lossy()), error));
-                continue;
-            }
-        };
-        let relative = format!("{prefix}{name}");
-        let path = dir.join(&name);
-        // `metadata` follows symbolic links, so a linked folder is read too.
-        match std::fs::metadata(&path) {
-            Ok(metadata) if metadata.is_dir() => match std::fs::read_dir(&path) {
-                Ok(inner) => read_into(inner, &path, &format!("{relative}/"), files, unreadable),
-                Err(error) => unreadable.push((format!("{relative}/"), error)),
-            },
-            Ok(_) => match std::fs::read(&path) {
-                Ok(contents) => files.insert(relative, contents),
-                Err(error) => unreadable.push((relative, error)),
-            },
-            Err(error) => unreadable.push((relative, error)),
+        if self.root.starts_with(&real) {
+            return self.unreadable.push((
+                relative.to_owned(),
+                refuse("links to a folder that holds the package"),
+            ));
+        }
+        if !self.visited.insert(real) {
+            return self.unreadable.push((
+                relative.to_owned(),
+                refuse("links to a folder already read"),
+            ));
+        }
+        match std::fs::read_dir(path) {
+            Ok(inner) => self.read(inner, path, relative),
+            Err(error) => self.unreadable.push((relative.to_owned(), error)),
         }
     }
 }
@@ -187,5 +230,22 @@ mod tests {
             hex,
             "1403ca0b13a95fe4c2d9fbb85ea908c4c61c18856539735b9673ffeffa47df6d"
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn links_to_the_package_or_above_it_are_refused() {
+        let root = std::env::temp_dir().join(format!("esm-package-links-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("teams")).unwrap();
+        std::fs::write(root.join("teams/a.json"), "{}").unwrap();
+        std::os::unix::fs::symlink("/", root.join("teams/disk")).unwrap();
+        std::os::unix::fs::symlink("..", root.join("teams/up")).unwrap();
+        let (files, unreadable) = PackageFiles::read_dir_reporting(&root).unwrap();
+        std::fs::remove_dir_all(&root).unwrap();
+        let paths: Vec<&str> = files.iter().map(|(path, _)| path).collect();
+        assert_eq!(paths, ["teams/a.json"]);
+        let refused: Vec<&str> = unreadable.iter().map(|(path, _)| path.as_str()).collect();
+        assert_eq!(refused, ["teams/disk/", "teams/up/"]);
     }
 }

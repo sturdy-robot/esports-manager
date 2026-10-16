@@ -66,6 +66,8 @@ pub fn files(dir: &std::path::Path) -> Vec<String> {
     let mut names: Vec<String> = std::fs::read_dir(dir)
         .unwrap()
         .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        // The folder's creation lock stays once a save was ever created.
+        .filter(|name| name != ".create.lock")
         .collect();
     names.sort();
     names

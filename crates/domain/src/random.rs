@@ -36,10 +36,11 @@ pub fn normal(rng: &mut impl Rng, mean: f64, std_dev: f64) -> f64 {
 #[must_use]
 pub fn round_clamped(value: f64, min: i32, max: i32) -> i32 {
     let rounded = value.round();
-    if rounded.is_nan() || min > max {
+    if rounded.is_nan() {
         return min;
     }
-    let bounded = rounded.clamp(f64::from(min), f64::from(max));
+    // An empty range clamps to `min..=min`.
+    let bounded = rounded.clamp(f64::from(min), f64::from(max.max(min)));
     #[expect(
         clippy::cast_possible_truncation,
         reason = "rounded and clamped to an i32 range just above"
@@ -311,6 +312,8 @@ mod tests {
     #[test]
     fn round_clamped_handles_an_empty_range() {
         assert_eq!(round_clamped(20.0, 30, 17), 30);
+        assert_eq!(round_clamped(40.0, 30, 17), 30);
+        assert_eq!(round_clamped(40.0, 30, 30), 30);
     }
 
     #[test]

@@ -136,12 +136,9 @@ impl Desktop {
             .store
             .open(file, now)
             .map_err(|e| fail(game::save_message(&e)))?;
-        let team = save.meta().team.to_string();
+        let opened = GameOpened::new(file.to_owned(), &save.meta().team);
         self.open = Some((file.to_owned(), save));
-        Ok(GameOpened {
-            file: file.to_owned(),
-            team,
-        })
+        Ok(opened)
     }
 
     fn save(&mut self) -> Result<&mut SqliteSave, Failure> {
@@ -246,7 +243,8 @@ mod tests {
             opened,
             GameOpened {
                 file: "tigers.esmsave".into(),
-                team: "team:azure_tigers".into()
+                team: "team:azure_tigers".into(),
+                team_message: "team-azure_tigers".into(),
             }
         );
         let roster = desktop.roster(None).unwrap();

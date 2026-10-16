@@ -189,6 +189,19 @@ pub enum SaveSummary {
 pub struct GameOpened {
     pub file: String,
     pub team: String,
+    /// The team's name message.
+    pub team_message: String,
+}
+
+impl GameOpened {
+    #[must_use]
+    pub fn new(file: String, team: &ContentId) -> Self {
+        Self {
+            file,
+            team: team.to_string(),
+            team_message: team.message_id(),
+        }
+    }
 }
 
 /// A use case's failure, as messages an adapter can show.
@@ -254,6 +267,17 @@ pub fn strength_stars(reputation: u8) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_name_order_reads_as_its_message_selector_and_its_json() {
+        for (order, text) in [
+            (NameOrderView::GivenFirst, "given-first"),
+            (NameOrderView::FamilyFirst, "family-first"),
+        ] {
+            assert_eq!(order.as_str(), text);
+            assert_eq!(serde_json::to_value(order).unwrap(), text);
+        }
+    }
 
     #[test]
     fn strength_stars_come_from_reputation() {

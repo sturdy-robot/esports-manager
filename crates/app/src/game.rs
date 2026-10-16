@@ -157,10 +157,7 @@ pub fn new_game(
             texts: &package.texts,
         })
         .map_err(NewGameError::Save)?;
-    Ok(GameOpened {
-        file,
-        team: team.to_string(),
-    })
+    Ok(GameOpened::new(file, &team))
 }
 
 /// A request that passed validation.
@@ -172,10 +169,12 @@ struct Valid {
 }
 
 /// Characters that are invisible or change how text around them is laid
-/// out: zero-width spaces and joiners, bidirectional controls, the
-/// byte-order mark. Rust's `char::is_control` doesn't cover them.
+/// out: zero-width spaces, bidirectional controls, the byte-order mark.
+/// Rust's `char::is_control` doesn't cover them. The zero-width joiner and
+/// non-joiner (U+200C, U+200D) are allowed: Persian and Indic names and emoji
+/// sequences need them.
 fn is_invisible_format(c: char) -> bool {
-    matches!(c, '\u{00AD}' | '\u{061C}' | '\u{180E}' | '\u{200B}'..='\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2060}'..='\u{2064}' | '\u{2066}'..='\u{206F}' | '\u{FEFF}')
+    matches!(c, '\u{00AD}' | '\u{061C}' | '\u{180E}' | '\u{200B}' | '\u{200E}'..='\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2060}'..='\u{2064}' | '\u{2066}'..='\u{206F}' | '\u{FEFF}')
 }
 
 fn validate(

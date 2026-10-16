@@ -127,7 +127,7 @@ export function installIpcMocks(): void {
         lastPlayedAt: 1_792_100_000,
       });
       open = { file, team: input.team };
-      return open;
+      return { ...open, teamMessage: input.team.replace(":", "-") };
     },
     list_saves: (): SaveSummary[] => saves,
     open_save: (args): GameOpened => {
@@ -141,7 +141,7 @@ export function installIpcMocks(): void {
       saves.splice(index, 1);
       saves.unshift(save.status === "ready" ? { ...save, lastPlayedAt: 1_792_100_000 } : save);
       open = { file, team: teamOf(save) };
-      return open;
+      return { ...open, teamMessage: open.team.replace(":", "-") };
     },
     get_roster: (args): RosterView => {
       if (open === undefined) {

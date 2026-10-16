@@ -87,4 +87,9 @@ describe("findRustUsage", () => {
       expect(findRustUsage(file, 'const A: &str = "error-storage";', catalog).ids).toEqual([]);
     }
   });
+
+  it("a test module declared elsewhere doesn't end the shipped code", () => {
+    const source = '#[cfg(test)]\nmod drift;\n\nfn a() -> &str { "error-storage" }\n';
+    expect(findRustUsage("crates/a/src/lib.rs", source, catalog).ids).toEqual(["error-storage"]);
+  });
 });

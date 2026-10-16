@@ -244,6 +244,8 @@ pub(super) fn commit_with(
     // Some file systems (FAT on a USB stick, say) have no hard links. Creating
     // the target with `create_new` claims the name atomically, so a save that
     // appears in the meantime is never replaced; the bytes are then copied.
+    // The target's lock is held meanwhile, so nobody opens a half-copied save.
+    let _copying = super::lock::acquire(target)?;
     let mut destination = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)

@@ -67,7 +67,7 @@ How the folder is picked is decided in one pure function in `app`. Its inputs ar
 
 ### Opening
 
-- **One process at a time.** An open save is held exclusively by the process that opened it, through an OS lock on a file beside it (`tigers.esmsave.lock`). The OS releases the lock when the process ends, so a crash never leaves a save locked. Opening a save that the CLI or another window already has open is refused with a save-in-use error. Its metadata can still be read, so Load Game lists it in its place, marked as open elsewhere. This also means two processes never interleave writes to one world.
+- **One process at a time.** An open save is held exclusively by the process that opened it, through an OS lock on a file beside it (`tigers.esmsave.lock`). The OS releases the lock when the process ends, so a crash never leaves a save locked. Opening a save that the CLI or another window already has open is refused with a save-in-use error. Its metadata can still be read, so Load Game lists it in its place, marked as open elsewhere. This also means two processes never interleave writes to one world. Creating a save takes a lock on the folder (`saves/.create.lock`) from checking the name to moving the file into place, so two processes creating at once can't both take the same name.
 - Opening a save sets `last_played_at`.
 - A save whose schema version is newer than the game's is refused with an error saying it was made by a newer version. Older saves are migrated (ADR 0004); there are none yet.
 - Deleting and renaming saves come later.
