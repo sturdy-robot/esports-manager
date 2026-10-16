@@ -11,7 +11,7 @@ use crate::defs::{
     PlayerDef, RegionDef, RoleSetDef, TeamDef, WorldDef,
 };
 use crate::files::PackageFiles;
-use crate::report::{PackageError, Problem};
+use app::content::{PackageError, Problem};
 
 pub const MANIFEST: &str = "manifest.json";
 pub const WORLD: &str = "world.json";

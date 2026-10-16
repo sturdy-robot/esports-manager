@@ -1,7 +1,7 @@
 # Attributes and overall
 
 - **Prefix:** `ATTR`
-- **Status:** Draft
+- **Status:** Accepted
 - **Related:** [ADR 0002](../adr/0002-genre-seam.md), [condition](condition.md), [champions and mastery](champions-and-mastery.md), [world generation](world-generation.md), [roster](roster.md)
 
 ## Summary

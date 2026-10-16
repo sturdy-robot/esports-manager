@@ -18,8 +18,7 @@ esports.workspace = true
 libsqlite3-sys = { version = "0.38.2", features = ["bundled"] }
 
 [dev-dependencies]
-rand_chacha.workspace = true
-rand_core.workspace = true
+esports = { workspace = true, features = ["test-support"] }
 
 [lints]
 workspace = true

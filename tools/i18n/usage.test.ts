@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkUsage, findUsage } from "./usage";
+import { checkUsage, findRustUsage, findUsage } from "./usage";
 
 describe("findUsage", () => {
   it("collects ids from <Localized> and getString()", () => {
@@ -48,5 +48,29 @@ describe("checkUsage", () => {
       'message "z" is used in code but not defined in the en catalog',
       'message "b" is defined but never used',
     ]);
+  });
+});
+
+describe("findRustUsage", () => {
+  const catalog = new Set(["error-storage", "attribute-mechanics"]);
+
+  it("collects ids named with Message::new and flags unknown ones", () => {
+    const source =
+      'let a = Message::new("error-storage");\nlet b = Message::new( "error-missing" );\n';
+    const usage = findRustUsage("a.rs", source, catalog);
+    expect(usage.ids.sort()).toEqual(["error-missing", "error-storage"]);
+    expect(usage.violations).toEqual([
+      'a.rs:2: message "error-missing" is not defined in the en catalog',
+    ]);
+  });
+
+  it("counts other literals only when they are catalog ids", () => {
+    const usage = findRustUsage(
+      "a.rs",
+      'match x { A => "attribute-mechanics", B => "not-a-message" }',
+      catalog,
+    );
+    expect(usage.ids).toEqual(["attribute-mechanics"]);
+    expect(usage.violations).toEqual([]);
   });
 });

@@ -10,11 +10,13 @@ use esports::moba::content::{GenerationParams, PinnedPlayer, RosterRules};
 use esports::moba::roles::{Role, RoleSet};
 use fluent_syntax::ast;
 
-use crate::convert::{Located, Manifest};
+use app::content::Manifest;
+
+use crate::convert::Located;
 use app::saves::ContentText;
 
 use crate::parse::{Entry, Parsed};
-use crate::report::{NameKind, PackageError, Problem};
+use app::content::{NameKind, PackageError, Problem};
 
 /// Everything that converted cleanly, by kind.
 pub struct Content<'a> {

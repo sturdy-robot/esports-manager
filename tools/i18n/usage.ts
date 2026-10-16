@@ -126,3 +126,35 @@ export function checkUsage(
   }
   return violations;
 }
+
+/**
+ * Message ids Rust code refers to (ADR 0007: ids used in TS or Rust). Rust
+ * names a message as `Message::new("…")`, which must exist; any other string
+ * literal that happens to be a catalog id (such as the `attribute-…` ids a
+ * function returns) also counts as a use.
+ */
+export function findRustUsage(
+  file: string,
+  source: string,
+  catalogIds: ReadonlySet<string>,
+): Usage {
+  const ids = new Set<string>();
+  const violations: string[] = [];
+  const lineOf = (offset: number) => source.slice(0, offset).split("\n").length;
+  for (const match of source.matchAll(/Message::new\(\s*"([^"]*)"/g)) {
+    const id = match[1] ?? "";
+    ids.add(id);
+    if (!catalogIds.has(id)) {
+      violations.push(
+        `${file}:${lineOf(match.index)}: message "${id}" is not defined in the en catalog`,
+      );
+    }
+  }
+  for (const match of source.matchAll(/"([a-z][a-z0-9]*(?:-[a-z0-9]+)+)"/g)) {
+    const id = match[1] ?? "";
+    if (catalogIds.has(id)) {
+      ids.add(id);
+    }
+  }
+  return { ids: [...ids], violations };
+}

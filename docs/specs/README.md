@@ -42,11 +42,11 @@ fn rest_restores_stamina_overnight() {
 | Spec | Prefix | Status |
 |---|---|---|
 | [Condition](condition.md) | `COND` | Draft |
-| [Attributes and overall](attributes.md) | `ATTR` | Draft |
+| [Attributes and overall](attributes.md) | `ATTR` | Accepted |
 | [Champions and mastery](champions-and-mastery.md) | `CHAMP`, `MAST` | Draft |
 | [Competitions](competitions.md) | `COMP` | Draft |
-| [Content packages](packages.md) | `PKG` | Draft |
-| [World generation](world-generation.md) | `GEN` | Draft |
+| [Content packages](packages.md) | `PKG` | Accepted |
+| [World generation](world-generation.md) | `GEN` | Accepted |
 | [Saves and data locations](saves.md) | `SAVE` | Draft |
 | [New Game, Load Game and the main menu](new-game.md) | `NEWG` | Draft |
 | [Roster and player profile](roster.md) | `ROST` | Draft |

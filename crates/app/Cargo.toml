@@ -16,5 +16,8 @@ serde.workspace = true
 specta.workspace = true
 thiserror.workspace = true
 
+[dev-dependencies]
+esports = { workspace = true, features = ["test-support"] }
+
 [lints]
 workspace = true

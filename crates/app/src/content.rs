@@ -1,4 +1,5 @@
-//! What the loader reports about a broken package (packages spec).
+//! The content port (packages spec): what a loaded package gives the
+//! application, and what the loader reports when a package is broken.
 //!
 //! Errors are data: a file, a path inside it and a typed problem. The UI and
 //! the CLI render them through Fluent; the loader never produces prose. The
@@ -6,7 +7,45 @@
 //! a malformed value.
 
 use domain::id::ContentId;
+use esports::Genre;
 use esports::moba::roles::RoleSetError;
+use esports::moba::world::WorldTemplate;
+
+use crate::saves::ContentText;
+
+/// What a package declares about itself.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Manifest {
+    pub id: String,
+    pub version: String,
+    pub title: String,
+    pub license: String,
+    pub authors: Vec<String>,
+    pub genre: Genre,
+    /// The first one is the fallback for every other.
+    pub locales: Vec<String>,
+}
+
+/// A package that passed every check.
+#[derive(Debug, Clone)]
+pub struct Package {
+    pub manifest: Manifest,
+    /// SHA-256 of the package's files; saves record it (saves spec).
+    pub content_hash: [u8; 32],
+    /// The world the package defines, ready for the generator.
+    pub template: WorldTemplate,
+    pub texts: Vec<ContentText>,
+}
+
+/// Where the game's content comes from.
+pub trait ContentSource {
+    /// Loads and checks the content.
+    ///
+    /// # Errors
+    ///
+    /// Every problem found, sorted by file.
+    fn load(&self) -> Result<Package, Vec<PackageError>>;
+}
 
 /// One thing wrong with a package.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -118,7 +157,8 @@ pub enum Problem {
 }
 
 impl PackageError {
-    pub(crate) fn new(file: impl Into<String>, path: impl Into<String>, problem: Problem) -> Self {
+    #[must_use]
+    pub fn new(file: impl Into<String>, path: impl Into<String>, problem: Problem) -> Self {
         Self {
             file: file.into(),
             path: path.into(),

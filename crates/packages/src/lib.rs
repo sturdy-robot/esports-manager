@@ -11,31 +11,17 @@ mod convert;
 pub mod defs;
 mod files;
 mod parse;
-mod report;
 pub mod schemas;
 
 use std::path::Path;
 
-use app::saves::ContentText;
 use esports::moba::world::WorldTemplate;
 
-pub use convert::Manifest;
+pub use app::content::{Manifest, NameKind, Package, PackageError, Problem};
 pub use files::PackageFiles;
-pub use report::{NameKind, PackageError, Problem};
 
 use convert::Located;
 use parse::{Entry, MANIFEST, WORLD};
-
-/// A package that passed every check.
-#[derive(Debug, Clone)]
-pub struct Package {
-    pub manifest: Manifest,
-    /// SHA-256 of the package's files; saves record it (saves spec).
-    pub content_hash: [u8; 32],
-    /// The world the package defines, ready for the generator.
-    pub template: WorldTemplate,
-    pub texts: Vec<ContentText>,
-}
 
 /// Loads the package in the directory `root`.
 ///
@@ -166,6 +152,16 @@ fn exactly_one<D, V>(
         return None;
     }
     converted.into_iter().next()
+}
+
+/// The package in a directory, as the application's content source.
+#[derive(Debug, Clone)]
+pub struct PackageDir(pub std::path::PathBuf);
+
+impl app::content::ContentSource for PackageDir {
+    fn load(&self) -> Result<Package, Vec<PackageError>> {
+        load(&self.0)
+    }
 }
 
 fn values<T>(located: Vec<Located<T>>) -> Vec<T> {
