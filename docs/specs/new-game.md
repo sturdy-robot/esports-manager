@@ -116,7 +116,7 @@ Wide                                                    Compact
 
 ## CLI
 
-Global options: `--data-dir <path>`, `--locale <en|pt-BR>`, and `--json`, which prints the use case's view DTO as JSON. Text output goes through Fluent (ADR 0007). Tests use `--json`.
+Global options: `--data-dir <path>`; `--content <dir>`, the package New Game builds from (default `content/core`, relative to the working directory; the desktop app bundles it); `--locale <en|pt-BR>`, default `en`; and `--json`, which prints the use case's view DTO as JSON. Text output goes through Fluent, with the game's catalogs from `src/locales` built into the binary (ADR 0007). Tests use `--json`. Help text (`--help`) is clap's and stays in English.
 
 ```
 esm teams                                        list team ids by region, for --team

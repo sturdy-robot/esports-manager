@@ -117,6 +117,51 @@ impl Colour {
     }
 }
 
+impl Colour {
+    pub const BLACK: Self = Self {
+        red: 0,
+        green: 0,
+        blue: 0,
+    };
+    pub const WHITE: Self = Self {
+        red: 255,
+        green: 255,
+        blue: 255,
+    };
+
+    /// WCAG relative luminance, from 0 (black) to 1 (white).
+    #[must_use]
+    pub fn relative_luminance(self) -> f64 {
+        let channel = |value: u8| {
+            let c = f64::from(value) / 255.0;
+            if c <= 0.040_45 {
+                c / 12.92
+            } else {
+                libm::pow((c + 0.055) / 1.055, 2.4)
+            }
+        };
+        0.2126 * channel(self.red) + 0.7152 * channel(self.green) + 0.0722 * channel(self.blue)
+    }
+
+    /// WCAG contrast ratio between two colours, from 1 to 21.
+    #[must_use]
+    pub fn contrast(self, other: Self) -> f64 {
+        let (a, b) = (self.relative_luminance(), other.relative_luminance());
+        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+    }
+
+    /// Black or white, whichever reads better on this colour. Either meets
+    /// WCAG AA's 4.5:1 on some colour, so the better one always does.
+    #[must_use]
+    pub fn readable_text(self) -> Self {
+        if self.contrast(Self::BLACK) >= self.contrast(Self::WHITE) {
+            Self::BLACK
+        } else {
+            Self::WHITE
+        }
+    }
+}
+
 impl std::fmt::Display for Colour {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "#{:02X}{:02X}{:02X}", self.red, self.green, self.blue)
@@ -193,6 +238,34 @@ mod tests {
         );
         for text in ["1E5AA8", "#1E5AA", "#1E5AA80", "#GG5AA8", "#+1+1+1", ""] {
             assert_eq!(Colour::parse(text), None, "{text}");
+        }
+    }
+
+    #[test]
+    fn contrast_follows_wcag() {
+        assert!((Colour::BLACK.contrast(Colour::WHITE) - 21.0).abs() < 1e-9);
+        assert!((Colour::WHITE.contrast(Colour::BLACK) - 21.0).abs() < 1e-9);
+        assert!((Colour::WHITE.contrast(Colour::WHITE) - 1.0).abs() < 1e-9);
+        // #777777 against white is the textbook 4.48:1.
+        let grey = Colour::parse("#777777").unwrap();
+        assert!((grey.contrast(Colour::WHITE) - 4.48).abs() < 0.01);
+        assert!(Colour::parse("#0A0A0A").unwrap().relative_luminance() < 0.004);
+    }
+
+    #[test]
+    fn readable_text_picks_the_better_of_black_and_white() {
+        assert_eq!(
+            Colour::parse("#1A1A1A").unwrap().readable_text(),
+            Colour::WHITE
+        );
+        assert_eq!(
+            Colour::parse("#F2C14E").unwrap().readable_text(),
+            Colour::BLACK
+        );
+        // Mid-grey sits near the crossover; whichever wins clears 4.5:1.
+        for hex in ["#777777", "#767676", "#808080", "#E4572E", "#0077B6"] {
+            let colour = Colour::parse(hex).unwrap();
+            assert!(colour.contrast(colour.readable_text()) >= 4.5, "{hex}");
         }
     }
 

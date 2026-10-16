@@ -20,13 +20,15 @@ use esports::moba::attributes::{MobaSkill, OverallAttribute};
 use esports::moba::content::{GenerationParams, PinnedAttributes, PinnedPlayer, RosterRules};
 use esports::moba::roles::RoleSet;
 
+use app::content::Manifest;
+
 use crate::defs::{
     CompetitionDef, GenerationDef, ManifestDef, NameOrderDef, NamePoolDef, NationalityDef,
     NicknamePoolDef, PinnedAttributesDef, PlayerDef, RegionDef, RoleDef, RoleSetDef, TeamDef,
     WeightKey, WorldDef,
 };
 use crate::parse::{Entry, join};
-use crate::report::{PackageError, Problem};
+use app::content::{PackageError, Problem};
 
 /// A converted value and where it came from, for later cross-checks.
 #[derive(Debug, Clone)]
@@ -40,19 +42,6 @@ impl<T> Located<T> {
     pub fn error(&self, field: &str, problem: Problem) -> PackageError {
         PackageError::new(&self.file, join(&self.path, field), problem)
     }
-}
-
-/// What a package declares about itself.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Manifest {
-    pub id: String,
-    pub version: String,
-    pub title: String,
-    pub license: String,
-    pub authors: Vec<String>,
-    pub genre: Genre,
-    /// The first one is the fallback for every other.
-    pub locales: Vec<String>,
 }
 
 /// Collects problems while converting one entity.

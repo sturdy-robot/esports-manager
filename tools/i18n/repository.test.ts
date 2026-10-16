@@ -7,7 +7,7 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_LOCALE } from "../../src/lib/i18n/locales";
 import { checkParity, loadCatalogs } from "./catalog";
-import { checkUsage, findUsage } from "./usage";
+import { checkUsage, findRustUsage, findUsage } from "./usage";
 
 const root = join(import.meta.dirname, "../..");
 const localesDir = join(root, "src/locales");
@@ -25,6 +25,17 @@ function uiSources(dir = join(root, "src")): string[] {
   });
 }
 
+/** Rust sources of the workspace crates, where adapters name messages. */
+function rustSources(dir = join(root, "crates")): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return entry.name === "target" ? [] : rustSources(path);
+    }
+    return entry.name.endsWith(".rs") ? [path] : [];
+  });
+}
+
 describe("i18n gates", () => {
   const catalogs = loadCatalogs(localesDir);
 
@@ -38,7 +49,7 @@ describe("i18n gates", () => {
     expect(checkParity(DEFAULT_LOCALE, core)).toEqual([]);
   });
 
-  it("UI code shows no text that bypasses Fluent, and uses every message", () => {
+  it("UI code shows no text that bypasses Fluent, and UI and Rust code use every message", () => {
     const used = new Set<string>();
     const violations: string[] = [];
     for (const file of uiSources()) {
@@ -49,6 +60,13 @@ describe("i18n gates", () => {
       violations.push(...usage.violations);
     }
     const catalogIds = new Set(catalogs.get(DEFAULT_LOCALE)?.catalog.keys());
+    for (const file of rustSources()) {
+      const usage = findRustUsage(relative(root, file), readFileSync(file, "utf8"), catalogIds);
+      for (const id of usage.ids) {
+        used.add(id);
+      }
+      violations.push(...usage.violations);
+    }
     expect([...violations, ...checkUsage(used, catalogIds)]).toEqual([]);
   });
 });
