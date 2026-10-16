@@ -16,11 +16,11 @@ pub mod schemas;
 
 use std::path::Path;
 
+use app::saves::ContentText;
 use esports::moba::world::WorldTemplate;
 
 pub use convert::Manifest;
 pub use files::PackageFiles;
-pub use parse::TextFile;
 pub use report::{NameKind, PackageError, Problem};
 
 use convert::Located;
@@ -34,7 +34,7 @@ pub struct Package {
     pub content_hash: [u8; 32],
     /// The world the package defines, ready for the generator.
     pub template: WorldTemplate,
-    pub texts: Vec<TextFile>,
+    pub texts: Vec<ContentText>,
 }
 
 /// Loads the package in the directory `root`.

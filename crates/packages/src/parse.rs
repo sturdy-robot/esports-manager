@@ -2,6 +2,7 @@
 //! [`defs`](crate::defs) type. Every problem is collected; nothing stops at
 //! the first error.
 
+use app::saves::ContentText;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
@@ -49,14 +50,6 @@ impl<T> Entry<T> {
     }
 }
 
-/// A `.ftl` file of one locale.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TextFile {
-    pub locale: String,
-    pub file: String,
-    pub source: String,
-}
-
 #[derive(Debug, Default)]
 pub struct Parsed {
     pub manifest: Option<Entry<ManifestDef>>,
@@ -70,7 +63,7 @@ pub struct Parsed {
     pub regions: Vec<Entry<RegionDef>>,
     pub role_sets: Vec<Entry<RoleSetDef>>,
     pub teams: Vec<Entry<TeamDef>>,
-    pub texts: Vec<TextFile>,
+    pub texts: Vec<ContentText>,
 }
 
 pub fn parse(files: &PackageFiles, errors: &mut Vec<PackageError>) -> Parsed {
@@ -143,7 +136,7 @@ fn text(
         return;
     }
     match String::from_utf8(contents.to_vec()) {
-        Ok(source) => parsed.texts.push(TextFile {
+        Ok(source) => parsed.texts.push(ContentText {
             locale: locale.to_owned(),
             file: path.to_owned(),
             source,
@@ -439,7 +432,7 @@ mod tests {
         assert_eq!(errors, []);
         assert_eq!(
             parsed.texts,
-            [TextFile {
+            [ContentText {
                 locale: "pt-BR".to_owned(),
                 file: "locales/pt-BR/teams/names.ftl".to_owned(),
                 source: "team-a = A\n".to_owned(),

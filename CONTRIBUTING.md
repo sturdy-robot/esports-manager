@@ -91,16 +91,20 @@ just test       # fast Rust test run
 just check      # every gate, as CI runs them
 just fmt        # format Rust and frontend code
 just bindings   # regenerate src/bindings.ts after changing a Tauri command or DTO
+just schemas    # regenerate content/schemas after changing a package definition type
+just db-schema  # regenerate crates/db/src/schema.rs after adding a migration (needs diesel_cli)
 just e2e        # browser E2E tests (desktop and compact sizes, axe)
 just smoke      # start the real desktop binary and check it talks to the backend
 cargo run -p cli --bin esm   # the headless CLI
 ```
 
-The repository checks that no off-the-shelf tool covers (crate graph, genre vocabulary, spec traceability, per-crate coverage) live in [`xtask/`](xtask/src/main.rs) and run through `cargo xtask <check>`.
+The repository checks that no off-the-shelf tool covers (crate graph, genre vocabulary, spec traceability, per-crate coverage, rest patterns in package conversion) live in [`xtask/`](xtask/src/main.rs) and run through `cargo xtask <check>`.
 
 ### Frontend layout
 
 - `src/bindings.ts` is **generated** from the Rust commands and DTOs (ADR 0006). Never edit it; run `just bindings`. A test fails if it is out of date.
+- `content/schemas/` and `crates/db/src/schema.rs` are generated too (`just schemas`, `just db-schema`), each with a drift test.
+- A new migration needs a fixture save in `crates/db/tests/fixtures/`, written once with `UPDATE_FIXTURES=1`, and a test that opens it (ADR 0004).
 - Call the backend only through `commands` from `src/bindings.ts`. Biome rejects direct `@tauri-apps/api/core` imports.
 - **Data** goes through TanStack Query hooks in `src/hooks/` (one per backend query). There is no global store of game state.
 - **Screens** are routes in `src/routes/`, registered in `src/router.tsx`.
