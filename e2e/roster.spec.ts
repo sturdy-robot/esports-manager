@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectNoHorizontalScroll, expectNoViolations, startGame } from "./support";
+import { expectNoHorizontalScroll, expectNoViolations, startGame, tabTo } from "./support";
 
 const kairos = "Kairos, view profile";
 
@@ -8,7 +8,7 @@ test("the roster opens a profile from the keyboard", async ({ page }) => {
   // Given the roster screen
   await startGame(page);
   // When the user tabs to a player and presses Enter
-  await page.getByRole("link", { name: kairos }).locator("visible=true").focus();
+  await tabTo(page, page.getByRole("link", { name: kairos }).locator("visible=true"), 30);
   await page.keyboard.press("Enter");
   // Then that player's profile is shown, and Back returns to the roster
   await expect(page.getByRole("heading", { name: "Kairos" })).toBeVisible();
@@ -36,6 +36,42 @@ test("the wide roster is a table", async ({ page }, testInfo) => {
   await expect(starters).toBeVisible();
   await expect(starters.getByRole("row")).toHaveCount(6);
   await expect(starters.getByRole("columnheader", { name: "Overall" })).toBeVisible();
+});
+
+test("column headers sort the roster, and Back keeps the sort", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "the wide layout only");
+  await startGame(page);
+  const starters = page.getByRole("table", { name: "Starters" });
+  const role = starters.getByRole("columnheader", { name: "Role" });
+  const overall = starters.getByRole("columnheader", { name: "Overall" });
+  await expect(role).toHaveAttribute("aria-sort", "ascending");
+  // Highest overall first, then lowest.
+  await overall.getByRole("button").click();
+  await expect(overall).toHaveAttribute("aria-sort", "descending");
+  await expect(role).not.toHaveAttribute("aria-sort");
+  const overalls = async () =>
+    (await starters.getByRole("row").allInnerTexts())
+      .slice(1)
+      .map((row) => Number(row.split("\t").at(-1)));
+  const down = await overalls();
+  expect(down).toHaveLength(5);
+  expect(down.every(Number.isInteger)).toBe(true);
+  expect(down).toEqual([...down].sort((a, b) => b - a));
+  // A click anywhere on a row opens that player.
+  await starters.getByRole("row").filter({ hasText: "Kairos" }).getByRole("cell").first().click();
+  await expect(page.getByRole("heading", { name: "Kairos" })).toBeVisible();
+  await page.getByRole("link", { name: "Back to roster" }).click();
+  await expect(overall).toHaveAttribute("aria-sort", "descending");
+  await overall.getByRole("button").click();
+  await expect(overall).toHaveAttribute("aria-sort", "ascending");
+});
+
+test("a failed roster has a way back", async ({ page }) => {
+  // No game is open, so the backend has no roster to give.
+  await page.goto("/roster");
+  await expect(page.getByRole("alert")).toContainText("Open or start a game first.");
+  await page.getByRole("link", { name: "Back" }).click();
+  await expect(page.getByRole("link", { name: "New Game" })).toBeVisible();
 });
 
 test.describe("for a Brazilian Portuguese user", () => {

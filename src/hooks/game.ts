@@ -3,8 +3,13 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { commands, type NewGameInput } from "../bindings";
 import { unwrap } from "../lib/backend/result";
 
-/** Every query that depends on which save is open. */
-const SAVE_QUERIES = ["contentText", "saves", "roster", "player"];
+/**
+ * Queries that depend on which save is open. Rosters and profiles are
+ * dropped, not just refetched: player ids repeat across worlds, so a cached
+ * one would briefly show the previous save's data.
+ */
+const REFRESHED_ON_SAVE_CHANGE = ["contentText", "saves"];
+const DROPPED_ON_SAVE_CHANGE = ["roster", "player"];
 
 /** The package text the UI's Fluent bundles need: team, region and role names. */
 export function useContentText() {
@@ -42,7 +47,12 @@ function useSaveChange<T>(run: (input: T) => ReturnType<typeof commands.openSave
   return useMutation({
     mutationFn: (input: T) => unwrap(run(input)),
     onSuccess: async () => {
-      await Promise.all(SAVE_QUERIES.map((key) => client.invalidateQueries({ queryKey: [key] })));
+      for (const key of DROPPED_ON_SAVE_CHANGE) {
+        client.removeQueries({ queryKey: [key] });
+      }
+      await Promise.all(
+        REFRESHED_ON_SAVE_CHANGE.map((key) => client.invalidateQueries({ queryKey: [key] })),
+      );
     },
   });
 }

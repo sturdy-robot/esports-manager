@@ -4,6 +4,7 @@ import { MainMenu } from "./routes/MainMenu";
 import { NewGame } from "./routes/NewGame";
 import { Player } from "./routes/Player";
 import { Roster } from "./routes/Roster";
+import { parseSort, type SortSearch, sortSearch } from "./routes/rosterSort";
 import { Shell } from "./routes/Shell";
 
 const rootRoute = createRootRoute({ component: Shell });
@@ -26,29 +27,35 @@ function text(value: unknown): string | undefined {
   return typeof value === "string" && value !== "" ? value : undefined;
 }
 
+function sortFrom(search: Record<string, unknown>): SortSearch {
+  return sortSearch(parseSort(search.sort, search.order));
+}
+
 // Ids hold `:` and `.`, so they travel as search parameters, not path segments.
+// The roster's sort travels to the profile too, so Back keeps it.
 const rosterRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/roster",
-  validateSearch: (search: Record<string, unknown>): { team?: string } => {
+  validateSearch: (search: Record<string, unknown>): { team?: string } & SortSearch => {
     const team = text(search.team);
-    return team === undefined ? {} : { team };
+    return { ...(team === undefined ? {} : { team }), ...sortFrom(search) };
   },
   component: function RosterRoute() {
-    const { team } = rosterRoute.useSearch();
-    return <Roster team={team} />;
+    const { team, sort, order } = rosterRoute.useSearch();
+    return <Roster team={team} sort={parseSort(sort, order)} />;
   },
 });
 
 const playerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/player",
-  validateSearch: (search: Record<string, unknown>): { id: string } => ({
+  validateSearch: (search: Record<string, unknown>): { id: string } & SortSearch => ({
     id: text(search.id) ?? "",
+    ...sortFrom(search),
   }),
   component: function PlayerRoute() {
-    const { id } = playerRoute.useSearch();
-    return <Player id={id} />;
+    const { id, sort, order } = playerRoute.useSearch();
+    return <Player id={id} sort={parseSort(sort, order)} />;
   },
 });
 

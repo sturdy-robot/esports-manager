@@ -1,11 +1,11 @@
 import { Localized, useLocalization } from "@fluent/react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useId, useState } from "react";
-import type { RegionOption } from "../bindings";
+import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import type { RegionOption, TeamOption } from "../bindings";
 import { Crest } from "../components/Crest";
 import { FailureList } from "../components/Failure";
 import { StrengthStars } from "../components/StrengthStars";
-import { backLink, primaryButton, secondaryButton } from "../components/styles";
+import { backLink, primaryButton, secondaryButton, textInput } from "../components/styles";
 import { useNewGameOptions, useStartNewGame } from "../hooks/game";
 import { failureMessages } from "../lib/backend/result";
 import { ContentText, messageText } from "../lib/i18n/content";
@@ -15,7 +15,9 @@ type Step = 1 | 2 | 3;
 /**
  * New Game, in three steps: the manager's name, the team, then the save's
  * name (new game spec). Going back keeps what was entered; every rule is the
- * backend's, so problems show when the game is started.
+ * backend's, so problems show when the game is started. Each step change
+ * moves focus to the step's heading, so keyboard and screen reader users
+ * start at the top of the new step.
  */
 export function NewGame() {
   const { l10n } = useLocalization();
@@ -29,12 +31,23 @@ export function NewGame() {
   const [saveName, setSaveName] = useState<string | undefined>(undefined);
   const [seed, setSeed] = useState("");
   const ids = { manager: useId(), save: useId(), seed: useId(), seedHint: useId() };
+  const heading = useRef<HTMLHeadingElement>(null);
+  const shownStep = useRef(step);
+  useEffect(() => {
+    if (shownStep.current !== step) {
+      shownStep.current = step;
+      heading.current?.focus();
+    }
+  }, [step]);
 
   const regions = options.data?.regions ?? [];
   const chosen = regions.flatMap((r) => r.teams).find((t) => t.id === team);
   const defaultSaveName = chosen === undefined ? "" : messageText(l10n, chosen.nameMessage);
 
-  const submit = () =>
+  const submit = () => {
+    if (start.isPending) {
+      return;
+    }
     start.mutate(
       {
         managerName: manager,
@@ -44,6 +57,7 @@ export function NewGame() {
       },
       { onSuccess: () => navigate({ to: "/roster" }) },
     );
+  };
 
   return (
     <section className="mx-auto flex max-w-5xl flex-col gap-4">
@@ -66,7 +80,7 @@ export function NewGame() {
           <p className="text-muted" />
         </Localized>
       </div>
-      <h3 className="font-semibold text-lg">
+      <h3 ref={heading} tabIndex={-1} className="font-semibold text-lg focus:outline-none">
         {step === 1 && l10n.getString("new-game-step-manager")}
         {step === 2 && l10n.getString("new-game-step-team")}
         {step === 3 && l10n.getString("new-game-step-confirm")}
@@ -86,7 +100,7 @@ export function NewGame() {
             value={manager}
             onChange={(event) => setManager(event.target.value)}
             autoComplete="off"
-            className="min-h-11 rounded-md border border-border bg-surface-panel px-3"
+            className={textInput}
           />
           <Localized id="nav-next">
             <button type="submit" className={primaryButton} />
@@ -113,13 +127,14 @@ export function NewGame() {
             submit();
           }}
         >
+          {chosen !== undefined && <ChosenTeam team={chosen} />}
           <label htmlFor={ids.save}>{l10n.getString("new-game-save-label")}</label>
           <input
             id={ids.save}
             value={saveName ?? defaultSaveName}
             onChange={(event) => setSaveName(event.target.value)}
             autoComplete="off"
-            className="min-h-11 rounded-md border border-border bg-surface-panel px-3"
+            className={textInput}
           />
           <details className="mt-2">
             <Localized id="new-game-advanced">
@@ -133,20 +148,20 @@ export function NewGame() {
                 inputMode="numeric"
                 aria-describedby={ids.seedHint}
                 onChange={(event) => setSeed(event.target.value)}
-                className="min-h-11 rounded-md border border-border bg-surface-panel px-3"
+                className={textInput}
               />
               <Localized id="new-game-seed-hint">
                 <p id={ids.seedHint} className="text-muted text-sm" />
               </Localized>
             </div>
           </details>
-          {start.isPending ? (
+          {/* The button stays while the world is built, so focus stays on it. */}
+          <Localized id="new-game-start">
+            <button type="submit" aria-disabled={start.isPending} className={primaryButton} />
+          </Localized>
+          {start.isPending && (
             <Localized id="new-game-starting">
               <p role="status" className="text-muted" />
-            </Localized>
-          ) : (
-            <Localized id="new-game-start">
-              <button type="submit" className={primaryButton} />
             </Localized>
           )}
           {start.isError && (
@@ -168,6 +183,19 @@ export function NewGame() {
   );
 }
 
+/** The team picked on step 2, which may be in another region than the one shown. */
+function ChosenTeam({ team }: { team: TeamOption }) {
+  const { l10n } = useLocalization();
+  return (
+    <p className="flex items-center gap-2">
+      <Crest crest={team.crest} size="sm" />
+      <span>
+        {l10n.getString("new-game-chosen-team", { team: messageText(l10n, team.nameMessage) })}
+      </span>
+    </p>
+  );
+}
+
 interface TeamStepProps {
   regions: RegionOption[];
   region: number;
@@ -177,11 +205,46 @@ interface TeamStepProps {
   onNext: () => void;
 }
 
-/** Region tabs, and a radio group of team cards (arrow keys move, Space picks). */
+/** The tab a key moves to from `current`, or undefined for any other key. */
+function tabFor(key: string, current: number, count: number): number | undefined {
+  switch (key) {
+    case "ArrowRight":
+      return (current + 1) % count;
+    case "ArrowLeft":
+      return (current - 1 + count) % count;
+    case "Home":
+      return 0;
+    case "End":
+      return count - 1;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Region tabs (one Tab stop; arrow keys, Home and End move and select), and a
+ * radio group of team cards in the tab panel (arrow keys move, Space or Enter
+ * picks).
+ */
 function TeamStep({ regions, region, onRegion, team, onTeam, onNext }: TeamStepProps) {
   const { l10n } = useLocalization();
   const shown = regions[region];
   const groupName = useId();
+  const tabsId = useId();
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const chosen = regions.flatMap((r) => r.teams).find((t) => t.id === team);
+  const tabId = (index: number) => `${tabsId}-tab-${index}`;
+  const panelId = `${tabsId}-panel`;
+
+  const onTabKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const next = tabFor(event.key, region, regions.length);
+    if (next !== undefined) {
+      event.preventDefault();
+      onRegion(next);
+      tabs.current[next]?.focus();
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div
@@ -192,47 +255,64 @@ function TeamStep({ regions, region, onRegion, team, onTeam, onNext }: TeamStepP
         {regions.map((option, index) => (
           <button
             key={option.id}
+            ref={(element) => {
+              tabs.current[index] = element;
+            }}
+            id={tabId(index)}
             type="button"
             role="tab"
             aria-selected={index === region}
+            aria-controls={panelId}
+            tabIndex={index === region ? 0 : -1}
             className={index === region ? primaryButton : secondaryButton}
             onClick={() => onRegion(index)}
+            onKeyDown={onTabKey}
           >
             <ContentText id={option.leagueMessage ?? option.nameMessage} />
           </button>
         ))}
       </div>
       {shown !== undefined && (
-        <div
-          role="radiogroup"
-          aria-label={messageText(l10n, shown.leagueMessage ?? shown.nameMessage)}
-          className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-5"
-        >
-          {shown.teams.map((option) => (
-            <label
-              key={option.id}
-              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border border-border bg-surface-raised p-3 has-[:checked]:border-accent has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent-text"
-            >
-              <input
-                type="radio"
-                name={groupName}
-                value={option.id}
-                checked={team === option.id}
-                onChange={() => onTeam(option.id)}
-                className="sr-only"
-              />
-              <Crest crest={option.crest} />
-              <span className="flex flex-col">
-                <span className="font-semibold">
-                  <ContentText id={option.nameMessage} />
+        <div role="tabpanel" id={panelId} aria-labelledby={tabId(region)}>
+          <div
+            role="radiogroup"
+            aria-label={messageText(l10n, shown.leagueMessage ?? shown.nameMessage)}
+            className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+          >
+            {shown.teams.map((option) => (
+              <label
+                key={option.id}
+                className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border border-border bg-surface-raised p-3 hover:border-accent has-[:checked]:border-accent has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent-text"
+              >
+                <input
+                  type="radio"
+                  name={groupName}
+                  value={option.id}
+                  checked={team === option.id}
+                  onChange={() => onTeam(option.id)}
+                  onKeyDown={(event) => {
+                    // Native radios ignore Enter outside a form; the spec
+                    // lets Enter pick a card too.
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      onTeam(option.id);
+                    }
+                  }}
+                  className="sr-only"
+                />
+                <Crest crest={option.crest} />
+                <span className="flex flex-col">
+                  <span className="font-semibold">
+                    <ContentText id={option.nameMessage} />
+                  </span>
+                  <StrengthStars stars={option.strength} />
                 </span>
-                <StrengthStars stars={option.strength} />
-              </span>
-            </label>
-          ))}
+              </label>
+            ))}
+          </div>
         </div>
       )}
-      <div>
+      <div className="flex flex-wrap items-center gap-4">
         <Localized id="nav-next">
           <button
             type="button"
@@ -241,6 +321,7 @@ function TeamStep({ regions, region, onRegion, team, onTeam, onNext }: TeamStepP
             onClick={onNext}
           />
         </Localized>
+        {chosen !== undefined && <ChosenTeam team={chosen} />}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /** Starts a game through the UI: Ana, Azure Tigers, the default save name. */
 export async function startGame(page: Page): Promise<void> {
@@ -26,4 +26,19 @@ export async function expectNoHorizontalScroll(page: Page): Promise<void> {
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
   expect(overflow).toBeLessThanOrEqual(0);
+}
+
+/**
+ * Presses Tab until `target` has focus, as a keyboard user would. Fails if
+ * it isn't reached within `limit` presses, so the test proves it is in the
+ * Tab order and not just focusable.
+ */
+export async function tabTo(page: Page, target: Locator, limit = 15): Promise<void> {
+  for (let presses = 0; presses < limit; presses++) {
+    await page.keyboard.press("Tab");
+    if (await target.evaluate((element) => element === document.activeElement)) {
+      return;
+    }
+  }
+  throw new Error(`Tab didn't reach ${target} in ${limit} presses`);
 }

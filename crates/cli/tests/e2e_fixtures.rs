@@ -1,6 +1,6 @@
 //! The browser E2E tests answer with views the real backend produced:
-//! `src/test/fixtures/*.json`, made by this CLI from the core package and
-//! seed 42. This test fails when a view changes and the fixtures don't. Set
+//! `src/test/fixtures/*.json`, made by this CLI from the core package: Ana's
+//! Azure Tigers from seed 42, and Bia's Onça Gaming from seed 7. This test fails when a view changes and the fixtures don't. Set
 //! `UPDATE_FIXTURES=1` to rewrite them (`just e2e-fixtures`).
 #![allow(clippy::unwrap_used, reason = "integration test helpers")]
 
@@ -34,34 +34,44 @@ fn e2e_fixtures_are_up_to_date() {
     let data = std::env::temp_dir().join(format!("esm-e2e-fixtures-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&data);
     let options = esm(&data, &["teams"]);
-    esm(
-        &data,
-        &[
-            "new-game",
-            "--manager",
-            "Ana",
-            "--team",
-            "team:azure_tigers",
-            "--save",
-            "Ana's Tigers",
-            "--seed",
-            "42",
-        ],
-    );
+    for (manager, team, save, seed) in [
+        ("Bia", "team:onca_gaming", "Bia's Onça", "7"),
+        ("Ana", "team:azure_tigers", "Ana's Tigers", "42"),
+    ] {
+        esm(
+            &data,
+            &[
+                "new-game",
+                "--manager",
+                manager,
+                "--team",
+                team,
+                "--save",
+                save,
+                "--seed",
+                seed,
+            ],
+        );
+    }
     let roster = esm(&data, &["roster", "--save", "Ana's Tigers"]);
+    let other_roster = esm(&data, &["roster", "--save", "Bia's Onça"]);
     let player = esm(
         &data,
         &["player", "--save", "Ana's Tigers", "player:kairos"],
     );
     let mut saves = esm(&data, &["saves"]);
-    // Real time differs on every run; the fixture keeps a fixed moment.
-    saves[0]["lastPlayedAt"] = serde_json::json!(1_792_000_000);
+    // Real time differs on every run; the fixture keeps fixed moments, in
+    // the order the saves are listed (most recently played first).
+    for (index, save) in saves.as_array_mut().unwrap().iter_mut().enumerate() {
+        save["lastPlayedAt"] = serde_json::json!(1_792_000_000 - 3_600 * index);
+    }
 
     let fixtures = root().join("src/test/fixtures");
     let mut stale = Vec::new();
     for (name, value) in [
         ("new-game-options.json", options),
         ("roster.json", roster),
+        ("roster-onca.json", other_roster),
         ("player.json", player),
         ("saves.json", saves),
     ] {
