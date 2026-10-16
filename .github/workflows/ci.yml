@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [develop]
+  # Lets the Windows/macOS job run on a branch before it merges.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -96,7 +98,7 @@ jobs:
 
   build:
     name: Build and test (${{ matrix.os }})
-    if: github.event_name == 'push'
+    if: github.event_name != 'pull_request'
     strategy:
       fail-fast: false
       matrix:
