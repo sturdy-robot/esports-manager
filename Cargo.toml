@@ -28,6 +28,8 @@ db = { path = "crates/db" }
 
 anyhow = "1.0.104"
 cargo_metadata = "0.23.1"
+# Pure-Rust maths, so floating-point results are the same on every OS (ADR 0003).
+libm = "0.2.16"
 rand_chacha = "0.10.0"
 rand_core = "0.10.1"
 serde = { version = "1.0.229", features = ["derive"] }
