@@ -34,6 +34,10 @@ pub enum GenerationError {
     IncompletableRoster(ContentId),
     #[error("the nickname pool ran out")]
     NicknamesExhausted,
+    #[error("player `{0}` is born after the world starts")]
+    BornAfterStart(ContentId),
+    #[error("the generator built an invalid id for team `{0}`")]
+    InvalidId(ContentId),
 }
 
 /// Builds the world: every team's roster, around its pinned players.
@@ -48,6 +52,13 @@ pub fn generate(
 ) -> Result<World, GenerationError> {
     let mut teams = template.teams.clone();
     teams.sort_by(|a, b| a.id.cmp(&b.id));
+    if let Some(stray) = template
+        .players
+        .iter()
+        .find(|p| !teams.iter().any(|t| t.id == p.team))
+    {
+        return Err(GenerationError::Unknown(stray.team.clone()));
+    }
     let generator = Generator::new(template);
 
     let mut players = Vec::new();
@@ -72,7 +83,8 @@ pub fn generate(
 struct Generator<'a> {
     template: &'a WorldTemplate,
     params: &'a GenerationParams,
-    /// Given and family names by nationality, every pool merged in order.
+    /// Given and family names by nationality, every pool merged and sorted,
+    /// so how a package splits its files never changes the world.
     names: BTreeMap<&'a ContentId, (Vec<&'a str>, Vec<&'a str>)>,
 }
 
@@ -83,6 +95,12 @@ impl<'a> Generator<'a> {
             let entry = names.entry(&pool.nationality).or_default();
             entry.0.extend(pool.given.iter().map(String::as_str));
             entry.1.extend(pool.family.iter().map(String::as_str));
+        }
+        for (given, family) in names.values_mut() {
+            for list in [given, family] {
+                list.sort_unstable();
+                list.dedup();
+            }
         }
         Self {
             template,
@@ -131,7 +149,7 @@ impl<'a> Generator<'a> {
         }
         for (number, role) in (1..).zip(slots) {
             let id = ContentId::generated("player", &team.id, number)
-                .map_err(|_| GenerationError::Unknown(team.id.clone()))?;
+                .map_err(|_| GenerationError::InvalidId(team.id.clone()))?;
             players.push(self.player(&mut rng, id, team, region, strength, &role, None)?);
         }
         Ok(players)
@@ -185,7 +203,7 @@ impl<'a> Generator<'a> {
 
     #[expect(
         clippy::too_many_arguments,
-        reason = "one call site, each argument distinct"
+        reason = "each argument is distinct; a parameter struct would only rename them"
     )]
     fn player(
         &self,
@@ -232,7 +250,7 @@ impl<'a> Generator<'a> {
                 base + role.bias(attribute, p.bias_scale),
                 p.attribute_spread,
             );
-            set(&mut attributes, attribute, Rating::clamped(value));
+            *attributes.get_mut(attribute) = Rating::clamped(value);
         }
         attributes.core.aggression = Rating::clamped(normal(rng, p.style_mean, p.style_spread));
         attributes.core.work_ethic = Rating::clamped(normal(rng, p.style_mean, p.style_spread));
@@ -260,7 +278,7 @@ impl<'a> Generator<'a> {
             let age = player
                 .birth_date
                 .age_on(self.template.settings.start_date)
-                .unwrap_or(0);
+                .ok_or_else(|| GenerationError::BornAfterStart(player.id.clone()))?;
             let youth = (p.potential_peak_age - f64::from(age)).max(0.0);
             let potential = overall + p.potential_per_year * youth + potential_noise;
             player.attributes.core.potential = Rating::clamped(potential.max(overall));
@@ -314,24 +332,6 @@ impl Strength {
     }
 }
 
-fn set(attributes: &mut MobaAttributes, attribute: OverallAttribute, rating: Rating) {
-    use super::attributes::MobaSkill;
-    let skills = &mut attributes.skills;
-    match attribute {
-        OverallAttribute::Skill(MobaSkill::Mechanics) => skills.mechanics = rating,
-        OverallAttribute::Skill(MobaSkill::Laning) => skills.laning = rating,
-        OverallAttribute::Skill(MobaSkill::GameSense) => skills.game_sense = rating,
-        OverallAttribute::Skill(MobaSkill::Awareness) => skills.awareness = rating,
-        OverallAttribute::Skill(MobaSkill::Positioning) => skills.positioning = rating,
-        OverallAttribute::Skill(MobaSkill::ChampionPoolBreadth) => {
-            skills.champion_pool_breadth = rating;
-        }
-        OverallAttribute::Skill(MobaSkill::Shotcalling) => skills.shotcalling = rating,
-        OverallAttribute::Teamwork => attributes.core.teamwork = rating,
-        OverallAttribute::Composure => attributes.core.composure = rating,
-    }
-}
-
 fn apply_pins(player: &mut Player, pinned: &PinnedPlayer) {
     if let Some(name) = &pinned.given_name {
         player.given_name.clone_from(name);
@@ -381,8 +381,17 @@ fn apply_pins(player: &mut Player, pinned: &PinnedPlayer) {
     }
 }
 
+/// How many times a player redraws a taken nickname before falling back to
+/// a draw among the free ones only.
+const NICKNAME_TRIES: u32 = 32;
+
 /// Gives every player without a pinned nickname one from the pool, unique in
 /// the world ignoring case.
+///
+/// The pool is sorted first, so how a package splits it across files never
+/// matters. Each player draws from their own stream and redraws only when the
+/// nickname is taken, so another team's players change it only by taking the
+/// same nickname (world generation spec).
 fn assign_nicknames(
     template: &WorldTemplate,
     players: &mut [Player],
@@ -393,18 +402,16 @@ fn assign_nicknames(
         .iter()
         .filter_map(|p| p.nickname.as_deref().map(|nickname| (&p.id, nickname)))
         .collect();
-    let lowered: Vec<String> = template
-        .nicknames
-        .iter()
-        .map(|n| n.to_lowercase())
-        .collect();
-    let mut taken: BTreeSet<usize> = BTreeSet::new();
+    let mut pool: Vec<&str> = template.nicknames.iter().map(String::as_str).collect();
+    pool.sort_by_cached_key(|nickname| (nickname.to_lowercase(), (*nickname).to_owned()));
+    pool.dedup_by_key(|nickname| nickname.to_lowercase());
     let pinned_lowered: BTreeSet<String> = pinned.values().map(|n| n.to_lowercase()).collect();
-    for (position, nickname) in lowered.iter().enumerate() {
-        if pinned_lowered.contains(nickname) {
-            taken.insert(position);
-        }
-    }
+    let mut taken: BTreeSet<usize> = pool
+        .iter()
+        .enumerate()
+        .filter(|(_, nickname)| pinned_lowered.contains(&nickname.to_lowercase()))
+        .map(|(position, _)| position)
+        .collect();
     for player in players {
         if let Some(nickname) = pinned.get(&player.id) {
             player.nickname = (*nickname).to_owned();
@@ -414,12 +421,25 @@ fn assign_nicknames(
             "generator:nickname:{}",
             player.id
         )));
-        let position = index_excluding(&mut rng, template.nicknames.len(), &taken)
+        let position = free_nickname(&mut rng, pool.len(), &taken)
             .ok_or(GenerationError::NicknamesExhausted)?;
         taken.insert(position);
-        player.nickname.clone_from(&template.nicknames[position]);
+        pool[position].clone_into(&mut player.nickname);
     }
     Ok(())
+}
+
+/// A position in a pool of `len` that `taken` doesn't hold: drawn from the
+/// whole pool, redrawn while taken, so the result depends on other players
+/// only when they took the very nickname drawn.
+fn free_nickname(rng: &mut impl Rng, len: usize, taken: &BTreeSet<usize>) -> Option<usize> {
+    for _ in 0..NICKNAME_TRIES {
+        let position = index(rng, len)?;
+        if !taken.contains(&position) {
+            return Some(position);
+        }
+    }
+    index_excluding(rng, len, taken)
 }
 
 /// For each team and role, the player with the highest overall starts; ties

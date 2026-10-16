@@ -54,6 +54,19 @@ impl MobaSkills {
         }
     }
 
+    /// The skill itself, to change it.
+    pub const fn get_mut(&mut self, skill: MobaSkill) -> &mut Rating {
+        match skill {
+            MobaSkill::Mechanics => &mut self.mechanics,
+            MobaSkill::Laning => &mut self.laning,
+            MobaSkill::GameSense => &mut self.game_sense,
+            MobaSkill::Awareness => &mut self.awareness,
+            MobaSkill::Positioning => &mut self.positioning,
+            MobaSkill::ChampionPoolBreadth => &mut self.champion_pool_breadth,
+            MobaSkill::Shotcalling => &mut self.shotcalling,
+        }
+    }
+
     #[must_use]
     pub const fn get(&self, skill: MobaSkill) -> Rating {
         match skill {
@@ -132,6 +145,15 @@ impl MobaAttributes {
             OverallAttribute::Composure => self.core.composure,
         }
     }
+
+    /// The attribute itself, to change it.
+    pub const fn get_mut(&mut self, attribute: OverallAttribute) -> &mut Rating {
+        match attribute {
+            OverallAttribute::Skill(skill) => self.skills.get_mut(skill),
+            OverallAttribute::Teamwork => &mut self.core.teamwork,
+            OverallAttribute::Composure => &mut self.core.composure,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -182,6 +204,19 @@ mod tests {
             .map(|&a| attributes.get(a).display())
             .collect();
         assert_eq!(values, [71, 72, 73, 74, 75, 76, 77, 81, 83]);
+    }
+
+    #[test]
+    fn get_mut_changes_the_attribute_get_reads() {
+        let mut attributes = MobaAttributes::uniform(rating(30));
+        for (points, attribute) in (40..).zip(OverallAttribute::ALL) {
+            *attributes.get_mut(attribute) = rating(points);
+        }
+        let values: Vec<u8> = OverallAttribute::ALL
+            .iter()
+            .map(|&a| attributes.get(a).display())
+            .collect();
+        assert_eq!(values, [40, 41, 42, 43, 44, 45, 46, 47, 48]);
     }
 
     #[test]

@@ -510,12 +510,83 @@ fn adding_a_team_leaves_the_others_alone() {
                     p.nationality.clone(),
                     p.given_name.clone(),
                     p.family_name.clone(),
+                    p.nickname.clone(),
                 )
             })
             .collect::<Vec<_>>()
     };
     assert_eq!(shape(&one, "a"), shape(&two, "a"));
     assert_eq!(shape(&one, "c"), shape(&two, "c"));
+}
+
+#[test]
+fn pinning_a_field_shifts_no_other_draw() {
+    let base = template(vec![team("a", "up", 70)]);
+    let mut plain = base.clone();
+    plain.players = vec![pinned("p", "a", "top")];
+    let mut dated = base;
+    let mut with_date = pinned("p", "a", "top");
+    with_date.birth_date = Some("2003-05-05".parse().unwrap());
+    dated.players = vec![with_date];
+    let one = generate(&plain, &seed(4)).unwrap();
+    let two = generate(&dated, &seed(4)).unwrap();
+    let (a, b) = (&one.players[0], &two.players[0]);
+    assert_eq!(
+        (&a.given_name, &a.family_name, &a.nationality),
+        (&b.given_name, &b.family_name, &b.nationality)
+    );
+    for attribute in OverallAttribute::ALL {
+        assert_eq!(
+            a.attributes.get(attribute),
+            b.attributes.get(attribute),
+            "{attribute:?}"
+        );
+    }
+    assert_eq!(one.players[1..], two.players[1..]);
+}
+
+#[test]
+fn how_pools_are_split_never_changes_the_world() {
+    let joined = template(vec![team("a", "up", 70), team("b", "down", 40)]);
+    let mut split = joined.clone();
+    // The same names and nicknames, in other files and orders.
+    let kr = split.name_pools.remove(0);
+    split.name_pools.push(NamePool {
+        given: vec![kr.given[2].clone()],
+        family: vec![],
+        ..kr.clone()
+    });
+    split.name_pools.push(NamePool {
+        given: kr.given[..2].iter().rev().cloned().collect(),
+        ..kr
+    });
+    split.nicknames.reverse();
+    assert_eq!(
+        generate(&joined, &seed(8)).unwrap(),
+        generate(&split, &seed(8)).unwrap()
+    );
+}
+
+#[test]
+fn a_birth_date_after_the_start_is_an_error() {
+    let mut template = template(vec![team("a", "up", 70)]);
+    let mut late = pinned("late", "a", "top");
+    late.birth_date = Some("2030-01-01".parse().unwrap());
+    template.players = vec![late];
+    assert_eq!(
+        generate(&template, &seed(1)),
+        Err(GenerationError::BornAfterStart(id("player:late")))
+    );
+}
+
+#[test]
+fn a_pinned_player_on_no_team_is_an_error() {
+    let mut template = template(vec![team("a", "up", 70)]);
+    template.players = vec![pinned("p", "nowhere", "top")];
+    assert_eq!(
+        generate(&template, &seed(1)),
+        Err(GenerationError::Unknown(id("team:nowhere")))
+    );
 }
 
 #[test]
@@ -889,18 +960,18 @@ fn the_generated_world_is_pinned() {
 }
 
 const PINNED_WORLD: &str = "\
-player:a.1 role:top true Nick83 Seo-jun Han 2007-04-25 [7232, 8669, 6819, 6960, 6947, 5982, 6901] [6140, 5215, 6519, 3083, 7123, 8335]\n\
-player:a.2 role:jungle false Nick60 Seo-jun Kim 2006-01-29 [6904, 6955, 7829, 8092, 7059, 6921, 7436] [6637, 4626, 7118, 3754, 6044, 9192]\n\
-player:a.3 role:mid true Nick290 Seo-jun Han 2007-04-20 [7108, 6984, 7544, 6755, 6944, 6254, 7689] [6580, 5254, 7897, 5789, 5107, 8340]\n\
-player:a.4 role:bot true Nick252 Seo-jun Kim 2002-12-07 [9245, 8725, 8266, 8450, 8522, 8403, 7223] [8026, 7129, 8249, 6719, 3359, 8550]\n\
-player:a.5 role:support false Nick160 Seo-jun Kim 2003-10-05 [5386, 4550, 5491, 5637, 5351, 4233, 5856] [5358, 3654, 4529, 3511, 2395, 5980]\n\
-player:a.6 role:jungle true Nick180 Seo-jun Han 2003-11-16 [7125, 6644, 7713, 7363, 7618, 6542, 7848] [6763, 3868, 7788, 3744, 3812, 7370]\n\
-player:a.7 role:support true Nick303 Do-yun Han 2001-09-17 [6404, 5489, 5648, 6635, 6413, 5899, 4747] [6277, 7360, 4453, 4912, 5540, 6144]\n\
-player:b.1 role:top true Nick168 Ana Silva 2006-02-05 [5032, 5796, 5957, 5241, 5396, 4043, 4986] [4687, 5146, 5348, 4687, 5776, 7435]\n\
-player:b.2 role:jungle true Nick393 Ana Costa 2004-07-25 [4944, 4051, 4973, 4719, 5128, 5316, 6371] [4791, 5562, 4065, 5407, 3543, 5016]\n\
-player:b.3 role:mid false Nick192 Caio Silva 2003-11-10 [4449, 3185, 3064, 3451, 2403, 3371, 3019] [2870, 5882, 2436, 6646, 4674, 3549]\n\
-player:b.4 role:bot true Nick166 Ana Ribeiro 2005-01-25 [4301, 6990, 4500, 5065, 5253, 5067, 4953] [4483, 7889, 4805, 2812, 5639, 5839]\n\
-player:b.5 role:support true Nick234 Caio Silva 2008-06-30 [4164, 4242, 4619, 3610, 3691, 3730, 4700] [3989, 3775, 4317, 5473, 4554, 5546]\n\
-player:b.6 role:mid true Nick41 Ana Ribeiro 2005-04-27 [5040, 5141, 3842, 4338, 3764, 2723, 4377] [3152, 3399, 3678, 1837, 3105, 5492]\n\
-player:b.7 role:bot false Nick331 Caio Costa 2004-10-17 [4482, 3483, 3080, 4803, 4113, 2927, 4295] [3399, 4848, 3600, 2776, 5916, 4562]\n\
+player:a.1 role:top true Nick173 Ha-eun Han 2007-04-25 [7232, 8669, 6819, 6960, 6947, 5982, 6901] [6140, 5215, 6519, 3083, 7123, 8335]\n\
+player:a.2 role:jungle false Nick75 Ha-eun Kim 2006-01-29 [6904, 6955, 7829, 8092, 7059, 6921, 7436] [6637, 4626, 7118, 3754, 6044, 9192]\n\
+player:a.3 role:mid true Nick132 Ha-eun Han 2007-04-20 [7108, 6984, 7544, 6755, 6944, 6254, 7689] [6580, 5254, 7897, 5789, 5107, 8340]\n\
+player:a.4 role:bot true Nick193 Ha-eun Kim 2002-12-07 [9245, 8725, 8266, 8450, 8522, 8403, 7223] [8026, 7129, 8249, 6719, 3359, 8550]\n\
+player:a.5 role:support false Nick244 Ha-eun Kim 2003-10-05 [5386, 4550, 5491, 5637, 5351, 4233, 5856] [5358, 3654, 4529, 3511, 2395, 5980]\n\
+player:a.6 role:jungle true Nick168 Ha-eun Han 2003-11-16 [7125, 6644, 7713, 7363, 7618, 6542, 7848] [6763, 3868, 7788, 3744, 3812, 7370]\n\
+player:a.7 role:support true Nick245 Do-yun Han 2001-09-17 [6404, 5489, 5648, 6635, 6413, 5899, 4747] [6277, 7360, 4453, 4912, 5540, 6144]\n\
+player:b.1 role:top true Nick15 Caio Ribeiro 2006-02-05 [5032, 5796, 5957, 5241, 5396, 4043, 4986] [4687, 5146, 5348, 4687, 5776, 7435]\n\
+player:b.2 role:jungle true Nick207 Caio Silva 2004-07-25 [4944, 4051, 4973, 4719, 5128, 5316, 6371] [4791, 5562, 4065, 5407, 3543, 5016]\n\
+player:b.3 role:mid false Nick29 Ana Ribeiro 2003-11-10 [4449, 3185, 3064, 3451, 2403, 3371, 3019] [2870, 5882, 2436, 6646, 4674, 3549]\n\
+player:b.4 role:bot true Nick191 Caio Costa 2005-01-25 [4301, 6990, 4500, 5065, 5253, 5067, 4953] [4483, 7889, 4805, 2812, 5639, 5839]\n\
+player:b.5 role:support true Nick147 Ana Ribeiro 2008-06-30 [4164, 4242, 4619, 3610, 3691, 3730, 4700] [3989, 3775, 4317, 5473, 4554, 5546]\n\
+player:b.6 role:mid true Nick9 Caio Costa 2005-04-27 [5040, 5141, 3842, 4338, 3764, 2723, 4377] [3152, 3399, 3678, 1837, 3105, 5492]\n\
+player:b.7 role:bot false Nick339 Ana Silva 2004-10-17 [4482, 3483, 3080, 4803, 4113, 2927, 4295] [3399, 4848, 3600, 2776, 5916, 4562]\n\
 ";

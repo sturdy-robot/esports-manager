@@ -77,7 +77,7 @@ fn the_same_world_on_every_operating_system() {
             hex
         });
     assert_eq!(
-        hash, "a91783e29fa1bd7c3f936bba56e2be81cf831731697746c9a3055c4f7dcdf993",
+        hash, "b0f078951a54dd69a061e410b63bb60ece23f240cc6ee86adae92f59d25ddab4",
         "the core world for seed 42 changed:\n{text}"
     );
 }

@@ -62,10 +62,14 @@ impl ContentId {
     ///
     /// # Errors
     ///
-    /// When `kind` isn't a valid kind.
+    /// When `kind` isn't a valid kind, or `owner` is itself generated.
     pub fn generated(kind: &str, owner: &Self, number: u32) -> Result<Self, IdError> {
         if !is_kind(kind) {
             return Err(IdError::InvalidKind);
+        }
+        // `player:a.1.2` would not parse back, so a generated id can't own one.
+        if owner.is_generated() {
+            return Err(IdError::InvalidSlug);
         }
         Ok(Self::from_parts(
             kind,
@@ -109,7 +113,8 @@ impl ContentId {
 
     /// The Fluent message holding this content's translatable name:
     /// `team:azure_tigers` → `team-azure_tigers` (packages spec). Only
-    /// package content has one; generated ids don't.
+    /// package content has a name in package text; for a generated id the
+    /// result names no message.
     #[must_use]
     pub fn message_id(&self) -> String {
         format!("{}-{}", self.kind(), self.slug())
@@ -204,6 +209,15 @@ mod tests {
         assert_eq!(player.as_str(), "player:azure_tigers.3");
         assert_eq!(player.kind(), "player");
         assert!(player.is_generated());
+    }
+
+    #[test]
+    fn generated_ids_cant_be_owned_by_generated_ids() {
+        let player = ContentId::generated("player", &id("team:a"), 1).unwrap();
+        assert_eq!(
+            ContentId::generated("player", &player, 2),
+            Err(IdError::InvalidSlug)
+        );
     }
 
     #[test]
