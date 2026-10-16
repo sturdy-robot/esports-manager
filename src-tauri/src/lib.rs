@@ -59,9 +59,11 @@ pub fn run() -> tauri::Result<()> {
             )));
 
             let config = desktop::window_config(&locations);
+            // The window is named after the product in tauri.conf.json.
+            let title = app.config().product_name.clone().unwrap_or_default();
             let mut window =
                 tauri::WebviewWindowBuilder::new(app, config.label, tauri::WebviewUrl::default())
-                    .title("eSports Manager")
+                    .title(title)
                     .inner_size(f64::from(config.width), f64::from(config.height))
                     .min_inner_size(f64::from(config.min_width), f64::from(config.min_height));
             if let Some(dir) = config.data_directory {

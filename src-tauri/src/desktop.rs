@@ -341,9 +341,18 @@ mod tests {
         assert!(desktop.open_save("second.esmsave", Timestamp(4)).is_ok());
         let saves = desktop.list_saves().unwrap();
         assert_eq!(saves.len(), 2);
-        // The open save is listed as ready, not as in use by this app.
-        assert!(
-            saves.iter().all(|s| matches!(s, SaveSummary::Ready { .. })),
+        // The open save is listed as ready, not as in use by this app, and
+        // first: it was played last.
+        let files: Vec<(&str, bool)> = saves
+            .iter()
+            .filter_map(|save| match save {
+                SaveSummary::Ready { file, in_use, .. } => Some((file.as_str(), *in_use)),
+                SaveSummary::Damaged { .. } => None,
+            })
+            .collect();
+        assert_eq!(
+            files,
+            [("second.esmsave", false), ("first.esmsave", false)],
             "{saves:?}"
         );
         assert_eq!(
@@ -434,14 +443,36 @@ mod tests {
         );
     }
 
+    /// The wiring behind SAVE-007; the smoke test checks the scenario
+    /// itself with both real binaries.
     #[test]
-    fn the_cli_and_the_desktop_app_agree() {
-        // spec: SAVE-007
-        // Given the environment of this process
-        // When the desktop app resolves its data folder, as `run` does
-        let desktop = crate::data_locations().unwrap();
-        // Then it is the folder the CLI resolves without `--data-dir`
-        assert_eq!(desktop, db::environment::locations(None).unwrap());
+    fn the_desktop_app_resolves_its_data_folder_like_the_cli() {
+        assert_eq!(
+            crate::data_locations().unwrap(),
+            db::environment::locations(None).unwrap()
+        );
+    }
+
+    #[test]
+    fn the_cli_and_the_desktop_see_the_same_roster() {
+        // spec: ROST-011
+        // Given a new game: Ana's Azure Tigers from seed 42, the game the
+        // CLI built `src/test/fixtures/roster.json` from (`just e2e-fixtures`)
+        let mut desktop = desktop("same-roster");
+        desktop
+            .start_new_game(input("Ana's Tigers", Some("42")), 1, Timestamp(1))
+            .unwrap();
+        // When the desktop app's `get_roster` command builds the view
+        let view = serde_json::to_value(desktop.roster(None).unwrap()).unwrap();
+        // Then it is the view `esm roster --json` printed
+        let cli: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(
+                Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/test/fixtures/roster.json"),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(view, cli);
     }
 
     #[test]
