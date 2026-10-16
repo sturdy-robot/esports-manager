@@ -1,18 +1,20 @@
-import { useEffect, useState } from "react";
-import { type About, commands } from "./bindings";
+import type { ReactLocalization } from "@fluent/react";
+import { LocalizationProvider } from "@fluent/react";
+import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider } from "@tanstack/react-router";
+import { router } from "./router";
 
-/** Placeholder shell until the first screens land. */
-export function App() {
-  const [about, setAbout] = useState<About | null>(null);
+interface AppProps {
+  l10n: ReactLocalization;
+  queryClient: QueryClient;
+}
 
-  useEffect(() => {
-    void commands.getAbout().then(setAbout);
-  }, []);
-
+export function App({ l10n, queryClient }: AppProps) {
   return (
-    <main>
-      <h1>eSports Manager</h1>
-      {about !== null && <p data-testid="version">v{about.version}</p>}
-    </main>
+    <LocalizationProvider l10n={l10n}>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </LocalizationProvider>
   );
 }

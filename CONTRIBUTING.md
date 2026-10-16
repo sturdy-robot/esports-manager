@@ -99,6 +99,12 @@ The repository checks that no off-the-shelf tool covers (crate graph, genre voca
 
 - `src/bindings.ts` is **generated** from the Rust commands and DTOs (ADR 0006). Never edit it; run `just bindings`. A test fails if it is out of date.
 - Call the backend only through `commands` from `src/bindings.ts`. Biome rejects direct `@tauri-apps/api/core` imports.
+- **Data** goes through TanStack Query hooks in `src/hooks/` (one per backend query). There is no global store of game state.
+- **Screens** are routes in `src/routes/`, registered in `src/router.tsx`.
+- **Text:** every user-visible string is a Fluent message in `src/locales/<locale>/*.ftl`, with **every locale updated in the same change** (English and Brazilian Portuguese today). Use `<Localized id="…">` or `l10n.getString("…")` with a literal id. The i18n tests fail on a missing translation, a mismatched `$variable`, an unused message, or text written directly in JSX.
+- **Styling:** Tailwind utilities backed by the tokens in `src/styles/tokens.css`. Don't hard-code colours. Every `--text-*` token must keep WCAG AA contrast on every `--surface-*` token; a test enforces it.
+- **Logic** that isn't a component (formatting, i18n, checks) lives in `src/lib/` or `tools/`, where Vitest's 80% coverage minimum applies.
+- `just hooks` installs fast pre-commit checks (lefthook). They are optional; CI runs everything anyway.
 
 ## Commit messages
 

@@ -22,6 +22,10 @@ frontend-check: typecheck lint knip coverage-frontend
 install:
     pnpm install --frozen-lockfile
 
+# Install the fast pre-commit hooks (lefthook.yml).
+hooks:
+    pnpm hooks
+
 # Run the desktop app with hot reload.
 dev:
     pnpm tauri dev

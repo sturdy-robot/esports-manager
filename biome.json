@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["src/**", "e2e/**", "*.ts", "*.json", "!src/bindings.ts"]
+    "includes": ["src/**", "tools/**", "e2e/**", "*.ts", "*.json", "!src/bindings.ts"]
   },
   "formatter": {
     "indentStyle": "space",
@@ -32,6 +32,11 @@
       "source": {
         "organizeImports": "on"
       }
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   }
 }
