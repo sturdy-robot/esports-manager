@@ -9,7 +9,11 @@ publish.workspace = true
 
 [dependencies]
 domain.workspace = true
+rand_core.workspace = true
 thiserror.workspace = true
+
+[dev-dependencies]
+rand_chacha.workspace = true
 
 [lints]
 workspace = true

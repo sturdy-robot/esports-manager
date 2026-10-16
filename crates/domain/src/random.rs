@@ -30,6 +30,42 @@ pub fn normal(rng: &mut impl Rng, mean: f64, std_dev: f64) -> f64 {
     mean + std_dev * radius * libm::cos(angle)
 }
 
+/// Rounds `value` to the nearest integer, ties away from zero, and clamps it
+/// to `min..=max`. A NaN becomes `min`.
+#[must_use]
+pub fn round_clamped(value: f64, min: i32, max: i32) -> i32 {
+    let rounded = value.round();
+    if rounded.is_nan() {
+        return min;
+    }
+    let bounded = rounded.clamp(f64::from(min), f64::from(max));
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "rounded and clamped to an i32 range just above"
+    )]
+    let whole = bounded as i32;
+    whole
+}
+
+/// A uniform index into `0..len` without repeating any of `taken`, which
+/// must be sorted and within range. `None` when every index is taken.
+pub fn index_excluding(
+    rng: &mut impl Rng,
+    len: usize,
+    taken: &std::collections::BTreeSet<usize>,
+) -> Option<usize> {
+    let free = len.checked_sub(taken.len())?;
+    let mut choice = index(rng, free)?;
+    for &used in taken {
+        if used <= choice {
+            choice += 1;
+        } else {
+            break;
+        }
+    }
+    Some(choice)
+}
+
 /// Redraws allowed before `below` accepts a biased value. A redraw happens
 /// with probability under `bound / 2⁶⁴`, so for any bound the game uses,
 /// reaching the limit is less likely than 2⁻²⁰⁴⁸. The limit only keeps the
@@ -231,6 +267,46 @@ mod tests {
         assert_eq!(counts[1], 0);
         assert!((9_500..10_500).contains(&counts[0]), "{counts:?}");
         assert!((29_500..30_500).contains(&counts[2]), "{counts:?}");
+    }
+
+    #[test]
+    fn round_clamped_rounds_ties_away_and_clamps() {
+        assert_eq!(round_clamped(21.5, 17, 28), 22);
+        assert_eq!(round_clamped(21.49, 17, 28), 21);
+        assert_eq!(round_clamped(-2.5, -10, 10), -3);
+        assert_eq!(round_clamped(3.0, 17, 28), 17);
+        assert_eq!(round_clamped(99.0, 17, 28), 28);
+        assert_eq!(round_clamped(f64::NAN, 17, 28), 17);
+        assert_eq!(round_clamped(f64::INFINITY, 17, 28), 28);
+    }
+
+    #[test]
+    fn index_excluding_skips_taken_indexes() {
+        let taken = std::collections::BTreeSet::from([0, 2]);
+        // Free indexes are 1, 3 and 4; raw draws 3, 4 and 5 (0, 1 and 2
+        // modulo 3) map onto them.
+        assert_eq!(index_excluding(&mut Script(vec![3]), 5, &taken), Some(1));
+        assert_eq!(index_excluding(&mut Script(vec![4]), 5, &taken), Some(3));
+        assert_eq!(index_excluding(&mut Script(vec![5]), 5, &taken), Some(4));
+        let all = std::collections::BTreeSet::from([0, 1]);
+        assert_eq!(index_excluding(&mut stream(), 2, &all), None);
+        assert_eq!(
+            index_excluding(&mut stream(), 1, &std::collections::BTreeSet::from([0, 1])),
+            None
+        );
+    }
+
+    #[test]
+    fn index_excluding_covers_every_free_index() {
+        let taken = std::collections::BTreeSet::from([1, 3]);
+        let mut rng = stream();
+        let mut seen = std::collections::BTreeSet::new();
+        for _ in 0..200 {
+            let choice = index_excluding(&mut rng, 6, &taken).unwrap();
+            assert!(!taken.contains(&choice));
+            seen.insert(choice);
+        }
+        assert_eq!(seen, std::collections::BTreeSet::from([0, 2, 4, 5]));
     }
 
     #[test]

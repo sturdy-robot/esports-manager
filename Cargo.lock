@@ -832,6 +832,8 @@ name = "esports"
 version = "0.0.0"
 dependencies = [
  "domain",
+ "rand_chacha",
+ "rand_core",
  "thiserror 2.0.21",
 ]
 
@@ -2226,6 +2228,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 name = "packages"
 version = "0.0.0"
 dependencies = [
+ "app",
  "domain",
  "esports",
  "fluent-syntax",

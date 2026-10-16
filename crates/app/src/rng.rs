@@ -1,6 +1,6 @@
 //! Construction of deterministic random streams (ADR 0003).
 
-use domain::rng::{StreamLabel, WorldSeed, derive_stream_seed};
+use domain::rng::{StreamLabel, StreamSource, WorldSeed, derive_stream_seed};
 use rand_chacha::ChaCha8Rng;
 use rand_core::SeedableRng;
 
@@ -24,6 +24,14 @@ impl RngProvider {
     #[must_use]
     pub fn stream(&self, label: &StreamLabel) -> ChaCha8Rng {
         ChaCha8Rng::from_seed(derive_stream_seed(self.seed, label))
+    }
+}
+
+impl StreamSource for RngProvider {
+    type Stream = ChaCha8Rng;
+
+    fn stream(&self, label: &StreamLabel) -> ChaCha8Rng {
+        Self::stream(self, label)
     }
 }
 
@@ -61,6 +69,16 @@ mod tests {
         let _ = first_values(&mut other);
 
         assert_eq!(first_values(&mut provider.stream(&fixture)), untouched);
+    }
+
+    #[test]
+    fn the_stream_source_hands_out_the_same_streams() {
+        let provider = RngProvider::new(WorldSeed::new(7));
+        let label = StreamLabel::new("generator:team:team:a");
+        assert_eq!(
+            first_values(&mut StreamSource::stream(&provider, &label)),
+            first_values(&mut provider.stream(&label)),
+        );
     }
 
     #[test]

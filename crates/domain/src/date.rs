@@ -115,6 +115,19 @@ impl GameDate {
         Self::from_day_number(self.day_number().checked_add(days)?)
     }
 
+    /// The same day `years` years earlier, or 28 February when that year has
+    /// no 29 February. `None` before year 1.
+    #[must_use]
+    pub fn years_before(self, years: u16) -> Option<Self> {
+        let year = self.year.checked_sub(years).filter(|&year| year >= 1)?;
+        let day = self.day.min(days_in_month(year, self.month));
+        Some(Self {
+            year,
+            month: self.month,
+            day,
+        })
+    }
+
     /// Completed years from `self` (a birth date) to `on`, or `None` when `on`
     /// is before `self`. Someone born on 29 February turns a year older on
     /// 1 March in common years.
@@ -339,6 +352,22 @@ mod tests {
         assert_eq!(birth.age_on(date("2027-02-28")), Some(18));
         assert_eq!(birth.age_on(date("2027-03-01")), Some(19));
         assert_eq!(birth.age_on(date("2028-02-29")), Some(20));
+    }
+
+    #[test]
+    fn years_before_keeps_the_day_where_it_exists() {
+        assert_eq!(
+            date("2027-01-01").years_before(29),
+            Some(date("1998-01-01"))
+        );
+        assert_eq!(date("2028-02-29").years_before(1), Some(date("2027-02-28")));
+        assert_eq!(date("2028-02-29").years_before(4), Some(date("2024-02-29")));
+        assert_eq!(date("2027-03-14").years_before(0), Some(date("2027-03-14")));
+        assert_eq!(date("2027-03-14").years_before(2027), None);
+        assert_eq!(
+            date("2027-03-14").years_before(2026),
+            Some(date("0001-03-14"))
+        );
     }
 
     #[test]
