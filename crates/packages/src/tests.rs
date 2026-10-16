@@ -189,24 +189,30 @@ fn the_fixture_is_valid() {
     let package = Fixture::new().load().unwrap();
     assert_eq!(package.manifest.id, "test");
     assert_eq!(package.manifest.locales, ["en", "pt-BR"]);
-    assert_eq!(package.world.start_date.to_string(), "2027-01-01");
-    assert_eq!(package.regions[0].level, 4);
     assert_eq!(
-        package.regions[0].nationalities,
+        package.template.settings.start_date.to_string(),
+        "2027-01-01"
+    );
+    assert_eq!(package.template.regions[0].level, 4);
+    assert_eq!(
+        package.template.regions[0].nationalities,
         [(id("nationality:br"), 1), (id("nationality:kr"), 9)]
     );
-    assert_eq!(package.nationalities.len(), 2);
-    assert_eq!(package.name_pools.len(), 2);
-    assert_eq!(package.nicknames.len(), 100);
-    assert_eq!(package.competitions[0].teams, [id("team:a"), id("team:b")]);
-    assert_eq!(package.teams.len(), 2);
-    assert_eq!(package.teams[0].tag.as_str(), "AAA");
-    assert_eq!(package.teams[0].colours[1].to_string(), "#F2C14E");
-    assert_eq!(package.teams[0].reputation.value(), 50);
-    assert_eq!(package.roles.roles().len(), 5);
-    assert_eq!(package.roster.subs, 2);
-    assert!((package.generation.mu_per_reputation - 0.4).abs() < f64::EPSILON);
-    assert_eq!(package.generation.age_max, 28);
+    assert_eq!(package.template.nationalities.len(), 2);
+    assert_eq!(package.template.name_pools.len(), 2);
+    assert_eq!(package.template.nicknames.len(), 100);
+    assert_eq!(
+        package.template.competitions[0].teams,
+        [id("team:a"), id("team:b")]
+    );
+    assert_eq!(package.template.teams.len(), 2);
+    assert_eq!(package.template.teams[0].tag.as_str(), "AAA");
+    assert_eq!(package.template.teams[0].colours[1].to_string(), "#F2C14E");
+    assert_eq!(package.template.teams[0].reputation.value(), 50);
+    assert_eq!(package.template.roles.roles().len(), 5);
+    assert_eq!(package.template.roster.subs, 2);
+    assert!((package.template.generation.mu_per_reputation - 0.4).abs() < f64::EPSILON);
+    assert_eq!(package.template.generation.age_max, 28);
     assert_eq!(package.texts.len(), 2);
     assert_eq!(package.content_hash, Fixture::new().files().content_hash());
 }
@@ -224,8 +230,8 @@ fn subfolders_and_file_names_carry_no_meaning() {
     // When
     let (nested, moved) = (nested.load().unwrap(), moved.load().unwrap());
     // Then
-    assert_eq!(nested.players, moved.players);
-    assert_eq!(nested.players[0].id, id("player:kairos"));
+    assert_eq!(nested.template.players, moved.template.players);
+    assert_eq!(nested.template.players[0].id, id("player:kairos"));
 }
 
 #[test]
@@ -491,7 +497,10 @@ fn a_roster_with_room_left_is_fine() {
         .map(|(n, role)| json!({"id": format!("player:p{n}"), "team": "team:a", "role": format!("role:{role}")}))
         .collect();
     fixture.set("players/a.json", Value::Array(players));
-    assert_eq!(fixture.load().map(|p| p.players.len()).ok(), Some(5));
+    assert_eq!(
+        fixture.load().map(|p| p.template.players.len()).ok(),
+        Some(5)
+    );
 }
 
 #[test]
@@ -932,8 +941,11 @@ fn nickname_pools_merge_without_repeats() {
         json!({"id": "nickname_pool:more", "nicknames": ["nick00", "Fresh"]}),
     );
     let package = fixture.load().unwrap();
-    assert_eq!(package.nicknames.len(), 101);
-    assert_eq!(package.nicknames.last().map(String::as_str), Some("Fresh"));
+    assert_eq!(package.template.nicknames.len(), 101);
+    assert_eq!(
+        package.template.nicknames.last().map(String::as_str),
+        Some("Fresh")
+    );
 }
 
 #[test]
@@ -949,7 +961,7 @@ fn pinned_players_convert_every_field() {
                               "composure": 9, "work_ethic": 10, "consistency": 11, "potential": 12}}),
     );
     let package = fixture.load().unwrap();
-    let kairos = &package.players[0];
+    let kairos = &package.template.players[0];
     assert_eq!(kairos.nickname.as_deref(), Some("Kairos"));
     assert_eq!(kairos.given_name.as_deref(), Some("Do-yun"));
     assert_eq!(kairos.family_name.as_deref(), Some("Han"));
@@ -984,7 +996,7 @@ fn pinned_players_convert_every_field() {
 fn weight_keys_map_to_their_attributes() {
     use esports::moba::attributes::OverallAttribute;
     let package = Fixture::new().load().unwrap();
-    let mid = package.roles.get(&id("role:mid")).unwrap();
+    let mid = package.template.roles.get(&id("role:mid")).unwrap();
     let weights: Vec<u32> = OverallAttribute::ALL
         .iter()
         .map(|&a| mid.weight(a))
@@ -1008,11 +1020,11 @@ fn the_core_package_loads_with_no_errors() {
     // Then
     let package = package.unwrap();
     assert_eq!(package.manifest.id, "core");
-    assert_eq!(package.regions.len(), 2);
-    assert_eq!(package.competitions.len(), 2);
-    assert_eq!(package.teams.len(), 18);
-    assert_eq!(package.nationalities.len(), 11);
-    assert_eq!(package.players.len(), 4);
+    assert_eq!(package.template.regions.len(), 2);
+    assert_eq!(package.template.competitions.len(), 2);
+    assert_eq!(package.template.teams.len(), 18);
+    assert_eq!(package.template.nationalities.len(), 11);
+    assert_eq!(package.template.players.len(), 4);
 }
 
 #[test]
@@ -1059,14 +1071,17 @@ fn names_may_be_split_across_pools() {
         "name-pools/kr-more.json",
         json!({"id": "name_pool:kr_more", "nationality": "nationality:kr", "given": ["Seo-jun"], "family": ["Kim"]}),
     );
-    assert_eq!(fixture.load().map(|p| p.name_pools.len()).ok(), Some(3));
+    assert_eq!(
+        fixture.load().map(|p| p.template.name_pools.len()).ok(),
+        Some(3)
+    );
 }
 
 #[test]
 fn subs_may_equal_the_roles() {
     let mut fixture = Fixture::new();
     fixture.edit("roles/core.json", |set| set["subs"] = json!(5));
-    assert_eq!(fixture.load().map(|p| p.roster.subs).ok(), Some(5));
+    assert_eq!(fixture.load().map(|p| p.template.roster.subs).ok(), Some(5));
 }
 
 #[test]

@@ -16,9 +16,7 @@ pub mod schemas;
 
 use std::path::Path;
 
-use domain::world::{Competition, NamePool, Nationality, Region, Team, WorldSettings};
-use esports::moba::content::{GenerationParams, PinnedPlayer, RosterRules};
-use esports::moba::roles::RoleSet;
+use esports::moba::world::WorldTemplate;
 
 pub use convert::Manifest;
 pub use files::PackageFiles;
@@ -34,18 +32,8 @@ pub struct Package {
     pub manifest: Manifest,
     /// SHA-256 of the package's files; saves record it (saves spec).
     pub content_hash: [u8; 32],
-    pub world: WorldSettings,
-    pub regions: Vec<Region>,
-    pub nationalities: Vec<Nationality>,
-    pub name_pools: Vec<NamePool>,
-    /// Every nickname pool merged, without case-insensitive repeats.
-    pub nicknames: Vec<String>,
-    pub competitions: Vec<Competition>,
-    pub teams: Vec<Team>,
-    pub players: Vec<PinnedPlayer>,
-    pub roles: RoleSet,
-    pub roster: RosterRules,
-    pub generation: GenerationParams,
+    /// The world the package defines, ready for the generator.
+    pub template: WorldTemplate,
     pub texts: Vec<TextFile>,
 }
 
@@ -129,17 +117,19 @@ pub fn load_files(files: &PackageFiles) -> Result<Package, Vec<PackageError>> {
     Ok(Package {
         manifest,
         content_hash: files.content_hash(),
-        world,
-        regions: values(regions),
-        nationalities: values(nationalities),
-        name_pools: values(name_pools),
-        nicknames: merge_nicknames(nicknames),
-        competitions: values(competitions),
-        teams: values(teams),
-        players: values(players),
-        roles,
-        roster,
-        generation: generation.value,
+        template: WorldTemplate {
+            settings: world,
+            regions: values(regions),
+            nationalities: values(nationalities),
+            name_pools: values(name_pools),
+            nicknames: merge_nicknames(nicknames),
+            competitions: values(competitions),
+            teams: values(teams),
+            players: values(players),
+            roles,
+            roster,
+            generation: generation.value,
+        },
         texts: parsed.texts,
     })
 }

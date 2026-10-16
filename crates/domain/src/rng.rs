@@ -40,6 +40,16 @@ impl StreamLabel {
     }
 }
 
+/// Hands out the random stream for a label. Domain and genre code take one
+/// of these and never build a generator themselves; the application layer's
+/// RNG provider is the implementation (ADR 0003).
+pub trait StreamSource {
+    type Stream: rand_core::Rng;
+
+    /// The stream for `label`. Asking twice gives the same sequence.
+    fn stream(&self, label: &StreamLabel) -> Self::Stream;
+}
+
 /// Length of the seed material: a 256-bit key, as the `ChaCha` family expects.
 pub const STREAM_SEED_LEN: usize = 32;
 
