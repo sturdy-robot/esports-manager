@@ -57,7 +57,8 @@ pub fn prepare(locations: &DataLocations) -> Result<(), (PathBuf, std::io::Error
     let saves = locations.saves();
     std::fs::create_dir_all(&saves).map_err(|error| (locations.root().to_path_buf(), error))?;
     // Creating a directory can succeed on a folder we then can't write to.
-    let probe = saves.join(".write-test");
+    // Named per process, so two processes starting at once don't race.
+    let probe = saves.join(format!(".write-test-{}", std::process::id()));
     std::fs::write(&probe, b"").map_err(|error| (locations.root().to_path_buf(), error))?;
     std::fs::remove_file(&probe).map_err(|error| (locations.root().to_path_buf(), error))?;
     Ok(())
@@ -107,7 +108,7 @@ mod tests {
         .unwrap();
         prepare(&locations).unwrap();
         assert!(root.join("saves").is_dir());
-        assert!(!root.join("saves/.write-test").exists());
+        assert_eq!(std::fs::read_dir(root.join("saves")).unwrap().count(), 0);
         std::fs::remove_dir_all(&root).unwrap();
     }
 

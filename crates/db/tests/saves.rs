@@ -137,7 +137,7 @@ fn an_empty_or_foreign_database_is_not_a_save() {
     assert_eq!(listings[0].save, Err(Damage::NotASave));
     assert_eq!(
         store.open("empty.esmsave", Timestamp(1)).map(|_| ()),
-        Err(SaveError::Damaged(Damage::NotASave))
+        Err(SaveError::NotASave)
     );
 }
 
@@ -159,10 +159,7 @@ fn newer_saves_are_refused() {
     // When
     let result = store.open(&file, Timestamp(200));
     // Then
-    assert_eq!(
-        result.map(|_| ()),
-        Err(SaveError::Damaged(Damage::NewerVersion))
-    );
+    assert_eq!(result.map(|_| ()), Err(SaveError::NewerVersion));
     assert_eq!(std::fs::read(dir.join(&file)).unwrap(), before);
     assert_eq!(store.list().unwrap()[0].save, Err(Damage::NewerVersion));
 }
@@ -276,7 +273,13 @@ fn leftovers_of_a_crash_are_cleaned_up() {
     // spec: SAVE-019
     // Given
     let dir = folder("leftovers");
-    std::fs::write(dir.join("tigers.1234-0.tmp"), b"half a save").unwrap();
+    // A half-written SQLite file with its rollback journal, and a journal
+    // whose temporary save is already gone.
+    let mut half = b"SQLite format 3\0".to_vec();
+    half.resize(4096, 0);
+    std::fs::write(dir.join("tigers.1234-0.tmp"), &half).unwrap();
+    std::fs::write(dir.join("tigers.1234-0.tmp-journal"), [0_u8; 512]).unwrap();
+    std::fs::write(dir.join("lions.99-3.tmp-journal"), [0_u8; 512]).unwrap();
     // When
     let store = SqliteSaveStore::new(dir.clone());
     // Then
@@ -287,6 +290,24 @@ fn leftovers_of_a_crash_are_cleaned_up() {
             .create(new_save(&meta("Tigers", 100), &world, &texts))
             .unwrap(),
         "tigers.esmsave"
+    );
+}
+
+#[test]
+fn creation_takes_a_free_file_and_leaves_other_files_alone() {
+    // SAVE-018 at the store's level: a file already under the name, even one
+    // that isn't a save, is never a target.
+    let dir = folder("existing-file");
+    std::fs::write(dir.join("tigers.esmsave"), b"existing").unwrap();
+    let store = SqliteSaveStore::new(dir.clone());
+    let (world, texts) = (world(42), texts());
+    let file = store
+        .create(new_save(&meta("Tigers", 100), &world, &texts))
+        .unwrap();
+    assert_eq!(file, "tigers-2.esmsave");
+    assert_eq!(
+        std::fs::read(dir.join("tigers.esmsave")).unwrap(),
+        b"existing"
     );
 }
 
@@ -304,10 +325,64 @@ fn an_open_save_cannot_be_opened_twice() {
     // When
     let second = store.open(&file, Timestamp(300));
     // Then
-    assert_eq!(second.map(|_| ()), Err(SaveError::Damaged(Damage::InUse)));
-    assert_eq!(store.list().unwrap()[0].save, Err(Damage::InUse));
+    assert_eq!(second.map(|_| ()), Err(SaveError::InUse));
+    // Its metadata is still listed, marked in use.
+    let listing = &store.list().unwrap()[0];
+    assert!(listing.in_use);
+    assert_eq!(listing.save.as_ref().unwrap().name, "Busy");
     drop(held);
+    assert!(!store.list().unwrap()[0].in_use);
     assert!(store.open(&file, Timestamp(400)).is_ok());
+}
+
+#[test]
+fn a_name_is_taken_even_by_a_save_that_is_open() {
+    let dir = folder("taken-open");
+    let store = SqliteSaveStore::new(dir.clone());
+    let (world, texts) = (world(42), texts());
+    let file = store
+        .create(new_save(&meta("Tigers", 100), &world, &texts))
+        .unwrap();
+    let _held = store.open(&file, Timestamp(200)).unwrap();
+    assert_eq!(
+        store.create(new_save(&meta("tigers", 300), &world, &texts)),
+        Err(SaveError::NameTaken("tigers".to_owned()))
+    );
+}
+
+#[test]
+fn a_name_is_taken_even_by_a_save_from_a_newer_version() {
+    let dir = folder("taken-newer");
+    let store = SqliteSaveStore::new(dir.clone());
+    let (world, texts) = (world(42), texts());
+    let file = store
+        .create(new_save(&meta("Future", 100), &world, &texts))
+        .unwrap();
+    raw_execute(
+        &dir.join(&file),
+        "INSERT INTO __diesel_schema_migrations (version) VALUES ('99990101000000')",
+    );
+    assert_eq!(
+        store.create(new_save(&meta("FUTURE", 300), &world, &texts)),
+        Err(SaveError::NameTaken("FUTURE".to_owned()))
+    );
+}
+
+#[test]
+fn an_open_save_keeps_its_place_in_the_list() {
+    let dir = folder("open-order");
+    let store = SqliteSaveStore::new(dir.clone());
+    let (world, texts) = (world(42), texts());
+    store
+        .create(new_save(&meta("Alpha", 100), &world, &texts))
+        .unwrap();
+    let zeta = store
+        .create(new_save(&meta("Zeta", 50), &world, &texts))
+        .unwrap();
+    std::fs::write(dir.join("broken.esmsave"), b"not a save").unwrap();
+    let _held = store.open(&zeta, Timestamp(500)).unwrap();
+    let files: Vec<String> = store.list().unwrap().into_iter().map(|l| l.file).collect();
+    assert_eq!(files, ["zeta.esmsave", "alpha.esmsave", "broken.esmsave"]);
 }
 
 #[test]
@@ -321,20 +396,27 @@ fn saves_played_at_the_same_moment_have_a_stable_order() {
         .create(new_save(&meta("Beta", 100), &world, &texts))
         .unwrap();
     store
-        .create(new_save(&meta("Alpha", 100), &world, &texts))
+        .create(new_save(&meta("alpha", 100), &world, &texts))
         .unwrap();
+    // A hand-made copy has the same name and moment; its file breaks the tie.
+    std::fs::copy(dir.join("alpha.esmsave"), dir.join("alpha-copy.esmsave")).unwrap();
     // When
-    let names = || {
+    let listed = || {
         store
             .list()
             .unwrap()
             .into_iter()
-            .map(|l| l.save.unwrap().name)
+            .map(|l| (l.save.unwrap().name, l.file))
             .collect::<Vec<_>>()
     };
-    // Then
-    assert_eq!(names(), ["Alpha", "Beta"]);
-    assert_eq!(names(), ["Alpha", "Beta"]);
+    // Then names sort as a person reads them, ignoring case
+    let expected = [
+        ("alpha".to_owned(), "alpha-copy.esmsave".to_owned()),
+        ("alpha".to_owned(), "alpha.esmsave".to_owned()),
+        ("Beta".to_owned(), "beta.esmsave".to_owned()),
+    ];
+    assert_eq!(listed(), expected);
+    assert_eq!(listed(), expected);
 }
 
 #[test]

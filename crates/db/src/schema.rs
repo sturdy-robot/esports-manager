@@ -137,6 +137,7 @@ diesel::joinable!(players -> roles (role_id));
 diesel::joinable!(players -> teams (team_id));
 diesel::joinable!(region_nationalities -> nationalities (nationality_id));
 diesel::joinable!(region_nationalities -> regions (region_id));
+diesel::joinable!(save_meta -> teams (team_id));
 diesel::joinable!(teams -> regions (region_id));
 
 diesel::allow_tables_to_appear_in_same_query!(

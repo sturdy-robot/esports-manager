@@ -119,27 +119,32 @@ impl Desktop {
     /// When the saves folder can't be read.
     pub fn list_saves(&self) -> Result<Vec<SaveSummary>, Failure> {
         let saves = game::list_saves(&self.store).map_err(|e| fail(game::save_message(&e)))?;
-        // The save this app holds open is locked against reading; it is
-        // listed from what the app already knows about it.
+        // The save this app holds open shows as locked to its own probe; to
+        // the player it is simply the game they're playing.
         Ok(saves
             .into_iter()
-            .map(|save| match (&save, &self.open) {
-                (SaveSummary::Damaged { file, .. }, Some((open, held))) if file == open => {
-                    game::summary(file.clone(), held.meta())
+            .map(|mut save| {
+                if let (SaveSummary::Ready { file, in_use, .. }, Some((open, _))) =
+                    (&mut save, &self.open)
+                    && file == open
+                {
+                    *in_use = false;
                 }
-                _ => save,
+                save
             })
             .collect())
     }
 
-    /// Opens a save, closing the one that was open first so its lock is
-    /// released.
+    /// Opens a save. The one that was open stays open if this fails; it is
+    /// closed first only when it is the same file, whose lock it holds.
     ///
     /// # Errors
     ///
     /// When the save can't be opened.
     pub fn open_save(&mut self, file: &str, now: Timestamp) -> Result<GameOpened, Failure> {
-        self.open = None;
+        if self.open.as_ref().is_some_and(|(open, _)| open == file) {
+            self.open = None;
+        }
         let save = self
             .store
             .open(file, now)

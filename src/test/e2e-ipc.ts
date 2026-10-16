@@ -93,6 +93,7 @@ export function installIpcMocks(): void {
       saves.push({
         status: "ready",
         file,
+        inUse: false,
         name: input.saveName,
         managerName: input.managerName,
         teamMessage: input.team.replace(":", "-"),
