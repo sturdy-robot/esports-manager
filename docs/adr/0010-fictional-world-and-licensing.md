@@ -1,6 +1,6 @@
 # 0010. Fictional world, licensing and assets
 
-- **Status:** Accepted
+- **Status:** Accepted; how packages declare their licence is amended by [0011](0011-package-licence-in-the-manifest.md)
 - **Date:** 2026-10-15
 - **Related:** [0005](0005-esm-packages.md)
 

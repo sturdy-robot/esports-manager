@@ -35,6 +35,7 @@ content/core/
 - **A file holds one entity or a list of entities** of its folder's type.
 - **Files are read in sorted path order** (byte order of the path relative to the package root), so the loaded order and the order of reported errors are the same on every OS.
 - **An unknown top-level folder is an error**, so a typo like `team/` is reported instead of silently ignored. `locales/` is the only folder that doesn't hold JSON.
+- **Nothing else sits at the root**, licence files included: a package's licence is its manifest's `license` field (ADR 0011).
 - Genre-specific types (`roles/`, `generation/` and `players/` today, `champions/` later) are defined by the genre module named in the manifest (`esports::moba`). Generic types (`regions/`, `teams/`, …) are defined in `packages` and converted into `domain` types.
 
 ### Ids (`packages`)

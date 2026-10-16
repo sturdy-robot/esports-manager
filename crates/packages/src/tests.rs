@@ -1001,6 +1001,23 @@ fn weight_keys_map_to_their_attributes() {
 }
 
 #[test]
+fn licence_files_at_the_root_are_unexpected() {
+    // ADR 0011: a package's licence is its manifest's `license` field.
+    let fixture = Fixture::new();
+    let mut files = fixture.files();
+    for file in ["LICENSE", "REUSE.toml", "manifest.json.license"] {
+        files.insert(file, "GPL-3.0-or-later");
+    }
+    let errors = load_files(&files).unwrap_err();
+    for file in ["LICENSE", "REUSE.toml", "manifest.json.license"] {
+        assert!(
+            errors.contains(&error(file, "", Problem::UnexpectedFile)),
+            "{errors:?}"
+        );
+    }
+}
+
+#[test]
 fn an_unreadable_root_is_reported() {
     let errors = load(std::path::Path::new("/definitely/not/here")).unwrap_err();
     assert!(matches!(errors[0].problem, Problem::Unreadable { .. }));
