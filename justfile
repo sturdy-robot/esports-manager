@@ -42,6 +42,10 @@ db-schema:
     cd crates/db && diesel migration run --database-url ../../target/schema.db
     rustfmt --edition 2024 crates/db/src/schema.rs
 
+# Regenerates the backend views the browser E2E tests answer with.
+e2e-fixtures:
+    UPDATE_FIXTURES=1 cargo test --locked -p cli --test e2e_fixtures
+
 # Regenerates the package JSON Schemas in content/schemas from the Rust types (ADR 0005).
 schemas:
     UPDATE_SCHEMAS=1 cargo test --locked -p packages json_schemas_are_up_to_date

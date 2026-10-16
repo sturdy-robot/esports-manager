@@ -13,7 +13,7 @@ pub const LOCALES: [&str; 2] = ["en", "pt-BR"];
 
 /// Every catalog under `src/locales`, as `(locale, file, source)`. A test
 /// checks this list against the folder.
-pub const CATALOGS: [(&str, &str, &str); 12] = [
+pub const CATALOGS: [(&str, &str, &str); 14] = [
     (
         "en",
         "cli.ftl",
@@ -45,6 +45,11 @@ pub const CATALOGS: [(&str, &str, &str); 12] = [
         include_str!("../../../src/locales/en/saves.ftl"),
     ),
     (
+        "en",
+        "screens.ftl",
+        include_str!("../../../src/locales/en/screens.ftl"),
+    ),
+    (
         "pt-BR",
         "cli.ftl",
         include_str!("../../../src/locales/pt-BR/cli.ftl"),
@@ -73,6 +78,11 @@ pub const CATALOGS: [(&str, &str, &str); 12] = [
         "pt-BR",
         "saves.ftl",
         include_str!("../../../src/locales/pt-BR/saves.ftl"),
+    ),
+    (
+        "pt-BR",
+        "screens.ftl",
+        include_str!("../../../src/locales/pt-BR/screens.ftl"),
     ),
 ];
 

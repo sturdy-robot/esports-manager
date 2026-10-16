@@ -24,3 +24,19 @@ describe("createLocalization", () => {
     expect(createLocalization(["ja"]).getString("app-loading")).toBe("Loading…");
   });
 });
+
+describe("package text", () => {
+  it("joins the game's catalogs, in its own locale only", () => {
+    const content = [
+      { locale: "en", file: "locales/en/a.ftl", source: "team-a = Azure Tigers\n" },
+      { locale: "pt-BR", file: "locales/pt-BR/a.ftl", source: "team-a = Tigres Azuis\n" },
+    ];
+    expect(createLocalization(["pt-BR"], content).getString("team-a")).toBe("Tigres Azuis");
+    expect(createLocalization(["en"], content).getString("team-a")).toBe("Azure Tigers");
+  });
+
+  it("can't override the game's own messages", () => {
+    const content = [{ locale: "en", file: "x.ftl", source: "app-loading = Hacked\n" }];
+    expect(createLocalization(["en"], content).getString("app-loading")).toBe("Loading…");
+  });
+});

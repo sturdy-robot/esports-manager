@@ -1,7 +1,7 @@
 # New Game, Load Game and the main menu
 
 - **Prefix:** `NEWG`
-- **Status:** Draft
+- **Status:** Accepted
 - **Related:** [packages](packages.md), [world generation](world-generation.md), [saves](saves.md), [roster](roster.md), [ADR 0006](../adr/0006-bindings-and-pure-view.md)
 
 ## Summary

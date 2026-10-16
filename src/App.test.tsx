@@ -2,19 +2,24 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { commands } from "./bindings";
-import { createLocalization } from "./lib/i18n/localization";
 import { testQueryClient } from "./test/render";
 
-vi.mock("./bindings", () => ({ commands: { getAbout: vi.fn() } }));
+vi.mock("./bindings", () => ({
+  commands: { getAbout: vi.fn(), getContentText: vi.fn() },
+}));
 
 describe("App", () => {
-  it("renders the shell and the home route", async () => {
+  it("renders the shell and the main menu", async () => {
     // Given
     vi.mocked(commands.getAbout).mockResolvedValue({ version: "1.2.3" });
+    vi.mocked(commands.getContentText).mockResolvedValue({ status: "ok", data: [] });
     // When
-    render(<App l10n={createLocalization(["en"])} queryClient={testQueryClient()} />);
+    render(<App locales={["en"]} queryClient={testQueryClient()} />);
     // Then
     expect(await screen.findByRole("heading", { name: "eSports Manager" })).toBeInTheDocument();
     expect(await screen.findByTestId("version")).toHaveTextContent("v1.2.3");
+    expect(screen.getByRole("link", { name: "New Game" })).toHaveAttribute("href", "/new");
+    expect(screen.getByRole("link", { name: "Load Game" })).toHaveAttribute("href", "/load");
+    expect(screen.getByRole("button", { name: "Quit" })).toBeInTheDocument();
   });
 });

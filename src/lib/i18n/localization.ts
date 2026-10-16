@@ -1,5 +1,6 @@
 import { FluentBundle, FluentResource } from "@fluent/bundle";
 import { ReactLocalization } from "@fluent/react";
+import type { ContentText } from "../../bindings";
 import { type Locale, negotiateLocales } from "./locales";
 
 const sources = import.meta.glob<string>("../../locales/*/*.ftl", {
@@ -17,7 +18,11 @@ function sourcesFor(locale: Locale): string[] {
     .flatMap((path) => sources[path] ?? []);
 }
 
-export function createBundle(locale: Locale): FluentBundle {
+/**
+ * The game's messages for `locale`, plus the package text (`content`) of the
+ * same locale: team, region, role and country names (packages spec).
+ */
+export function createBundle(locale: Locale, content: readonly ContentText[] = []): FluentBundle {
   // No bidi isolation marks: every shipped locale is left-to-right.
   const bundle = new FluentBundle(locale, { useIsolating: false });
   for (const source of sourcesFor(locale)) {
@@ -26,10 +31,23 @@ export function createBundle(locale: Locale): FluentBundle {
       throw new Error(`Invalid Fluent messages for ${locale}: ${errors.join("; ")}`);
     }
   }
+  for (const text of content.filter((text) => text.locale === locale)) {
+    // The package loader has already checked its text; a package can't
+    // override the game's own messages, so clashes are skipped.
+    bundle.addResource(new FluentResource(text.source));
+  }
   return bundle;
 }
 
-/** The localization for the user's preferred languages, with English fallback. */
-export function createLocalization(requested: readonly string[]): ReactLocalization {
-  return new ReactLocalization(negotiateLocales(requested).map(createBundle));
+/**
+ * The localization for the user's preferred languages, with English
+ * fallback; a name missing in one locale falls back to the next (PKG-011).
+ */
+export function createLocalization(
+  requested: readonly string[],
+  content: readonly ContentText[] = [],
+): ReactLocalization {
+  return new ReactLocalization(
+    negotiateLocales(requested).map((locale) => createBundle(locale, content)),
+  );
 }

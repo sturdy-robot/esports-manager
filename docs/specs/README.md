@@ -48,5 +48,5 @@ fn rest_restores_stamina_overnight() {
 | [Content packages](packages.md) | `PKG` | Accepted |
 | [World generation](world-generation.md) | `GEN` | Accepted |
 | [Saves and data locations](saves.md) | `SAVE` | Accepted |
-| [New Game, Load Game and the main menu](new-game.md) | `NEWG` | Draft |
-| [Roster and player profile](roster.md) | `ROST` | Draft |
+| [New Game, Load Game and the main menu](new-game.md) | `NEWG` | Accepted |
+| [Roster and player profile](roster.md) | `ROST` | Accepted |

@@ -19,6 +19,8 @@ profile-skills = Habilidades
 profile-traits = Traços
 profile-hidden = Ocultos
 profile-unknown = ?
+# What screen readers say for profile-unknown.
+profile-unknown-label = desconhecido
 attribute-mechanics = Mecânica
 attribute-laning = Rota
 attribute-game-sense = Leitura de Jogo

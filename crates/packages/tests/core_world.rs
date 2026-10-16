@@ -253,3 +253,22 @@ fn print_summary() {
         );
     }
 }
+
+#[test]
+fn every_crests_text_is_readable() {
+    // spec: ROST-010
+    // Given every team in the core package
+    for team in &core().template.teams {
+        // When its crest is built
+        let crest = app::views::Crest::of(team);
+        // Then the text reaches 4.5:1 against the fill
+        let fill = domain::world::Colour::parse(&crest.fill).unwrap();
+        let text = domain::world::Colour::parse(&crest.text).unwrap();
+        assert!(
+            fill.contrast(text) >= 4.5,
+            "{}: {:.2}",
+            team.id,
+            fill.contrast(text)
+        );
+    }
+}

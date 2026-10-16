@@ -20,7 +20,12 @@ function uiSources(dir = join(root, "src")): string[] {
       return entry.name === "test" ? [] : uiSources(path);
     }
     const isSource = /\.tsx?$/.test(entry.name);
-    const excluded = /\.test\.tsx?$/.test(entry.name) || entry.name === "bindings.ts";
+    // content.tsx renders message ids that come from the backend; it is the
+    // one file allowed to call getString with a non-literal id.
+    const excluded =
+      /\.test\.tsx?$/.test(entry.name) ||
+      entry.name === "bindings.ts" ||
+      path.endsWith(join("lib", "i18n", "content.tsx"));
     return isSource && !excluded ? [path] : [];
   });
 }
