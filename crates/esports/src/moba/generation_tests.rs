@@ -17,6 +17,7 @@ use super::*;
 use crate::moba::attributes::{MobaSkill, OverallAttribute};
 use crate::moba::content::{GenerationParams, PinnedAttributes, PinnedPlayer, RosterRules};
 use crate::moba::roles::RoleSet;
+use domain::generation::Constants;
 
 /// The same streams the application's RNG provider hands out.
 struct Seeded(WorldSeed);
@@ -82,25 +83,27 @@ fn team(slug: &str, region: &str, reputation: u32) -> Team {
 
 fn params() -> GenerationParams {
     GenerationParams {
-        mu_base: 35.0,
-        mu_per_reputation: 0.4,
-        sigma_base: 12.0,
-        sigma_per_reputation: 0.07,
-        sigma_min: 2.0,
+        common: Constants {
+            mu_base: 35.0,
+            mu_per_reputation: 0.4,
+            sigma_base: 12.0,
+            sigma_per_reputation: 0.07,
+            sigma_min: 2.0,
+            style_mean: 50.0,
+            style_spread: 15.0,
+            consistency_mean: 55.0,
+            consistency_spread: 15.0,
+            potential_peak_age: 24.0,
+            potential_per_year: 2.5,
+            potential_spread: 6.0,
+            age_mean: 22.0,
+            age_spread: 2.5,
+            age_min: 17,
+            age_max: 28,
+            nickname_pool_factor: 3,
+        },
         attribute_spread: 6.0,
         bias_scale: 8.0,
-        style_mean: 50.0,
-        style_spread: 15.0,
-        consistency_mean: 55.0,
-        consistency_spread: 15.0,
-        potential_peak_age: 24.0,
-        potential_per_year: 2.5,
-        potential_spread: 6.0,
-        age_mean: 22.0,
-        age_spread: 2.5,
-        age_min: 17,
-        age_max: 28,
-        nickname_pool_factor: 3,
     }
 }
 
@@ -741,8 +744,8 @@ fn ages_and_birth_dates_agree() {
 #[test]
 fn birth_dates_cover_the_whole_year_of_an_age() {
     let mut template = template(vec![team("a", "up", 60)]);
-    template.generation.age_min = 20;
-    template.generation.age_max = 20;
+    template.generation.common.age_min = 20;
+    template.generation.common.age_max = 20;
     let start = template.settings.start_date;
     let (mut earliest, mut latest) = (start, start.years_before(30).unwrap());
     for value in 0..300 {
@@ -853,37 +856,9 @@ fn every_skill_is_drawn_independently() {
 }
 
 #[test]
-fn team_strength_follows_the_spec_table() {
-    let params = params();
-    let cases = [
-        (95, 4, 77.0, 5.35),
-        (35, 4, 53.0, 9.55),
-        (85, -4, 65.0, 6.05),
-        (30, -4, 43.0, 9.9),
-        (100, 0, 75.0, 5.0),
-    ];
-    for (reputation, level, mu, sigma) in cases {
-        let strength = Strength::of(&params, reputation, level);
-        assert!(
-            (strength.mu - mu).abs() < 1e-9,
-            "{reputation}: {}",
-            strength.mu
-        );
-        assert!(
-            (strength.sigma - sigma).abs() < 1e-9,
-            "{reputation}: {}",
-            strength.sigma
-        );
-    }
-    let mut floor = params;
-    floor.sigma_min = 6.0;
-    assert!((Strength::of(&floor, 95, 0).sigma - 6.0).abs() < 1e-9);
-}
-
-#[test]
 fn potential_adds_room_for_each_year_under_the_peak() {
     let mut template = template(vec![team("a", "up", 70)]);
-    template.generation.potential_spread = 0.0;
+    template.generation.common.potential_spread = 0.0;
     let mut young = pinned("young", "a", "top");
     young.birth_date = Some("2006-06-01".parse().unwrap());
     young.attributes = flat(60);

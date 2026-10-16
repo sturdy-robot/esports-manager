@@ -14,8 +14,8 @@ The numbers are starting values, to be tuned in sim-bench.
 
 ### Ownership
 
-- **`domain`:** the generic parts. Normal draws, clamping and rounding of ratings, ages and birth dates, nationality and name choice, nicknames, and the six core attributes.
-- **`esports::moba`:** roles, the seven MOBA skills, role bias, and the roster shape (five roles, seven players).
+- **`domain`** (`domain::generation`, ADR 0002): the rules every genre shares. Normal draws, clamping and rounding of ratings, team strength, ages and birth dates, nationality and name choice, nicknames, the core traits drawn the same way everywhere (Aggression, Work Ethic, Consistency) and the potential formula, and the generic constants of `generation/`.
+- **`esports::moba`:** roles, the seven MOBA skills, role bias, and the roster shape (five roles, seven players). Teamwork and Composure are core attributes, but in a MOBA they count toward overall, so they are drawn here with the skills and the role bias. The MOBA overall feeds the potential formula. The order of every draw is the genre's: it calls the `domain` rules in a fixed sequence.
 - **`app`:** the use case that runs the generator over loaded content and hands the world to the save port.
 
 ### Randomness

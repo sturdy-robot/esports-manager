@@ -5,12 +5,16 @@
 //! from `generator:nickname:<player id>`. Every player consumes the same
 //! number of draws whatever is pinned, so pinning a field never shifts
 //! another draw.
+//!
+//! The genre-agnostic draws (strength, birth date, nationality and names,
+//! traits, potential, nicknames) are `domain::generation`'s; this module adds
+//! roles, the MOBA skills and the roster shape.
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use domain::date::GameDate;
+use domain::generation::{self, DrawError, NamePools, Nicknames, Strength, Traits};
 use domain::id::ContentId;
-use domain::random::{index, index_excluding, normal, round_clamped, weighted_index};
+use domain::random::{index_excluding, normal};
 use domain::rating::Rating;
 use domain::rng::{StreamLabel, StreamSource};
 use domain::world::{Region, Team};
@@ -83,29 +87,15 @@ pub fn generate(
 struct Generator<'a> {
     template: &'a WorldTemplate,
     params: &'a GenerationParams,
-    /// Given and family names by nationality, every pool merged and sorted,
-    /// so how a package splits its files never changes the world.
-    names: BTreeMap<&'a ContentId, (Vec<&'a str>, Vec<&'a str>)>,
+    names: NamePools<'a>,
 }
 
 impl<'a> Generator<'a> {
     fn new(template: &'a WorldTemplate) -> Self {
-        let mut names: BTreeMap<&ContentId, (Vec<&str>, Vec<&str>)> = BTreeMap::new();
-        for pool in &template.name_pools {
-            let entry = names.entry(&pool.nationality).or_default();
-            entry.0.extend(pool.given.iter().map(String::as_str));
-            entry.1.extend(pool.family.iter().map(String::as_str));
-        }
-        for (given, family) in names.values_mut() {
-            for list in [given, family] {
-                list.sort_unstable();
-                list.dedup();
-            }
-        }
         Self {
             template,
             params: &template.generation,
-            names,
+            names: NamePools::new(&template.name_pools),
         }
     }
 
@@ -120,7 +110,7 @@ impl<'a> Generator<'a> {
             .iter()
             .find(|region| region.id == team.region)
             .ok_or_else(|| GenerationError::Unknown(team.region.clone()))?;
-        let strength = Strength::of(self.params, team.reputation.value(), region.level);
+        let strength = Strength::of(&self.params.common, team.reputation, region.level);
 
         let mut pinned: Vec<&PinnedPlayer> = self
             .template
@@ -223,25 +213,14 @@ impl<'a> Generator<'a> {
             .ok_or_else(|| GenerationError::Unknown(role_id.clone()))?;
 
         // Every draw happens in this fixed order, pinned or not.
-        let weights: Vec<u32> = region
-            .nationalities
-            .iter()
-            .map(|&(_, weight)| weight)
-            .collect();
-        let drawn = weighted_index(rng, &weights)
-            .ok_or_else(|| GenerationError::EmptyMix(region.id.clone()))?;
-        let nationality = pinned
-            .and_then(|p| p.nationality.clone())
-            .unwrap_or_else(|| region.nationalities[drawn].0.clone());
-        let (given_pool, family_pool) = self
+        let identity = self
             .names
-            .get(&nationality)
-            .ok_or_else(|| GenerationError::EmptyNames(nationality.clone()))?;
-        let given = index(rng, given_pool.len())
-            .ok_or_else(|| GenerationError::EmptyNames(nationality.clone()))?;
-        let family = index(rng, family_pool.len())
-            .ok_or_else(|| GenerationError::EmptyNames(nationality.clone()))?;
-        let birth_date = self.birth_date(rng);
+            .draw(rng, region, pinned.and_then(|p| p.nationality.as_ref()))
+            .map_err(|error| match error {
+                DrawError::EmptyMix(region) => GenerationError::EmptyMix(region),
+                DrawError::EmptyNames(nationality) => GenerationError::EmptyNames(nationality),
+            })?;
+        let birth_date = generation::birth_date(rng, &p.common, self.template.settings.start_date);
         let base = normal(rng, strength.mu, strength.sigma);
         let mut attributes = MobaAttributes::uniform(Rating::MIN);
         for attribute in OverallAttribute::ALL {
@@ -252,11 +231,10 @@ impl<'a> Generator<'a> {
             );
             *attributes.get_mut(attribute) = Rating::clamped(value);
         }
-        attributes.core.aggression = Rating::clamped(normal(rng, p.style_mean, p.style_spread));
-        attributes.core.work_ethic = Rating::clamped(normal(rng, p.style_mean, p.style_spread));
-        attributes.core.consistency =
-            Rating::clamped(normal(rng, p.consistency_mean, p.consistency_spread));
-        let potential_noise = normal(rng, 0.0, p.potential_spread);
+        let traits = Traits::draw(rng, &p.common);
+        attributes.core.aggression = traits.aggression;
+        attributes.core.work_ethic = traits.work_ethic;
+        attributes.core.consistency = traits.consistency;
 
         let mut player = Player {
             id,
@@ -264,9 +242,9 @@ impl<'a> Generator<'a> {
             role: role_id.clone(),
             starter: false,
             nickname: String::new(),
-            given_name: given_pool[given].to_owned(),
-            family_name: family_pool[family].to_owned(),
-            nationality,
+            given_name: identity.given_name,
+            family_name: identity.family_name,
+            nationality: identity.nationality,
             birth_date,
             attributes,
         };
@@ -279,56 +257,10 @@ impl<'a> Generator<'a> {
                 .birth_date
                 .age_on(self.template.settings.start_date)
                 .ok_or_else(|| GenerationError::BornAfterStart(player.id.clone()))?;
-            let youth = (p.potential_peak_age - f64::from(age)).max(0.0);
-            let potential = overall + p.potential_per_year * youth + potential_noise;
-            player.attributes.core.potential = Rating::clamped(potential.max(overall));
+            player.attributes.core.potential =
+                generation::potential(&p.common, overall, age, traits.potential_noise);
         }
         Ok(player)
-    }
-
-    /// A birth date that gives an age drawn from N(`age_mean`, `age_spread`),
-    /// clamped to the allowed ages, on the start date.
-    fn birth_date(&self, rng: &mut impl Rng) -> GameDate {
-        let p = self.params;
-        let start = self.template.settings.start_date;
-        let age = round_clamped(
-            normal(rng, p.age_mean, p.age_spread),
-            i32::from(p.age_min),
-            i32::from(p.age_max),
-        );
-        let age = u16::try_from(age).unwrap_or(0);
-        // Born on `latest` turns `age` on the start date; one day before
-        // `earliest`, they would already be a year older.
-        let latest = start.years_before(age).unwrap_or(GameDate::MIN);
-        let earliest = start
-            .years_before(age + 1)
-            .and_then(|date| date.add_days(1))
-            .unwrap_or(GameDate::MIN);
-        let span = latest.day_number() - earliest.day_number() + 1;
-        let offset = domain::random::below(rng, u64::try_from(span).unwrap_or(1)).unwrap_or(0);
-        earliest
-            .add_days(i64::try_from(offset).unwrap_or(0))
-            .unwrap_or(latest)
-    }
-}
-
-/// A team's player-base distribution: N(`mu`, `sigma`).
-#[derive(Debug, Clone, Copy, PartialEq)]
-struct Strength {
-    mu: f64,
-    sigma: f64,
-}
-
-impl Strength {
-    /// A higher reputation gives a higher mean and a lower spread; the
-    /// region's level shifts the mean.
-    fn of(params: &GenerationParams, reputation: u8, level: i32) -> Self {
-        let reputation = f64::from(reputation);
-        Self {
-            mu: params.mu_base + params.mu_per_reputation * reputation + f64::from(level),
-            sigma: (params.sigma_base - params.sigma_per_reputation * reputation)
-                .max(params.sigma_min),
-        }
     }
 }
 
@@ -381,17 +313,8 @@ fn apply_pins(player: &mut Player, pinned: &PinnedPlayer) {
     }
 }
 
-/// How many times a player redraws a taken nickname before falling back to
-/// a draw among the free ones only.
-const NICKNAME_TRIES: u32 = 32;
-
-/// Gives every player without a pinned nickname one from the pool, unique in
-/// the world ignoring case.
-///
-/// The pool is sorted first, so how a package splits it across files never
-/// matters. Each player draws from their own stream and redraws only when the
-/// nickname is taken, so another team's players change it only by taking the
-/// same nickname (world generation spec).
+/// Gives every player without a pinned nickname one from the pool, each
+/// drawn from the player's own stream.
 fn assign_nicknames(
     template: &WorldTemplate,
     players: &mut [Player],
@@ -402,16 +325,7 @@ fn assign_nicknames(
         .iter()
         .filter_map(|p| p.nickname.as_deref().map(|nickname| (&p.id, nickname)))
         .collect();
-    let mut pool: Vec<&str> = template.nicknames.iter().map(String::as_str).collect();
-    pool.sort_by_cached_key(|nickname| (nickname.to_lowercase(), (*nickname).to_owned()));
-    pool.dedup_by_key(|nickname| nickname.to_lowercase());
-    let pinned_lowered: BTreeSet<String> = pinned.values().map(|n| n.to_lowercase()).collect();
-    let mut taken: BTreeSet<usize> = pool
-        .iter()
-        .enumerate()
-        .filter(|(_, nickname)| pinned_lowered.contains(&nickname.to_lowercase()))
-        .map(|(position, _)| position)
-        .collect();
+    let mut pool = Nicknames::new(&template.nicknames, pinned.values().copied());
     for player in players {
         if let Some(nickname) = pinned.get(&player.id) {
             player.nickname = (*nickname).to_owned();
@@ -421,25 +335,11 @@ fn assign_nicknames(
             "generator:nickname:{}",
             player.id
         )));
-        let position = free_nickname(&mut rng, pool.len(), &taken)
-            .ok_or(GenerationError::NicknamesExhausted)?;
-        taken.insert(position);
-        pool[position].clone_into(&mut player.nickname);
+        pool.draw(&mut rng)
+            .ok_or(GenerationError::NicknamesExhausted)?
+            .clone_into(&mut player.nickname);
     }
     Ok(())
-}
-
-/// A position in a pool of `len` that `taken` doesn't hold: drawn from the
-/// whole pool, redrawn while taken, so the result depends on other players
-/// only when they took the very nickname drawn.
-fn free_nickname(rng: &mut impl Rng, len: usize, taken: &BTreeSet<usize>) -> Option<usize> {
-    for _ in 0..NICKNAME_TRIES {
-        let position = index(rng, len)?;
-        if !taken.contains(&position) {
-            return Some(position);
-        }
-    }
-    index_excluding(rng, len, taken)
 }
 
 /// For each team and role, the player with the highest overall starts; ties

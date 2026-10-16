@@ -9,6 +9,7 @@
 use std::str::FromStr;
 
 use domain::date::GameDate;
+use domain::generation::Constants;
 use domain::id::ContentId;
 use domain::rating::Rating;
 use domain::world::{
@@ -519,25 +520,27 @@ pub fn generation(
         c.fail("nickname_pool_factor", Problem::OutOfRange);
     }
     let value = id.map(|_| GenerationParams {
-        mu_base: *mu_base,
-        mu_per_reputation: *mu_per_reputation,
-        sigma_base: *sigma_base,
-        sigma_per_reputation: *sigma_per_reputation,
-        sigma_min: *sigma_min,
+        common: Constants {
+            mu_base: *mu_base,
+            mu_per_reputation: *mu_per_reputation,
+            sigma_base: *sigma_base,
+            sigma_per_reputation: *sigma_per_reputation,
+            sigma_min: *sigma_min,
+            style_mean: *style_mean,
+            style_spread: *style_spread,
+            consistency_mean: *consistency_mean,
+            consistency_spread: *consistency_spread,
+            potential_peak_age: *potential_peak_age,
+            potential_per_year: *potential_per_year,
+            potential_spread: *potential_spread,
+            age_mean: *age_mean,
+            age_spread: *age_spread,
+            age_min: *age_min,
+            age_max: *age_max,
+            nickname_pool_factor: *nickname_pool_factor,
+        },
         attribute_spread: *attribute_spread,
         bias_scale: *bias_scale,
-        style_mean: *style_mean,
-        style_spread: *style_spread,
-        consistency_mean: *consistency_mean,
-        consistency_spread: *consistency_spread,
-        potential_peak_age: *potential_peak_age,
-        potential_per_year: *potential_per_year,
-        potential_spread: *potential_spread,
-        age_mean: *age_mean,
-        age_spread: *age_spread,
-        age_min: *age_min,
-        age_max: *age_max,
-        nickname_pool_factor: *nickname_pool_factor,
     });
     c.finish(value)
 }

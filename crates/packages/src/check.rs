@@ -481,7 +481,7 @@ fn nickname_pool(
         .filter(|p| p.value.nickname.is_some())
         .count();
     let generated = places.saturating_sub(pinned_nicknames);
-    let factor = usize::try_from(generation.nickname_pool_factor).unwrap_or(usize::MAX);
+    let factor = usize::try_from(generation.common.nickname_pool_factor).unwrap_or(usize::MAX);
     let needed = generated.saturating_mul(factor);
     if distinct < needed {
         let file = content

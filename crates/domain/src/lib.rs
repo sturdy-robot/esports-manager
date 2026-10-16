@@ -5,6 +5,7 @@
 
 pub mod attributes;
 pub mod date;
+pub mod generation;
 pub mod id;
 pub mod random;
 pub mod rating;
