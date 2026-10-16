@@ -29,7 +29,7 @@ The numbers are starting values, to be tuned in sim-bench.
 - Adding a team to a package doesn't change any other team's players. The one exception is a nickname that would collide with the new team's.
 - **Normal draws are portable.** They use Box–Muller with the pure-Rust `libm` functions, not `f64::ln`/`cos`, which call the platform's maths library and can differ in the last bit between operating systems. Every rating is rounded to hundredths before it is stored.
 
-### Team strength (`domain`, constants in `rules/`)
+### Team strength (`domain`, constants in `generation/`)
 
 Reputation is 1–100 on each team, and each region has a `level` offset.
 
@@ -66,7 +66,7 @@ All ratings are clamped to 1–99, never folded with `abs()`. Folding is what pi
 
 ### Age and dates (`domain`)
 
-- The world starts on `world.json`'s `start_date`. In core that is 2027-01-01, labelled "Season 1".
+- The world starts on `world.json`'s `start_date`. In core that is 2027-01-01, the first day of Season 1. The season number is game state, not package text.
 - **Generated age:** N(22, 2.5), rounded, clamped to 17–28.
 - **Birth date:** drawn uniformly among the dates that give exactly that age on the start date.
 - Ages are always computed from the birth date and the current game date. They are never stored.

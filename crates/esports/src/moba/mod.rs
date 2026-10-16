@@ -2,4 +2,5 @@
 //! content package.
 
 pub mod attributes;
+pub mod content;
 pub mod roles;

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OneOrMany",
+  "description": "What a content file holds: one entity, or a list of them. Used only to\ngenerate the schemas.",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/RegionDef"
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RegionDef"
+      }
+    }
+  ],
+  "$defs": {
+    "RegionDef": {
+      "description": "A region, in `regions/`.",
+      "type": "object",
+      "properties": {
+        "$schema": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "id": {
+          "type": "string"
+        },
+        "level": {
+          "description": "Added to every team's mean strength in this region.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "nationalities": {
+          "description": "Nationality ids and their weights. The total must be positive.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "level",
+        "nationalities"
+      ]
+    }
+  }
+}

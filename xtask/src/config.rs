@@ -12,6 +12,7 @@ pub struct Quality {
     pub coverage: BTreeMap<String, u32>,
     pub architecture: Architecture,
     pub vocabulary: Vocabulary,
+    pub packages: Packages,
 }
 
 #[derive(Debug, Deserialize)]
@@ -27,6 +28,14 @@ pub struct Vocabulary {
     #[serde(rename = "crate")]
     pub crate_name: String,
     pub denied: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Packages {
+    /// Modules converting package types to domain types, where rest
+    /// patterns are banned.
+    pub conversion: Vec<String>,
 }
 
 impl Quality {
@@ -62,6 +71,9 @@ mod tests {
             [vocabulary]
             crate = "domain"
             denied = ["lane"]
+
+            [packages]
+            conversion = ["crates/packages/src/convert.rs"]
             "#,
         )
         .unwrap();
@@ -71,6 +83,10 @@ mod tests {
         assert_eq!(quality.architecture.banned["domain"], ["tokio"]);
         assert_eq!(quality.vocabulary.crate_name, "domain");
         assert_eq!(quality.vocabulary.denied, ["lane"]);
+        assert_eq!(
+            quality.packages.conversion,
+            ["crates/packages/src/convert.rs"]
+        );
     }
 
     #[test]
@@ -84,6 +100,8 @@ mod tests {
             crate = "domain"
             denied = []
             surprise = true
+            [packages]
+            conversion = []
             "#,
         );
         assert!(result.is_err());

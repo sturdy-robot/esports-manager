@@ -53,3 +53,8 @@ denied = [
     "moba",
     "nexus",
 ]
+
+# Modules converting package types to domain types (ADR 0005). Rest patterns
+# are banned in them, so every field must be bound.
+[packages]
+conversion = ["crates/packages/src/convert.rs"]
