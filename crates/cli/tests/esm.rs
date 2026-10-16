@@ -361,20 +361,3 @@ fn json_views_are_the_use_case_dtos() {
     assert_eq!(profile["player"]["age"], 17);
     assert_eq!(profile["hidden"][1]["value"], serde_json::Value::Null);
 }
-
-#[test]
-fn the_cli_and_the_desktop_see_the_same_roster() {
-    // spec: ROST-011
-    // Given
-    let data = folder("same-view");
-    assert!(new_game(&data, "Same", Some("42")).status.success());
-    // When the CLI prints the roster, and the use case the desktop app's
-    // `get_roster` command calls builds it over the same save
-    let cli = json(&esm(&data, &["--json", "roster", "--save", "Same"]));
-    let store = db::SqliteSaveStore::new(data.join("saves"));
-    let mut open =
-        app::saves::SaveStore::open(&store, "same.esmsave", app::saves::Timestamp(0)).unwrap();
-    let desktop = serde_json::to_value(app::game::roster(&mut open, None).unwrap()).unwrap();
-    // Then
-    assert_eq!(cli, desktop);
-}

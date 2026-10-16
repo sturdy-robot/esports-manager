@@ -13,7 +13,7 @@ use crate::files;
 /// Files in `docs/specs/` that describe the format instead of a feature.
 const NOT_SPECS: [&str; 2] = ["README.md", "TEMPLATE.md"];
 /// Where tests live, relative to the repository root.
-const SOURCE_DIRS: [&str; 4] = ["crates", "src", "src-tauri", "e2e"];
+const SOURCE_DIRS: [&str; 5] = ["crates", "src", "src-tauri", "e2e", "smoke"];
 const SOURCE_EXTENSIONS: [&str; 3] = ["rs", "ts", "tsx"];
 const MARKER: &str = "spec:";
 

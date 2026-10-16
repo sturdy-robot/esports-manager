@@ -1,11 +1,13 @@
 /**
  * Smoke test of the real desktop binary through tauri-driver (ADR 0008):
- * the app starts, the frontend loads, and a command reaches the Rust side.
+ * the app starts, the frontend loads, a command reaches the Rust side, and
+ * the app finds a save the CLI made in the same environment.
  *
- * Build first with `pnpm tauri build --debug --no-bundle`; `just smoke`
- * does both. Needs tauri-driver and, on Linux, WebKitWebDriver.
+ * Build first with `pnpm tauri build --debug --no-bundle` and
+ * `cargo build -p cli`; `just smoke` does all of it. Needs tauri-driver and,
+ * on Linux, WebKitWebDriver.
  */
-import { type ChildProcess, spawn } from "node:child_process";
+import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { existsSync, rmSync, writeFileSync } from "node:fs";
 import { createConnection } from "node:net";
 import { join } from "node:path";
@@ -15,12 +17,16 @@ const DRIVER_PORT = 4444;
 const binaryName = process.platform === "win32" ? "esports-manager.exe" : "esports-manager";
 const binaryDir = join(import.meta.dirname, "../target/debug");
 const application = join(binaryDir, binaryName);
+const cli = join(binaryDir, process.platform === "win32" ? "esm.exe" : "esm");
 // Nothing the app writes may land in the OS data folder of the machine
 // running the test. Driven runs get a scratch XDG_DATA_HOME (Linux, where the
 // smoke test runs); the portable check uses target/debug/data.
 const scratchData = join(binaryDir, "smoke-data");
 const portableMarker = join(binaryDir, "portable");
 const portableData = join(binaryDir, "data");
+// Where the OS data folder points during the portable run, to prove nothing
+// lands there.
+const portableScratch = join(binaryDir, "smoke-portable-os-data");
 
 function waitForPort(port: number, timeoutMs: number): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -45,10 +51,25 @@ function waitForPort(port: number, timeoutMs: number): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  if (!existsSync(application)) {
-    throw new Error(`${application} not found; run \`pnpm tauri build --debug --no-bundle\``);
+  for (const binary of [application, cli]) {
+    if (!existsSync(binary)) {
+      throw new Error(`${binary} not found; run \`just smoke\``);
+    }
   }
+  // A run stopped half-way can leave the marker, which would put both
+  // binaries in portable mode.
+  rmSync(portableMarker, { force: true });
   rmSync(scratchData, { recursive: true, force: true });
+  // spec: SAVE-007
+  // Given a save the CLI made without --data-dir, in this environment
+  const created = spawnSync(
+    cli,
+    ["new-game", "--manager", "Ana", "--team", "team:azure_tigers", "--save", "Smoke Save"],
+    { env: { ...process.env, XDG_DATA_HOME: scratchData }, encoding: "utf8" },
+  );
+  if (created.status !== 0) {
+    throw new Error(`esm new-game failed: ${created.stderr}`);
+  }
   const driver: ChildProcess = spawn("tauri-driver", ["--port", String(DRIVER_PORT)], {
     stdio: "inherit",
     env: { ...process.env, XDG_DATA_HOME: scratchData },
@@ -77,7 +98,12 @@ async function main(): Promise<void> {
       if (!existsSync(join(scratchData, "esports-manager", "saves"))) {
         throw new Error(`the app did not create its saves folder under ${scratchData}`);
       }
-      console.log(`smoke test passed: "${title}" ${text}`);
+      // When the desktop app, in the same environment, lists its saves
+      await (await browser.$("a=Load Game")).click();
+      // Then it finds the CLI's save: both resolved the same data folder
+      const save = await browser.$("button*=Smoke Save");
+      await save.waitForDisplayed({ timeout: 20_000 });
+      console.log(`smoke test passed: "${title}" ${text}, and the CLI's save is listed`);
     } finally {
       await browser.deleteSession();
     }
@@ -93,9 +119,13 @@ async function main(): Promise<void> {
  */
 async function portable(): Promise<void> {
   rmSync(portableData, { recursive: true, force: true });
+  rmSync(portableScratch, { recursive: true, force: true });
   writeFileSync(portableMarker, "");
   try {
-    const app = spawn(application, [], { stdio: "inherit" });
+    const app = spawn(application, [], {
+      stdio: "inherit",
+      env: { ...process.env, XDG_DATA_HOME: portableScratch },
+    });
     const folders = ["saves", "webview"].map((folder) => join(portableData, folder));
     const deadline = Date.now() + 60_000;
     while (!folders.every(existsSync) && Date.now() < deadline && app.exitCode === null) {
@@ -107,9 +137,14 @@ async function portable(): Promise<void> {
         throw new Error(`portable mode did not create ${folder} (app exit code ${app.exitCode})`);
       }
     }
-    console.log(`portable check passed: data in ${portableData}`);
+    if (existsSync(portableScratch)) {
+      throw new Error(`portable mode wrote to the OS data folder ${portableScratch}`);
+    }
+    console.log(`portable check passed: data in ${portableData}, nothing outside it`);
   } finally {
     rmSync(portableMarker, { force: true });
+    rmSync(portableData, { recursive: true, force: true });
+    rmSync(portableScratch, { recursive: true, force: true });
   }
 }
 

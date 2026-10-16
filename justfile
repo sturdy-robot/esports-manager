@@ -115,6 +115,7 @@ e2e:
 # Start the real desktop binary and check the UI reaches the backend.
 smoke:
     pnpm tauri build --debug --no-bundle
+    cargo build -p cli
     {{ if os() == "linux" { "env -u WAYLAND_DISPLAY GDK_BACKEND=x11 xvfb-run -a pnpm smoke" } else { "pnpm smoke" } }}
 
 # Licences, bans and sources. Advisories run weekly in CI (`just advisories`).
