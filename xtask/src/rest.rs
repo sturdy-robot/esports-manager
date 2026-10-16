@@ -24,26 +24,51 @@ pub fn run(root: &Path, conversion_files: &[String]) -> Result<Vec<String>> {
     Ok(violations)
 }
 
-/// Line numbers where `..` is followed, possibly on a later line, by `}`,
-/// `)`, `]` or `,`: a rest pattern. Ranges (`0..2`, `..=`) and struct update
-/// syntax are followed by something else. Comments and string literals are
-/// ignored.
+/// Line numbers of rest patterns, and of fields ignored with `field: _`.
+///
+/// A `..` is a rest pattern when, ignoring whitespace and line breaks, it
+/// comes after `{`, `(`, `[` or `,` and before `}`, `)`, `]` or `,`. Ranges
+/// (`1..`, `a..b`, `..=`), slices (`&s[1..]`, `&s[..]`) and struct update syntax
+/// (`..Default::default()`) don't match. Binding a field as `_` skips it as
+/// silently as `..` does, so it is flagged too; only `schema: _` is allowed,
+/// because `$schema` is editor metadata, not content. Comments and string
+/// literals are ignored. A full range passed as an argument, `f(..)`, reads
+/// like the tuple pattern `Some(..)` and is flagged; write `RangeFull` there.
 pub fn find_rest_patterns(text: &str) -> Vec<usize> {
-    let lines: Vec<String> = text.lines().map(code_only).collect();
+    let code: Vec<String> = text.lines().map(code_only).collect();
+    let joined = code.join("\n");
+    let line_of = |offset: usize| joined[..offset].matches('\n').count() + 1;
     let mut found = Vec::new();
-    for (number, line) in lines.iter().enumerate() {
-        let is_rest = line.match_indices("..").any(|(index, _)| {
-            let after = std::iter::once(&line[index + 2..])
-                .chain(lines[number + 1..].iter().map(String::as_str));
-            after
-                .flat_map(str::chars)
-                .find(|c| !c.is_whitespace())
-                .is_some_and(|next| matches!(next, '}' | ')' | ']' | ','))
-        });
-        if is_rest {
-            found.push(number + 1);
+    for (index, _) in joined.match_indices("..") {
+        let head = joined[..index].trim_end();
+        let before = head.chars().next_back();
+        let after = joined[index + 2..].trim_start().chars().next();
+        // `s[..]` indexes: its `[` follows a name, `)` or `]`. A slice
+        // pattern's `[` never does.
+        let indexes = before == Some('[')
+            && head[..head.len() - 1]
+                .chars()
+                .next_back()
+                .is_some_and(|c| c.is_alphanumeric() || matches!(c, '_' | ')' | ']'));
+        let opens = matches!(before, Some('{' | '(' | '[' | ',')) && !indexes;
+        let closes = matches!(after, Some('}' | ')' | ']' | ','));
+        if opens && closes {
+            found.push(line_of(index));
         }
     }
+    for (index, _) in joined.match_indices(": _") {
+        let start = joined[..index]
+            .rfind(|c: char| !(c.is_alphanumeric() || c == '_'))
+            .map_or(0, |position| position + 1);
+        let field = &joined[start..index];
+        let after = joined[index + 3..].chars().next();
+        let ignores = matches!(after, Some(',' | '}' | ')' | ' ' | '\n') | None);
+        if ignores && !field.is_empty() && field != "schema" {
+            found.push(line_of(index));
+        }
+    }
+    found.sort_unstable();
+    found.dedup();
     found
 }
 
@@ -93,6 +118,24 @@ mod tests {
         assert_eq!(find_rest_patterns(text), [3]);
         let text = "let TeamDef {\n    id, ..\n} = def;\n";
         assert_eq!(find_rest_patterns(text), [2]);
+    }
+
+    #[test]
+    fn slices_and_range_from_are_not_rest_patterns() {
+        let text = "let a = &s[1..];\nlet b = &s[..2];\nlet c = f(1..);\nlet d = g(x, 1..);\nlet e = &s[..];\nlet f = &v()[..];\n";
+        assert_eq!(find_rest_patterns(text), Vec::<usize>::new());
+        // Slice and tuple patterns still count.
+        assert_eq!(
+            find_rest_patterns("let [a, ..] = s;\nlet [..] = t;\nif let Some(..) = x {}\n"),
+            [1, 2, 3]
+        );
+    }
+
+    #[test]
+    fn ignored_fields_are_flagged_except_the_schema() {
+        let text =
+            "let TeamDef {\n    schema: _,\n    tag: _,\n    id,\n} = def;\nlet B { x: _ } = b;\n";
+        assert_eq!(find_rest_patterns(text), [3, 6]);
     }
 
     #[test]

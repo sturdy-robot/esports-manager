@@ -2,8 +2,8 @@
 //! catalogs from `src/locales`, built into the binary, plus a package's text.
 //! A message missing in the chosen locale falls back to `en`.
 
+use app::content::ContentText;
 use app::messages::{ArgValue, Message};
-use app::saves::ContentText;
 use fluent_bundle::{FluentArgs, FluentBundle, FluentResource, FluentValue};
 use unic_langid::LanguageIdentifier;
 

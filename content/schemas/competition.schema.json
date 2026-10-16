@@ -1,49 +1,50 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "OneOrMany",
-  "description": "What a content file holds: one entity, or a list of them. Used only to\ngenerate the schemas.",
-  "anyOf": [
-    {
-      "$ref": "#/$defs/CompetitionDef"
-    },
-    {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/CompetitionDef"
-      }
-    }
-  ],
   "$defs": {
     "CompetitionDef": {
+      "additionalProperties": false,
       "description": "A league, in `competitions/`.",
-      "type": "object",
       "properties": {
         "$schema": {
+          "default": null,
           "type": [
             "string",
             "null"
-          ],
-          "default": null
+          ]
         },
         "id": {
+          "pattern": "^[a-z_]+:[a-z0-9_]+$",
           "type": "string"
         },
         "region": {
           "type": "string"
         },
         "teams": {
-          "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "type": "array"
         }
       },
-      "additionalProperties": false,
       "required": [
         "id",
         "region",
         "teams"
-      ]
+      ],
+      "type": "object"
     }
-  }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/CompetitionDef"
+    },
+    {
+      "items": {
+        "$ref": "#/$defs/CompetitionDef"
+      },
+      "type": "array"
+    }
+  ],
+  "description": "A league, in `competitions/`.",
+  "title": "CompetitionDef"
 }

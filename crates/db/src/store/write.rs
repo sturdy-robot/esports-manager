@@ -3,7 +3,8 @@
 
 use std::path::Path;
 
-use app::saves::{ContentText, NewSave, SaveError, SaveMeta};
+use app::content::ContentText;
+use app::saves::{NewSave, SaveError, SaveMeta};
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::MigrationHarness;

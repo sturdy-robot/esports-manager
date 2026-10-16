@@ -1,40 +1,27 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "OneOrMany",
-  "description": "What a content file holds: one entity, or a list of them. Used only to\ngenerate the schemas.",
-  "anyOf": [
-    {
-      "$ref": "#/$defs/TeamDef"
-    },
-    {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/TeamDef"
-      }
-    }
-  ],
   "$defs": {
     "TeamDef": {
+      "additionalProperties": false,
       "description": "A team, in `teams/`.",
-      "type": "object",
       "properties": {
         "$schema": {
+          "default": null,
           "type": [
             "string",
             "null"
-          ],
-          "default": null
+          ]
         },
         "colours": {
           "description": "Two `#RRGGBB` colours: the crest's fill and its border.",
-          "type": "array",
           "items": {
             "type": "string"
           },
           "maxItems": 2,
-          "minItems": 2
+          "minItems": 2,
+          "type": "array"
         },
         "id": {
+          "pattern": "^[a-z_]+:[a-z0-9_]+$",
           "type": "string"
         },
         "region": {
@@ -42,25 +29,39 @@
         },
         "reputation": {
           "description": "1 to 100.",
-          "type": "integer",
           "format": "uint32",
           "maximum": 100,
-          "minimum": 1
+          "minimum": 1,
+          "type": "integer"
         },
         "tag": {
           "description": "Three uppercase letters or digits.",
-          "type": "string",
-          "pattern": "^[A-Z0-9]{3}$"
+          "pattern": "^[A-Z0-9]{3}$",
+          "type": "string"
         }
       },
-      "additionalProperties": false,
       "required": [
         "id",
         "region",
         "tag",
         "colours",
         "reputation"
-      ]
+      ],
+      "type": "object"
     }
-  }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/TeamDef"
+    },
+    {
+      "items": {
+        "$ref": "#/$defs/TeamDef"
+      },
+      "type": "array"
+    }
+  ],
+  "description": "A team, in `teams/`.",
+  "title": "TeamDef"
 }

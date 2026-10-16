@@ -684,6 +684,7 @@ fn duplicate_pinned_nicknames_are_a_package_error() {
             "[1].nickname",
             Problem::DuplicateNickname {
                 nickname: "kairos".to_owned(),
+                player: id("player:other"),
                 other: id("player:kairos")
             }
         )]
@@ -713,7 +714,7 @@ fn the_role_set_and_generation_are_required_once() {
         "roles/",
         "",
         Problem::WrongCount {
-            kind: "role_set".to_owned(),
+            folder: "roles/".to_owned(),
             count: 0
         }
     )));
@@ -728,7 +729,7 @@ fn the_role_set_and_generation_are_required_once() {
             "generation/other.json",
             "",
             Problem::WrongCount {
-                kind: "generation".to_owned(),
+                folder: "generation/".to_owned(),
                 count: 2
             }
         )]
@@ -775,12 +776,7 @@ fn manifest_fields_are_checked() {
                     genre: "chess".to_owned()
                 }
             ),
-            (
-                "locales".to_owned(),
-                Problem::MissingField {
-                    field: "locales".to_owned()
-                }
-            ),
+            ("locales".to_owned(), Problem::Empty),
         ]
     );
 }
@@ -1086,7 +1082,8 @@ fn subs_may_equal_the_roles() {
 
 #[test]
 fn pinned_players_only_free_their_own_team_slots() {
-    // Three teams of 7 with one pinned player: 20 generated, 60 needed.
+    // Three teams of 7: 21 places, and the pinned player has no nickname,
+    // so all 21 draw one: 63 needed.
     let mut fixture = Fixture::new();
     let nicknames: Vec<String> = (0..59).map(|n| format!("N{n}")).collect();
     fixture
@@ -1106,8 +1103,331 @@ fn pinned_players_only_free_their_own_team_slots() {
             "",
             Problem::NicknamePoolTooSmall {
                 distinct: 59,
-                needed: 60
+                needed: 63
             }
         )]
     );
+}
+
+#[test]
+fn a_broken_unicode_escape_is_a_syntax_error_not_a_crash() {
+    let mut fixture = Fixture::new();
+    fixture.text("locales/pt-BR/broken.ftl", "a = ok\nb = { \"\\u00é\" }\n");
+    assert_eq!(
+        fixture.errors(),
+        [error(
+            "locales/pt-BR/broken.ftl",
+            "",
+            Problem::TextSyntax { line: 2 }
+        )]
+    );
+}
+
+#[test]
+fn a_repeated_key_is_an_error_in_maps_too() {
+    let fixture = Fixture::new();
+    let mut files = fixture.files();
+    files.insert(
+        "regions/r.json",
+        r#"{"id": "region:r", "level": 0, "nationalities": {"nationality:kr": 1, "nationality:kr": 2}}"#,
+    );
+    let found: Vec<(String, Problem)> = load_files(&files)
+        .unwrap_err()
+        .into_iter()
+        .map(|e| (e.file, e.problem))
+        .collect();
+    assert!(
+        found.contains(&(
+            "regions/r.json".to_owned(),
+            Problem::DuplicateField {
+                field: "nationality:kr".to_owned()
+            }
+        )),
+        "{found:?}"
+    );
+}
+
+#[test]
+fn a_repeated_key_is_an_error_in_objects_and_lists() {
+    let mut fixture = Fixture::new();
+    let mut files = fixture.files();
+    files.insert(
+        "teams/a.json",
+        r##"{"id": "team:a", "region": "region:r", "tag": "AAA", "colours": ["#000000", "#FFFFFF"], "reputation": 50, "id": "team:zz"}"##,
+    );
+    files.insert(
+        "players/two.json",
+        r#"[{"id": "player:p", "team": "team:a", "role": "role:mid"}, {"id": "player:q", "team": "team:a", "role": "role:mid", "role": "role:top"}]"#,
+    );
+    let found: Vec<(String, String, Problem)> = load_files(&files)
+        .unwrap_err()
+        .into_iter()
+        .map(|e| (e.file, e.path, e.problem))
+        .collect();
+    assert!(
+        found.contains(&(
+            "teams/a.json".to_owned(),
+            String::new(),
+            Problem::DuplicateField {
+                field: "id".to_owned()
+            }
+        )),
+        "{found:?}"
+    );
+    assert!(
+        found.contains(&(
+            "players/two.json".to_owned(),
+            "[1]".to_owned(),
+            Problem::DuplicateField {
+                field: "role".to_owned()
+            }
+        )),
+        "{found:?}"
+    );
+    let _ = fixture.remove("teams/a.json");
+}
+
+#[test]
+fn a_byte_order_mark_is_accepted_and_other_encodings_are_reported() {
+    let fixture = Fixture::new();
+    let mut files = fixture.files();
+    let team = team("a").to_string();
+    files.insert("teams/a.json", format!("\u{feff}{team}"));
+    assert!(load_files(&files).is_ok());
+    files.insert("teams/a.json", vec![0xff, 0xfe, b'{', b'}']);
+    assert!(
+        load_files(&files)
+            .unwrap_err()
+            .contains(&error("teams/a.json", "", Problem::NotUtf8))
+    );
+}
+
+#[test]
+fn one_broken_entity_causes_no_cascade() {
+    let mut fixture = Fixture::new();
+    fixture.edit("regions/r.json", |region| {
+        region["nationalities"]["Nationality:KR"] = json!(1);
+    });
+    let errors = fixture.errors();
+    assert_eq!(
+        errors,
+        [error(
+            "regions/r.json",
+            "nationalities.Nationality:KR",
+            Problem::InvalidId {
+                id: "Nationality:KR".to_owned()
+            }
+        )]
+    );
+}
+
+#[test]
+fn a_broken_manifest_is_not_reported_missing() {
+    let mut fixture = Fixture::new();
+    let mut files = fixture.files();
+    files.insert("manifest.json", "{ not json");
+    let errors = load_files(&files).unwrap_err();
+    assert!(
+        !errors.iter().any(|e| e.problem == Problem::MissingFile),
+        "{errors:?}"
+    );
+    assert!(matches!(errors[0].problem, Problem::Syntax { .. }));
+    let _ = fixture.remove("world.json");
+}
+
+#[test]
+fn a_manifest_with_one_mistake_still_has_its_text_checked() {
+    let mut fixture = Fixture::new();
+    fixture.edit("manifest.json", |m| m["version"] = json!("1.0"));
+    let en = fixture.texts["locales/en/names.ftl"].replace("team-b = team-b\n", "");
+    fixture.text("locales/en/names.ftl", &en);
+    let problems: Vec<Problem> = fixture.errors().into_iter().map(|e| e.problem).collect();
+    assert!(problems.contains(&Problem::InvalidFormat));
+    assert!(problems.contains(&Problem::MissingText {
+        message: "team-b".to_owned(),
+        locale: "en".to_owned()
+    }));
+}
+
+#[test]
+fn too_many_subs_does_not_hide_duplicate_nicknames() {
+    let mut fixture = Fixture::new();
+    fixture
+        .edit("roles/core.json", |set| set["subs"] = json!(6))
+        .set(
+            "players/both.json",
+            json!([
+                {"id": "player:a", "team": "team:a", "role": "role:mid", "nickname": "Same"},
+                {"id": "player:b", "team": "team:b", "role": "role:mid", "nickname": "same"}
+            ]),
+        );
+    let problems: Vec<Problem> = fixture.errors().into_iter().map(|e| e.problem).collect();
+    assert!(
+        problems
+            .iter()
+            .any(|p| matches!(p, Problem::TooManySubs { .. }))
+    );
+    assert!(
+        problems
+            .iter()
+            .any(|p| matches!(p, Problem::DuplicateNickname { .. }))
+    );
+}
+
+#[test]
+fn invalid_role_ids_are_not_also_an_empty_role_set() {
+    let mut fixture = Fixture::new();
+    fixture.edit("roles/core.json", |set| {
+        for role in set["roles"].as_array_mut().unwrap() {
+            role["id"] = json!("Bad Id");
+        }
+    });
+    let problems: Vec<Problem> = fixture.errors().into_iter().map(|e| e.problem).collect();
+    assert!(
+        !problems.contains(&Problem::RoleSet(RoleSetError::Empty)),
+        "{problems:?}"
+    );
+    assert!(
+        problems
+            .iter()
+            .all(|p| matches!(p, Problem::InvalidId { .. })),
+        "{problems:?}"
+    );
+}
+
+#[test]
+fn a_pinned_nationality_needs_names() {
+    let mut fixture = Fixture::new();
+    fixture
+        .edit("nationalities/all.json", |all| {
+            all.as_array_mut()
+                .unwrap()
+                .push(json!({"id": "nationality:jp", "code": "JP", "name_order": "family_first"}));
+        })
+        .set(
+            "players/p.json",
+            json!({"id": "player:p", "team": "team:a", "role": "role:mid", "nationality": "nationality:jp", "given_name": "Taro"}),
+        );
+    fixture.text("locales/en/more.ftl", "nationality-jp = Japan\n");
+    let problems: Vec<Problem> = fixture.errors().into_iter().map(|e| e.problem).collect();
+    assert!(
+        problems.contains(&Problem::EmptyNamePool {
+            nationality: id("nationality:jp"),
+            names: NameKind::Family
+        }),
+        "{problems:?}"
+    );
+    // Pinning both names still needs the pools: the generator draws them
+    // anyway, so pinning never shifts another draw.
+    fixture.edit("players/p.json", |p| p["family_name"] = json!("Sato"));
+    let problems: Vec<Problem> = fixture.errors().into_iter().map(|e| e.problem).collect();
+    assert!(
+        problems.contains(&Problem::EmptyNamePool {
+            nationality: id("nationality:jp"),
+            names: NameKind::Given
+        }),
+        "{problems:?}"
+    );
+    // With pools, the package loads, and what loads generates.
+    fixture.set(
+        "name-pools/jp.json",
+        json!({"id": "name_pool:jp", "nationality": "nationality:jp", "given": ["Ren"], "family": ["Ito"]}),
+    );
+    let package = fixture.load().unwrap();
+    let world = esports::moba::generation::generate(
+        &package.template,
+        &app::rng::RngProvider::new(domain::rng::WorldSeed::new(1)),
+    )
+    .unwrap();
+    let pinned = world
+        .players
+        .iter()
+        .find(|p| p.id == id("player:p"))
+        .unwrap();
+    assert_eq!(
+        (pinned.given_name.as_str(), pinned.family_name.as_str()),
+        ("Taro", "Sato")
+    );
+}
+
+#[test]
+fn a_nickname_factor_of_zero_is_out_of_range() {
+    let mut fixture = Fixture::new();
+    fixture.edit("generation/core.json", |g| {
+        g["nickname_pool_factor"] = json!(0);
+    });
+    assert_eq!(
+        fixture.errors(),
+        [error(
+            "generation/core.json",
+            "nickname_pool_factor",
+            Problem::OutOfRange
+        )]
+    );
+}
+
+#[test]
+fn a_pinned_birth_date_after_the_start_is_out_of_range() {
+    let mut fixture = Fixture::new();
+    fixture.set(
+        "players/p.json",
+        json!({"id": "player:p", "team": "team:a", "role": "role:mid", "birth_date": "2030-01-01"}),
+    );
+    assert_eq!(
+        fixture.errors(),
+        [error("players/p.json", "birth_date", Problem::OutOfRange)]
+    );
+    fixture.edit("players/p.json", |p| p["birth_date"] = json!("2027-01-01"));
+    assert!(fixture.load().is_ok());
+}
+
+#[cfg(unix)]
+#[test]
+fn unreadable_files_are_reported_by_path_and_links_are_followed() {
+    use std::os::unix::fs::PermissionsExt;
+    let root = std::env::temp_dir().join(format!("esm-unreadable-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(root.join("teams")).unwrap();
+    let elsewhere = root.with_extension("players");
+    std::fs::create_dir_all(&elsewhere).unwrap();
+    std::fs::write(root.join("teams/secret.json"), "{}").unwrap();
+    std::fs::set_permissions(
+        root.join("teams/secret.json"),
+        std::fs::Permissions::from_mode(0o000),
+    )
+    .unwrap();
+    std::os::unix::fs::symlink(&elsewhere, root.join("players")).unwrap();
+    std::fs::write(elsewhere.join("p.json"), "{}").unwrap();
+    let (files, unreadable) = PackageFiles::read_dir_reporting(&root).unwrap();
+    let paths: Vec<&str> = unreadable.iter().map(|(path, _)| path.as_str()).collect();
+    // Root can read anything, so only check the link when running as root.
+    if !paths.is_empty() {
+        assert_eq!(paths, ["teams/secret.json"]);
+    }
+    assert!(files.iter().any(|(path, _)| path == "players/p.json"));
+    let errors = load(&root).unwrap_err();
+    if !paths.is_empty() {
+        assert_eq!(errors[0].file, "teams/secret.json");
+    }
+    std::fs::set_permissions(
+        root.join("teams/secret.json"),
+        std::fs::Permissions::from_mode(0o644),
+    )
+    .unwrap();
+    std::fs::remove_dir_all(&root).unwrap();
+    std::fs::remove_dir_all(&elsewhere).unwrap();
+}
+
+#[test]
+fn schema_pointers_load_on_single_objects() {
+    // spec: PKG-013
+    // Given
+    let mut fixture = Fixture::new();
+    fixture.edit("teams/a.json", |team| {
+        team["$schema"] = json!("../schemas/team.schema.json");
+    });
+    // When
+    let package = fixture.load();
+    // Then
+    assert_eq!(package.map(|p| p.template.teams.len()).ok(), Some(2));
 }

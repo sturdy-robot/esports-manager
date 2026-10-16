@@ -134,10 +134,7 @@ pub fn manifest(entry: &Entry<ManifestDef>, errors: &mut Vec<PackageError>) -> O
         locales,
     } = &entry.def;
     let mut c = Converter::new(entry, errors);
-    let id_ok = !id.is_empty()
-        && id
-            .bytes()
-            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_');
+    let id_ok = ContentId::is_slug(id);
     if !id_ok {
         c.fail("id", Problem::InvalidId { id: id.clone() });
     }
@@ -159,12 +156,7 @@ pub fn manifest(entry: &Entry<ManifestDef>, errors: &mut Vec<PackageError>) -> O
         );
     }
     if locales.is_empty() {
-        c.fail(
-            "locales",
-            Problem::MissingField {
-                field: "locales".to_owned(),
-            },
-        );
+        c.fail("locales", Problem::Empty);
     }
     let value = parsed_genre.map(|genre| Manifest {
         id: id.clone(),
@@ -443,13 +435,19 @@ pub fn role_set(
             ));
         }
     }
-    let role_set = match RoleSet::new(definitions) {
-        Ok(role_set) => Some(role_set),
-        Err(problems) => {
-            for problem in problems {
-                c.fail("roles", Problem::RoleSet(problem));
+    // When every role id failed, those errors are reported already; an
+    // empty role set on top would be a second, misleading error.
+    let role_set = if definitions.is_empty() && !roles.is_empty() {
+        None
+    } else {
+        match RoleSet::new(definitions) {
+            Ok(role_set) => Some(role_set),
+            Err(problems) => {
+                for problem in problems {
+                    c.fail("roles", Problem::RoleSet(problem));
+                }
+                None
             }
-            None
         }
     };
     let value = id
@@ -516,6 +514,9 @@ pub fn generation(
     }
     if age_min > age_max {
         c.fail("age_min", Problem::OutOfRange);
+    }
+    if *nickname_pool_factor == 0 {
+        c.fail("nickname_pool_factor", Problem::OutOfRange);
     }
     let value = id.map(|_| GenerationParams {
         mu_base: *mu_base,

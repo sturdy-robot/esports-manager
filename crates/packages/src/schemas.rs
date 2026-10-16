@@ -26,9 +26,29 @@ pub fn all() -> Vec<(&'static str, String)> {
     ]
 }
 
-/// A content file holds one entity or a list of them.
+/// The pattern every content id follows: `<kind>:<slug>`.
+const ID_PATTERN: &str = "^[a-z_]+:[a-z0-9_]+$";
+
+/// A content file holds one entity or a list of them. The schema is titled
+/// and described after the entity, which is what editors show.
 fn content<T: JsonSchema>() -> String {
-    render(&schema_for!(OneOrMany<T>))
+    let mut schema = serde_json::to_value(schema_for!(OneOrMany<T>)).unwrap_or_default();
+    let name = T::schema_name();
+    let description = schema["$defs"][name.as_ref()]["description"].clone();
+    schema["title"] = serde_json::Value::String(name.into_owned());
+    schema["description"] = description;
+    if let Some(defs) = schema["$defs"].as_object_mut() {
+        for definition in defs.values_mut() {
+            if let Some(id) = definition.pointer_mut("/properties/id")
+                && id["type"] == "string"
+            {
+                id["pattern"] = serde_json::Value::String(ID_PATTERN.to_owned());
+            }
+        }
+    }
+    let mut text = serde_json::to_string_pretty(&schema).unwrap_or_default();
+    text.push('\n');
+    text
 }
 
 fn render(schema: &schemars::Schema) -> String {
@@ -76,6 +96,22 @@ mod tests {
         assert!(
             stale.is_empty() && extra.is_empty(),
             "content/schemas is out of date (stale: {stale:?}, extra: {extra:?}); run `just schemas` and commit the result"
+        );
+    }
+
+    #[test]
+    fn content_schemas_are_titled_after_their_entity() {
+        for (name, text) in super::all() {
+            let value: serde_json::Value = serde_json::from_str(&text).unwrap();
+            assert_ne!(value["title"], "OneOrMany", "{name}");
+        }
+        let team: serde_json::Value =
+            serde_json::from_str(&super::content::<crate::defs::TeamDef>()).unwrap();
+        assert_eq!(team["title"], "TeamDef");
+        assert_eq!(team["description"], "A team, in `teams/`.");
+        assert_eq!(
+            team["$defs"]["TeamDef"]["properties"]["id"]["pattern"],
+            super::ID_PATTERN
         );
     }
 

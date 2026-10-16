@@ -2,16 +2,25 @@
 //! application, and what the loader reports when a package is broken.
 //!
 //! Errors are data: a file, a path inside it and a typed problem. The UI and
-//! the CLI render them through Fluent; the loader never produces prose. The
-//! one exception is `InvalidValue`, which carries serde's own description of
-//! a malformed value.
+//! the CLI render them through Fluent; the loader never produces prose. Two
+//! problems carry text it didn't write: `InvalidValue`, serde's description
+//! of a malformed value, and `Unreadable`, the operating system's reason.
 
 use domain::id::ContentId;
 use esports::Genre;
 use esports::moba::roles::RoleSetError;
 use esports::moba::world::WorldTemplate;
 
-use crate::saves::ContentText;
+/// A `.ftl` file of a package's own text, copied into the save. The UI
+/// loads it into its Fluent bundles.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ContentText {
+    pub locale: String,
+    /// Its path inside the package, such as `locales/en/teams.ftl`.
+    pub file: String,
+    pub source: String,
+}
 
 /// What a package declares about itself.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -66,7 +75,7 @@ pub enum NameKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Problem {
-    /// The package root can't be read.
+    /// A file or folder of the package can't be read.
     Unreadable {
         reason: String,
     },
@@ -83,7 +92,13 @@ pub enum Problem {
     },
     /// A file's top level is neither an object nor a list.
     NotAnEntity,
+    /// The file isn't UTF-8 text.
+    NotUtf8,
     UnknownField {
+        field: String,
+    },
+    /// The same field appears twice in one object.
+    DuplicateField {
         field: String,
     },
     MissingField {
@@ -92,6 +107,8 @@ pub enum Problem {
     InvalidValue {
         detail: String,
     },
+    /// A list that must not be empty, such as the manifest's locales.
+    Empty,
     /// A field whose text doesn't have the required form (a date, a colour,
     /// a tag, a country code, a version).
     InvalidFormat,
@@ -114,7 +131,7 @@ pub enum Problem {
     },
     /// A type the package must define exactly once.
     WrongCount {
-        kind: String,
+        folder: String,
         count: usize,
     },
     UnsupportedGenre {
@@ -144,6 +161,7 @@ pub enum Problem {
     },
     DuplicateNickname {
         nickname: String,
+        player: ContentId,
         other: ContentId,
     },
     NicknamePoolTooSmall {

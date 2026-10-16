@@ -4,19 +4,17 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use app::content::ContentText;
+use app::content::{NameKind, PackageError, Problem};
+use domain::date::GameDate;
 use domain::id::ContentId;
 use domain::world::{Competition, NamePool, Nationality, Region, Team};
 use esports::moba::content::{GenerationParams, PinnedPlayer, RosterRules};
 use esports::moba::roles::{Role, RoleSet};
 use fluent_syntax::ast;
 
-use app::content::Manifest;
-
 use crate::convert::Located;
-use app::saves::ContentText;
-
 use crate::parse::{Entry, Parsed};
-use app::content::{NameKind, PackageError, Problem};
 
 /// Everything that converted cleanly, by kind.
 pub struct Content<'a> {
@@ -29,20 +27,20 @@ pub struct Content<'a> {
     pub players: &'a [Located<PinnedPlayer>],
     pub roles: Option<&'a Located<(RoleSet, RosterRules)>>,
     pub generation: Option<&'a Located<GenerationParams>>,
+    pub start_date: Option<GameDate>,
 }
 
-pub fn check(
-    parsed: &Parsed,
-    content: &Content<'_>,
-    manifest: Option<&Manifest>,
-    errors: &mut Vec<PackageError>,
-) {
+pub fn check(parsed: &Parsed, content: &Content<'_>, errors: &mut Vec<PackageError>) {
     duplicates(parsed, errors);
-    references(content, errors);
-    if let Some(manifest) = manifest {
-        text(&parsed.texts, content, manifest, errors);
+    references(parsed, content, errors);
+    // The locales come from the manifest as written, so a manifest with an
+    // unrelated mistake doesn't hide every text problem.
+    if let Some(manifest) = &parsed.manifest {
+        text(&parsed.texts, content, &manifest.def.locales, errors);
     }
     mixes_and_pools(content, errors);
+    duplicate_nicknames(content, errors);
+    birth_dates(content, errors);
     if let Some(roles) = content.roles
         && rosters(content, roles, errors)
         && let Some(generation) = content.generation
@@ -96,16 +94,30 @@ fn duplicates(parsed: &Parsed, errors: &mut Vec<PackageError>) {
     }
 }
 
-fn references(content: &Content<'_>, errors: &mut Vec<PackageError>) {
-    let regions: BTreeSet<&ContentId> = content.regions.iter().map(|r| &r.value.id).collect();
-    let nationalities: BTreeSet<&ContentId> =
-        content.nationalities.iter().map(|n| &n.value.id).collect();
-    let teams: BTreeSet<&ContentId> = content.teams.iter().map(|t| &t.value.id).collect();
-    let roles: Option<BTreeSet<&ContentId>> = content
-        .roles
-        .map(|roles| roles.value.0.roles().iter().map(Role::id).collect());
+/// The ids a package defines, as written: an entity that failed to convert
+/// for an unrelated reason still exists, so references to it don't cascade
+/// into a second, misleading error.
+fn defined<T>(entries: &[Entry<T>], id: impl Fn(&T) -> &str) -> BTreeSet<ContentId> {
+    entries
+        .iter()
+        .filter_map(|entry| ContentId::parse(id(&entry.def)).ok())
+        .collect()
+}
 
-    let mut require = |set: &BTreeSet<&ContentId>,
+fn references(parsed: &Parsed, content: &Content<'_>, errors: &mut Vec<PackageError>) {
+    let regions = defined(&parsed.regions, |d| &d.id);
+    let nationalities = defined(&parsed.nationalities, |d| &d.id);
+    let teams = defined(&parsed.teams, |d| &d.id);
+    let roles: Option<BTreeSet<ContentId>> = (!parsed.role_sets.is_empty()).then(|| {
+        parsed
+            .role_sets
+            .iter()
+            .flat_map(|set| &set.def.roles)
+            .filter_map(|role| ContentId::parse(&role.id).ok())
+            .collect()
+    });
+
+    let mut require = |set: &BTreeSet<ContentId>,
                        at: &dyn Fn(Problem) -> PackageError,
                        field: &str,
                        id: &ContentId| {
@@ -177,12 +189,12 @@ fn references(content: &Content<'_>, errors: &mut Vec<PackageError>) {
 fn text(
     texts: &[ContentText],
     content: &Content<'_>,
-    manifest: &Manifest,
+    locales: &[String],
     errors: &mut Vec<PackageError>,
 ) {
     let mut messages: BTreeMap<&str, BTreeSet<String>> = BTreeMap::new();
     for file in texts {
-        if !manifest.locales.contains(&file.locale) {
+        if !locales.contains(&file.locale) {
             errors.push(PackageError::new(
                 &file.file,
                 "",
@@ -192,22 +204,14 @@ fn text(
             ));
             continue;
         }
-        let resource = match fluent_syntax::parser::parse(file.source.as_str()) {
-            Ok(resource) => resource,
-            Err((resource, problems)) => {
-                for problem in problems {
-                    let line = file.source[..problem.pos.start.min(file.source.len())]
-                        .matches('\n')
-                        .count()
-                        + 1;
-                    errors.push(PackageError::new(
-                        &file.file,
-                        "",
-                        Problem::TextSyntax { line },
-                    ));
-                }
-                resource
-            }
+        let Some(resource) = parse_text(&file.source, |line| {
+            errors.push(PackageError::new(
+                &file.file,
+                "",
+                Problem::TextSyntax { line },
+            ));
+        }) else {
+            continue;
         };
         let ids = messages.entry(file.locale.as_str()).or_default();
         for entry in resource.body {
@@ -217,7 +221,7 @@ fn text(
         }
     }
 
-    let Some(first) = manifest.locales.first() else {
+    let Some(first) = locales.first() else {
         return;
     };
     let empty = BTreeSet::new();
@@ -252,6 +256,57 @@ fn text(
     }
 }
 
+/// The line `offset` falls on, counting from 1.
+fn line_of(source: &str, offset: usize) -> usize {
+    source.get(..offset).unwrap_or(source).matches('\n').count() + 1
+}
+
+/// A unicode escape (`\u` with four hex digits, `\U` with six) that is cut
+/// short by a non-ASCII character: fluent-syntax 0.12 panics on it instead of
+/// reporting it, so it is caught here first.
+fn broken_escape(source: &str) -> Option<usize> {
+    for (offset, _) in source.match_indices('\\') {
+        let rest = &source[offset + 1..];
+        let digits = match rest.chars().next() {
+            Some('u') => 4,
+            Some('U') => 6,
+            _ => continue,
+        };
+        let window: Vec<char> = rest.chars().skip(1).take(digits).collect();
+        let cut_short = window
+            .iter()
+            .position(|c| !c.is_ascii_hexdigit())
+            .is_some_and(|position| !window[position].is_ascii());
+        if cut_short {
+            return Some(line_of(source, offset));
+        }
+    }
+    None
+}
+
+/// Parses a package's `.ftl` text, reporting each syntax error's line. The
+/// parser must never take the game down, so a panic in it is reported as a
+/// syntax error too.
+fn parse_text(source: &str, mut report: impl FnMut(usize)) -> Option<ast::Resource<&str>> {
+    if let Some(line) = broken_escape(source) {
+        report(line);
+        return None;
+    }
+    match std::panic::catch_unwind(|| fluent_syntax::parser::parse(source)) {
+        Ok(Ok(resource)) => Some(resource),
+        Ok(Err((resource, problems))) => {
+            for problem in problems {
+                report(line_of(source, problem.pos.start));
+            }
+            Some(resource)
+        }
+        Err(_) => {
+            report(1);
+            None
+        }
+    }
+}
+
 fn mixes_and_pools(content: &Content<'_>, errors: &mut Vec<PackageError>) {
     let mut drawable = BTreeSet::new();
     for region in content.regions {
@@ -271,6 +326,14 @@ fn mixes_and_pools(content: &Content<'_>, errors: &mut Vec<PackageError>) {
                 .map(|(id, _)| id),
         );
     }
+    // A pinned nationality draws names too, even when both are pinned: every
+    // draw happens, so pinning one field never shifts another.
+    drawable.extend(
+        content
+            .players
+            .iter()
+            .filter_map(|p| p.value.nationality.as_ref()),
+    );
     for nationality in content.nationalities {
         let id = &nationality.value.id;
         if !drawable.contains(id) {
@@ -299,8 +362,44 @@ fn mixes_and_pools(content: &Content<'_>, errors: &mut Vec<PackageError>) {
     }
 }
 
-/// Checks the roster shape, pinned nicknames and pinned rosters. Returns
-/// whether the roster shape itself is usable.
+/// Pinned nicknames are unique, ignoring case.
+fn duplicate_nicknames(content: &Content<'_>, errors: &mut Vec<PackageError>) {
+    let mut nicknames: BTreeMap<String, &ContentId> = BTreeMap::new();
+    for player in content.players {
+        let Some(nickname) = &player.value.nickname else {
+            continue;
+        };
+        match nicknames.get(&nickname.to_lowercase()) {
+            Some(&other) => errors.push(player.error(
+                "nickname",
+                Problem::DuplicateNickname {
+                    nickname: nickname.clone(),
+                    player: player.value.id.clone(),
+                    other: other.clone(),
+                },
+            )),
+            None => {
+                nicknames.insert(nickname.to_lowercase(), &player.value.id);
+            }
+        }
+    }
+}
+
+/// A pinned birth date can't be after the world's start: the player would
+/// have no age.
+fn birth_dates(content: &Content<'_>, errors: &mut Vec<PackageError>) {
+    let Some(start) = content.start_date else {
+        return;
+    };
+    for player in content.players {
+        if player.value.birth_date.is_some_and(|born| born > start) {
+            errors.push(player.error("birth_date", Problem::OutOfRange));
+        }
+    }
+}
+
+/// Checks the roster shape and pinned rosters. Returns whether the roster
+/// shape itself is usable.
 fn rosters(
     content: &Content<'_>,
     located: &Located<(RoleSet, RosterRules)>,
@@ -317,25 +416,6 @@ fn rosters(
             },
         ));
         return false;
-    }
-
-    let mut nicknames: BTreeMap<String, &ContentId> = BTreeMap::new();
-    for player in content.players {
-        let Some(nickname) = &player.value.nickname else {
-            continue;
-        };
-        match nicknames.get(&nickname.to_lowercase()) {
-            Some(&other) => errors.push(player.error(
-                "nickname",
-                Problem::DuplicateNickname {
-                    nickname: nickname.clone(),
-                    other: other.clone(),
-                },
-            )),
-            None => {
-                nicknames.insert(nickname.to_lowercase(), &player.value.id);
-            }
-        }
     }
 
     for team in content.teams {
@@ -390,19 +470,22 @@ fn nickname_pool(
         .filter(|nickname| !pinned.contains(nickname))
         .collect::<BTreeSet<_>>()
         .len();
+    // Every roster place draws a nickname unless its player pins one,
+    // including pinned players who leave their nickname out.
     let roster_size = role_set.roles().len() + usize::from(rules.subs);
-    let generated: usize = content
-        .teams
+    let places = content.teams.len().saturating_mul(roster_size);
+    let pinned_nicknames = content
+        .players
         .iter()
-        .map(|team| {
-            let pinned = content
-                .players
+        .filter(|p| p.value.nickname.is_some())
+        .filter(|p| {
+            content
+                .teams
                 .iter()
-                .filter(|p| p.value.team == team.value.id)
-                .count();
-            roster_size.saturating_sub(pinned)
+                .any(|team| team.value.id == p.value.team)
         })
-        .sum();
+        .count();
+    let generated = places.saturating_sub(pinned_nicknames);
     let factor = usize::try_from(generation.nickname_pool_factor).unwrap_or(usize::MAX);
     let needed = generated.saturating_mul(factor);
     if distinct < needed {

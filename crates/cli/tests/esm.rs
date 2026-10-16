@@ -246,7 +246,10 @@ fn a_broken_package_reports_its_problems() {
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
-    assert!(String::from_utf8_lossy(&output.stderr).starts_with("The package can't be read"));
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .starts_with("/definitely/not/a/package can't be read")
+    );
 }
 
 #[test]

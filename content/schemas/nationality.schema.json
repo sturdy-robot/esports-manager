@@ -1,55 +1,56 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "OneOrMany",
-  "description": "What a content file holds: one entity, or a list of them. Used only to\ngenerate the schemas.",
-  "anyOf": [
-    {
-      "$ref": "#/$defs/NationalityDef"
-    },
-    {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/NationalityDef"
-      }
-    }
-  ],
   "$defs": {
     "NameOrderDef": {
-      "type": "string",
       "enum": [
         "given_first",
         "family_first"
-      ]
+      ],
+      "type": "string"
     },
     "NationalityDef": {
+      "additionalProperties": false,
       "description": "A nationality, in `nationalities/`.",
-      "type": "object",
       "properties": {
         "$schema": {
+          "default": null,
           "type": [
             "string",
             "null"
-          ],
-          "default": null
+          ]
         },
         "code": {
           "description": "ISO 3166-1 alpha-2, such as `KR`.",
-          "type": "string",
-          "pattern": "^[A-Z]{2}$"
+          "pattern": "^[A-Z]{2}$",
+          "type": "string"
         },
         "id": {
+          "pattern": "^[a-z_]+:[a-z0-9_]+$",
           "type": "string"
         },
         "name_order": {
           "$ref": "#/$defs/NameOrderDef"
         }
       },
-      "additionalProperties": false,
       "required": [
         "id",
         "code",
         "name_order"
-      ]
+      ],
+      "type": "object"
     }
-  }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/NationalityDef"
+    },
+    {
+      "items": {
+        "$ref": "#/$defs/NationalityDef"
+      },
+      "type": "array"
+    }
+  ],
+  "description": "A nationality, in `nationalities/`.",
+  "title": "NationalityDef"
 }
