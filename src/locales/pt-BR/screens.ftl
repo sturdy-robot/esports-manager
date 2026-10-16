@@ -15,6 +15,7 @@ new-game-step-team = Escolha seu time
 new-game-step-confirm = Dê um nome ao jogo salvo
 new-game-manager-label = Nome do treinador
 new-game-region-tabs = Regiões
+new-game-chosen-team = Time: { $team }
 new-game-save-label = Nome do jogo salvo
 new-game-advanced = Avançado
 new-game-seed-label = Semente do mundo (opcional)
@@ -35,6 +36,8 @@ load-game-column-played = Jogado em
 # $damage é o motivo pelo qual o jogo salvo não abre.
 load-game-damaged = Não abre: { $damage }
 load-game-failed = Não foi possível abrir o jogo salvo:
+load-game-list-failed = Não foi possível listar os jogos salvos:
+load-game-opening = Abrindo o jogo salvo…
 
 roster-view-player = { $nickname }, ver perfil
 profile-back = Voltar ao elenco

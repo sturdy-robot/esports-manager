@@ -8,36 +8,47 @@ import { backLink } from "../components/styles";
 import { usePlayer } from "../hooks/game";
 import { failureMessages } from "../lib/backend/result";
 import { ContentText, messageText } from "../lib/i18n/content";
+import { formatCalendarDate } from "../lib/i18n/dates";
+import { DEFAULT_SORT, type RosterSort, sortSearch } from "./rosterSort";
 
-/** One player: identity, overall, and attributes by group; hidden ones are unknown. */
-export function Player({ id }: { id: string }) {
+/**
+ * One player: identity, overall, and attributes by group; hidden ones are
+ * unknown. `sort` is the roster's, kept for the way back.
+ */
+export function Player({ id, sort = DEFAULT_SORT }: { id: string; sort?: RosterSort }) {
   const { l10n } = useLocalization();
   const profile = usePlayer(id);
   const name = usePersonName();
   if (profile.isError) {
     return (
-      <FailureList
-        heading={l10n.getString("app-backend-error")}
-        messages={failureMessages(profile.error)}
-      />
+      <section className="mx-auto flex max-w-3xl flex-col gap-4">
+        <Localized id="profile-back">
+          <Link to="/roster" search={sortSearch(sort)} className={backLink} />
+        </Localized>
+        <FailureList
+          heading={l10n.getString("app-backend-error")}
+          messages={failureMessages(profile.error)}
+        />
+      </section>
     );
   }
   if (!profile.isSuccess) {
     return (
-      <Localized id="app-loading">
-        <p className="text-muted" />
-      </Localized>
+      <section className="mx-auto flex max-w-3xl flex-col gap-4">
+        <Localized id="profile-back">
+          <Link to="/roster" search={sortSearch(sort)} className={backLink} />
+        </Localized>
+        <Localized id="app-loading">
+          <p className="text-muted" />
+        </Localized>
+      </section>
     );
   }
   const { player, team, birthDate, skills, traits, hidden } = profile.data;
-  const locale = document.documentElement.lang || undefined;
-  const born = new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }).format(
-    new Date(`${birthDate}T00:00:00Z`),
-  );
   return (
     <section className="mx-auto flex max-w-3xl flex-col gap-4">
       <Localized id="profile-back">
-        <Link to="/roster" search={{ team: team.id }} className={backLink} />
+        <Link to="/roster" search={{ team: team.id, ...sortSearch(sort) }} className={backLink} />
       </Localized>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-semibold text-2xl">{player.nickname}</h2>
@@ -64,7 +75,7 @@ export function Player({ id }: { id: string }) {
       <p className="text-muted">
         <ContentText id={team.nameMessage} />
         {" · "}
-        {l10n.getString("profile-born", { date: born })}
+        {l10n.getString("profile-born", { date: formatCalendarDate(birthDate, "long") })}
       </p>
       <div className="grid gap-6 sm:grid-cols-2">
         <AttributeGroup heading={l10n.getString("profile-skills")} attributes={skills} />

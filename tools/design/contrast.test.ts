@@ -39,4 +39,13 @@ describe("contrast", () => {
     const css = readFileSync(join(import.meta.dirname, "../../src/styles/tokens.css"), "utf8");
     expect(checkTextContrast(hexTokens(css))).toEqual([]);
   });
+
+  it("button text meets AA on the button and on its hover state", () => {
+    const css = readFileSync(join(import.meta.dirname, "../../src/styles/tokens.css"), "utf8");
+    const tokens = hexTokens(css);
+    const text = tokens.get("text-on-accent") ?? "";
+    for (const background of ["accent-strong", "accent-hover"]) {
+      expect(contrastRatio(text, tokens.get(background) ?? "#ffffff")).toBeGreaterThanOrEqual(4.5);
+    }
+  });
 });

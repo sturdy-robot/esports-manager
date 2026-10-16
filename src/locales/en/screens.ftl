@@ -15,6 +15,7 @@ new-game-step-team = Choose your team
 new-game-step-confirm = Name your save
 new-game-manager-label = Manager name
 new-game-region-tabs = Regions
+new-game-chosen-team = Team: { $team }
 new-game-save-label = Save name
 new-game-advanced = Advanced
 new-game-seed-label = World seed (optional)
@@ -35,6 +36,8 @@ load-game-column-played = Last played
 # $damage is why the save can't be opened.
 load-game-damaged = Can't open: { $damage }
 load-game-failed = The save couldn't be opened:
+load-game-list-failed = The saves couldn't be listed:
+load-game-opening = Opening the save…
 
 roster-view-player = { $nickname }, view profile
 profile-back = Back to roster

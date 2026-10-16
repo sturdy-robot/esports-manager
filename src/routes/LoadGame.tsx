@@ -6,25 +6,28 @@ import { backLink } from "../components/styles";
 import { useOpenSave, useSaves } from "../hooks/game";
 import { failureMessages } from "../lib/backend/result";
 import { ContentText, messageText } from "../lib/i18n/content";
+import { formatCalendarDate, formatMoment } from "../lib/i18n/dates";
 
 const DAMAGE: Record<DamageView, string> = {
   notASave: "save-damage-not-a-save",
   newerVersion: "save-damage-newer-version",
 };
 
-/** Load Game: every save, newest first; damaged ones are shown but can't be opened. */
+/**
+ * Load Game: every save, newest first; damaged ones and ones open elsewhere
+ * are shown but can't be opened. While one opens, the others wait.
+ */
 export function LoadGame() {
   const { l10n } = useLocalization();
   const saves = useSaves();
   const open = useOpenSave();
   const navigate = useNavigate();
-  // Dates follow the UI's language; the frontend may format, never compute.
-  const locale = document.documentElement.lang || undefined;
-  const formatDate = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" });
-  const formatPlayed = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
 
-  const choose = (file: string) =>
-    open.mutate(file, { onSuccess: () => navigate({ to: "/roster" }) });
+  const choose = (file: string) => {
+    if (!open.isPending) {
+      open.mutate(file, { onSuccess: () => navigate({ to: "/roster" }) });
+    }
+  };
 
   return (
     <section className="mx-auto flex max-w-5xl flex-col gap-4">
@@ -63,20 +66,26 @@ export function LoadGame() {
           </li>
           {saves.data.map((save) => (
             <li key={save.file}>
-              <SaveRow
-                save={save}
-                onOpen={choose}
-                gameDate={(date) => formatDate.format(new Date(`${date}T00:00:00Z`))}
-                played={(seconds) => formatPlayed.format(new Date(seconds * 1000))}
-              />
+              <SaveRow save={save} onOpen={choose} waiting={open.isPending} />
             </li>
           ))}
         </ul>
       )}
-      {(saves.isError || open.isError) && (
+      {open.isPending && (
+        <Localized id="load-game-opening">
+          <p role="status" className="text-muted" />
+        </Localized>
+      )}
+      {saves.isError && (
+        <FailureList
+          heading={l10n.getString("load-game-list-failed")}
+          messages={failureMessages(saves.error)}
+        />
+      )}
+      {open.isError && (
         <FailureList
           heading={l10n.getString("load-game-failed")}
-          messages={failureMessages(saves.error ?? open.error)}
+          messages={failureMessages(open.error)}
         />
       )}
     </section>
@@ -86,11 +95,11 @@ export function LoadGame() {
 interface SaveRowProps {
   save: SaveSummary;
   onOpen: (file: string) => void;
-  gameDate: (date: string) => string;
-  played: (seconds: number) => string;
+  /** Another save is opening; this one can't be picked yet. */
+  waiting: boolean;
 }
 
-function SaveRow({ save, onOpen, gameDate, played }: SaveRowProps) {
+function SaveRow({ save, onOpen, waiting }: SaveRowProps) {
   const { l10n } = useLocalization();
   if (save.status === "damaged") {
     return (
@@ -116,15 +125,16 @@ function SaveRow({ save, onOpen, gameDate, played }: SaveRowProps) {
     <button
       type="button"
       onClick={() => onOpen(save.file)}
-      className="grid min-h-11 w-full grid-cols-1 gap-x-4 rounded-md border border-border bg-surface-raised p-3 text-left hover:border-accent focus-visible:outline-2 focus-visible:outline-accent-text sm:grid-cols-5"
+      aria-disabled={waiting}
+      className="grid min-h-11 w-full grid-cols-1 gap-x-4 rounded-md border border-border bg-surface-raised p-3 text-left hover:border-accent focus-visible:outline-2 focus-visible:outline-accent-text aria-disabled:opacity-50 sm:grid-cols-5"
     >
       <span className="font-semibold">{save.name}</span>
       <span>{save.managerName}</span>
       <span>
         <ContentText id={save.teamMessage} />
       </span>
-      <span className="text-muted">{gameDate(save.gameDate)}</span>
-      <span className="text-muted">{played(save.lastPlayedAt)}</span>
+      <span className="text-muted">{formatCalendarDate(save.gameDate)}</span>
+      <span className="text-muted">{formatMoment(save.lastPlayedAt)}</span>
     </button>
   );
 }

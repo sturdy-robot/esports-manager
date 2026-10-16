@@ -85,7 +85,21 @@ describe("the game's mutations", () => {
     await act(() => open.current.mutateAsync("a.esmsave"));
     expect(commands.openSave).toHaveBeenCalledWith("a.esmsave");
     const keys = invalidate.mock.calls.map(([filters]) => filters?.queryKey?.[0]);
-    expect(keys).toEqual(expect.arrayContaining(["contentText", "saves", "roster", "player"]));
+    expect(keys).toEqual(expect.arrayContaining(["contentText", "saves"]));
+  });
+
+  it("drop the previous save's rosters and profiles, even when nothing shows them", async () => {
+    // Given a roster and a profile cached from one save, and no screen showing them
+    vi.mocked(commands.openSave).mockReturnValue(ok({ file: "b.esmsave", team: "team:b" }));
+    const { client, wrapper: w } = wrapper();
+    client.setQueryData(["roster", null], { stale: true });
+    client.setQueryData(["player", "player:kairos"], { stale: true });
+    // When another save is opened
+    const open = renderHook(() => useOpenSave(), { wrapper: w }).result;
+    await act(() => open.current.mutateAsync("b.esmsave"));
+    // Then nothing of the first save is left to show
+    expect(client.getQueryData(["roster", null])).toBeUndefined();
+    expect(client.getQueryData(["player", "player:kairos"])).toBeUndefined();
   });
 
   it("quit closes the window", async () => {

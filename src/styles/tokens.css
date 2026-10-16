@@ -17,11 +17,12 @@
   --text-primary: #e2e8f0;
   --text-muted: #a3b2c6;
   --text-accent: #7cb4fb;
-  /* Text on --accent-strong buttons (4.9:1). */
+  /* Text on --accent-strong buttons (5.2:1) and their --accent-hover state (6.7:1). */
   --text-on-accent: #ffffff;
 
   --accent: #3b82f6;
   --accent-strong: #2563eb;
+  --accent-hover: #1d4ed8;
   --positive: #22c55e;
   --negative: #ef4444;
   --warning: #f59e0b;
