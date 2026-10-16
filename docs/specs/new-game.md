@@ -8,15 +8,14 @@
 
 The front door of the game. The main menu leads to New Game or Load Game. New Game asks for a manager name, a team and a save name, then builds a world from the core package and a seed. Load Game lists the saves. Both end on the roster of the user's team. The CLI offers the same use cases, and is the backbone of the backend's end-to-end tests.
 
-Items marked *(Proposed)* are my proposals, not yet confirmed.
 
 ## Rules
 
 ### Use cases (`app`)
 
-- **`new_game_options()`** returns the regions with their teams, as `TeamOption`s. Each has:
-  - id, name message id, region, tag and colours
-  - **strength**: 1–5 stars, from reputation, the ceiling of reputation / 20 *(Proposed)*
+- **`new_game_options()`** returns the regions, each with its name message id, its league (competition id and name message id) for the tab label, and its teams as `TeamOption`s. Each team has:
+  - id, name message id, tag and colours
+  - **strength**: 1–5 stars, the ceiling of reputation / 20
 - **`new_game(request)`** takes the manager name, team id, save name and seed. In order, it:
   1. loads and validates the core package; any error ends here with the report
   2. generates the world
@@ -26,16 +25,17 @@ Items marked *(Proposed)* are my proposals, not yet confirmed.
 
 ### Validation (`app`; errors are codes with typed arguments)
 
-- **Manager name:** trimmed, 1 to 32 characters.
-- **Save name:** trimmed, 1 to 48 characters, unique among saves ignoring case. It defaults to the team's name in the UI.
+- **Manager name:** trimmed, 1 to 32 characters, with no control characters.
+- **Save name:** trimmed, 1 to 48 characters, with no control characters, unique among saves ignoring case. It defaults to the team's name in the UI.
 - **Team:** must exist in the loaded content.
+- **Characters** are Unicode scalar values (Rust's `chars()`), never bytes, so "Ana Júlia" is 9 characters. The UI doesn't count them itself, and sets no `maxlength`; it shows the backend's errors.
 - Every error is reported, not just the first, and nothing is written.
 
 ### Seed
 
 - **By default, the adapter draws the seed from OS entropy** (`getrandom`) and passes it in as a `WorldSeed`. The domain never draws it.
-- The CLI takes `--seed <u64>`. The UI's New Game has a collapsed **Advanced** section with an optional seed field. *(Proposed: UI field.)*
-- The seed is stored in `save_meta`, so the same world can always be generated again.
+- The CLI takes `--seed <u64>`. The UI's New Game has a collapsed **Advanced** section with an optional seed field.
+- The seed is stored in `save_meta` with the packages' ids, versions and content hashes, so the same world can be generated again with the same packages and game version.
 
 ### Flow (UI)
 
@@ -75,7 +75,7 @@ Wide
 │ │ (AZT)      │ │ (CDY)      │ │ (MRG)      │ │ (ICR)      │  │
 │ │ Azure      │ │ Crimson    │ │ Moonrise   │ │ Iron       │  │
 │ │ Tigers     │ │ Dynasty    │ │ Gaming     │ │ Cranes     │  │
-│ │ ★★★★★      │ │ ★★★★★      │ │ ★★★★☆      │ │ ★★★★☆      │  │
+│ │ ★★★★★      │ │ ★★★★★      │ │ ★★★★★      │ │ ★★★★☆      │  │
 │ └────────────┘ └────────────┘ └────────────┘ └────────────┘  │
 │  … one card per team, a grid of 4 to 5 columns               │
 │                                                  [ Next → ]  │
@@ -132,7 +132,7 @@ Exit code 0 on success, 1 on a validation or use-case error, 2 on bad arguments.
 
 - **Given** the core package
 - **When** the New Game options are requested
-- **Then** they list the Seorabeol region with 10 teams and the Pindorama region with 8. Each team has a name, a tag, two colours and a strength of 1 to 5 stars
+- **Then** they list the Seorabeol region with 10 teams and the Pindorama region with 8, each with its league's name. Each team has a name, a tag, two colours and a strength of 1 to 5 stars
 
 ### NEWG-002 — Strength stars come from reputation
 

@@ -8,7 +8,7 @@
 
 At New Game, the loaded packages and a world seed are compiled into a world: regions, competitions, teams, and the players on every roster. Packages define the structure, and may pin some players; the generator fills in everyone else. It has to make strong teams strong and weak teams weak, give players a profile that fits their role, and produce the same world from the same seed on every machine.
 
-Items marked *(Proposed)* are my proposals, not yet confirmed. The numbers are starting values, to be tuned in sim-bench.
+The numbers are starting values, to be tuned in sim-bench.
 
 ## Rules
 
@@ -24,13 +24,14 @@ Items marked *(Proposed)* are my proposals, not yet confirmed. The numbers are s
   - `generator:team:<team id>` for a team's generated players and its sub roles
   - `generator:player:<player id>` for the generated fields of a pinned player
   - `generator:nickname:<player id>` for nicknames
+- **Generated players' ids** are `player:<team slug>.<n>`, numbered from 1 in generation order within the team. Package slugs can't contain `.`, so a generated id never collides with a pinned one. The id is stable for the life of the save.
 - Teams are generated in id order.
 - Adding a team to a package doesn't change any other team's players. The one exception is a nickname that would collide with the new team's.
-- **Normal draws are portable.** They use Box–Muller with the pure-Rust `libm` functions, not `f64::ln`/`cos`, which call the platform's maths library and can differ in the last bit between operating systems. *(Proposed.)* Every rating is rounded to hundredths before it is stored.
+- **Normal draws are portable.** They use Box–Muller with the pure-Rust `libm` functions, not `f64::ln`/`cos`, which call the platform's maths library and can differ in the last bit between operating systems. Every rating is rounded to hundredths before it is stored.
 
 ### Team strength (`domain`, constants in `rules/`)
 
-Reputation is 1–100 on each team, and each region has a `level` offset. *(Proposed.)*
+Reputation is 1–100 on each team, and each region has a `level` offset.
 
 - **mu_team** = 35 + 0.4 × reputation + region level
 - **sigma_team** = max(2, 12 − 0.07 × reputation)
@@ -44,7 +45,7 @@ A higher reputation gives a higher mean and a lower spread, as decided. With the
 | Top Pindorama team | 85 | 65 | 6.1 |
 | Bottom Pindorama team | 30 | 43 | 9.9 |
 
-### Players: a two-level draw *(Proposed)*
+### Players: a two-level draw
 
 1. **Player base:** b ~ N(mu_team, sigma_team).
 2. **Each attribute that counts toward overall:** a ~ N(b + bias(role, attribute), 6), clamped to 1–99. That means the seven MOBA skills plus Teamwork and Composure.
@@ -58,14 +59,14 @@ All ratings are clamped to 1–99, never folded with `abs()`. Folding is what pi
 
 ### Roster shape (`esports::moba`)
 
-- **Each team has seven players:** one of each of the five roles, plus two subs whose roles are two different roles drawn from the team's stream.
-- **Pinned players count toward the seven.** Generation fills the remaining slots so the shape still holds. A team whose pinned players can't fit the shape (more than seven, or three in one role) is a package error.
-- **Starters:** for each role, the player with the highest overall starts. Ties go to the lower player id. *(Proposed, to replace "subs are generated weaker".)*
+- **The roster shape comes from the package's role set:** one player per role, plus `subs` more (2 in core), whose roles are different roles drawn from the team's stream. With core's five roles that is seven players. `subs` can't exceed the number of roles.
+- **Pinned players count toward the roster.** Generation fills the remaining slots so the shape still holds. A team's pinned players must leave a completable roster: no more than the roster size, no role more than twice, and enough free slots for every role that has no pinned player. Otherwise it is a package error. For example, six pinned players split two-two-two across three roles leave one slot for two missing roles.
+- **Starters:** for each role, the player with the highest overall starts. Ties go to the lower player id.
 - Each player has one main role. A secondary role is left for later.
 
 ### Age and dates (`domain`)
 
-- The world starts on `world.json`'s `start_date`. In core that is 2027-01-01, labelled "Season 1". *(Proposed.)*
+- The world starts on `world.json`'s `start_date`. In core that is 2027-01-01, labelled "Season 1".
 - **Generated age:** N(22, 2.5), rounded, clamped to 17–28.
 - **Birth date:** drawn uniformly among the dates that give exactly that age on the start date.
 - Ages are always computed from the birth date and the current game date. They are never stored.
@@ -74,11 +75,26 @@ All ratings are clamped to 1–99, never folded with `abs()`. Folding is what pi
 
 - A player's nationality is drawn from their region's weighted `nationalities` mix.
 - **Given and family names** come from that nationality's pools. They are displayed in the nationality's `name_order`.
-- **Nicknames** come from one shared pool and are unique in the world. A colliding draw is redrawn from the same stream. Loading fails if the pool has fewer than three times as many entries as there are generated players. *(Proposed.)*
+- **Nicknames** come from one shared pool and are unique in the world, ignoring case. Each player's draw picks from the pool entries that are still unused, so generation always terminates. Pinned nicknames are taken out of the pool first.
 
 ### Pinned players (`esports::moba`)
 
-A pinned player in `players/` keeps every field it sets, exactly. Every field it leaves out is generated as if the player were generated for that team, from the player's own stream.
+A pinned player in `players/` keeps every field it sets, exactly. Every field it leaves out is generated as if the player were generated for that team, from the player's own stream. Pinned ratings are checked to be within 1–99 when the package loads. A pinned Potential is kept even if it ends up below the player's overall: that is a player at their ceiling.
+
+### Checked when the package loads (`packages`)
+
+A package that fails any of these is rejected before generation, so New Game never fails part-way:
+
+- Every region's nationality mix has non-negative weights with a positive total.
+- Every nationality a region can draw has non-empty given-name and family-name pools.
+- The role set is non-empty with no duplicates, and `subs` doesn't exceed its size.
+- Pinned nicknames are unique, ignoring case.
+- The nickname pool has at least three times as many distinct entries (ignoring case), after pinned nicknames are removed, as there are generated players.
+- Every team's pinned players leave a completable roster.
+
+### Reproducibility
+
+A seed reproduces a world **with the same packages and the same game version**. The save records each package's id, version and content hash next to the seed and the game version ([saves](saves.md)), so a bug report can rebuild the exact world.
 
 ## Scenarios
 
@@ -145,7 +161,7 @@ A pinned player in `players/` keeps every field it sets, exactly. Every field it
 ### GEN-011 — Ages and birth dates agree
 
 - **Given** any generated world with start date 2027-01-01
-- **When** every generated player is inspected
+- **When** every player whose age and birth date aren't pinned is inspected
 - **Then** each one's age on the start date is between 17 and 28, and is the age their birth date gives
 
 ### GEN-012 — Nationalities follow the region's mix
@@ -182,7 +198,49 @@ A pinned player in `players/` keeps every field it sets, exactly. Every field it
 
 - **Given** any generated world
 - **When** every generated player is inspected
-- **Then** each one's Potential is at least their overall
+- **Then** each one whose Potential isn't pinned has a Potential of at least their overall
+
+### GEN-018 — Generated players get stable, distinct ids
+
+- **Given** a world generated with seed 42
+- **When** the save is closed and opened again
+- **Then** every generated player has the same `player:<team slug>.<n>` id as before, and none equals a pinned player's id
+
+### GEN-019 — The roster shape follows the role set
+
+- **Given** a test package with three roles and `subs` 1
+- **When** its world is generated
+- **Then** every team has four players, one per role and one sub
+
+### GEN-020 — A roster pinned into a corner is a package error
+
+- **Given** a team with six pinned players, two each in Top, Mid and Bot
+- **When** the package is loaded
+- **Then** the report has an incompletable-roster error for that team, naming Jungle and Support
+
+### GEN-021 — Invalid nationality mixes are package errors
+
+- **Given** a region whose mix is empty, and another whose weights are all zero
+- **When** the package is loaded
+- **Then** the report has an invalid-mix error for each region
+
+### GEN-022 — Every drawable nationality needs names
+
+- **Given** a region that can draw `nationality:se`, with no Swedish family names
+- **When** the package is loaded
+- **Then** the report has an empty-pool error for `nationality:se` and family names
+
+### GEN-023 — Too few distinct nicknames is a package error
+
+- **Given** a nickname pool of 400 entries, of which only 300 differ when case is ignored, for 126 generated players
+- **When** the package is loaded
+- **Then** the report has a nickname-pool error giving 300 distinct and 378 needed
+
+### GEN-024 — Duplicate pinned nicknames are a package error
+
+- **Given** two pinned players with the nicknames "Kairos" and "kairos"
+- **When** the package is loaded
+- **Then** the report has a duplicate-nickname error naming both players
 
 ## Enforcement
 

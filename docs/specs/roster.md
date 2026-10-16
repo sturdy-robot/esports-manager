@@ -8,14 +8,13 @@
 
 The roster is the first screen of a game: who is on the team, in which roles, and how good they are. The profile is one player in detail, with their attributes. These are the walking skeleton's proof that the whole pipeline works, from the package through the generator and the save to the screen.
 
-Items marked *(Proposed)* are my proposals, not yet confirmed.
 
 ## Rules
 
 ### Queries (`app`)
 
 - **`roster_view(save, team)`** returns, already derived:
-  - **team:** name message id, tag, colours and region
+  - **team:** name message id, tag, colours, region, and its league (competition id and name message id) for the header
   - **players:** for each one, id, nickname, given and family name, name order, role, starter or sub, nationality (id and code), age and overall
 - **`player_profile(save, player)`** returns:
   - the same identity fields, plus team and birth date
@@ -33,7 +32,7 @@ Items marked *(Proposed)* are my proposals, not yet confirmed.
 - **Age:** completed years on the current game date, computed in Rust.
 - **Full name:** in the nationality's order. The UI renders it with one Fluent message that selects on name order. Korean, Chinese and Vietnamese players are family-first; everyone else is given-first.
 - **Nationality:** a badge with the uppercase country code (`KR`). Its accessible name is the country's name. The profile shows the name in full. Flag art comes later as package assets.
-- **Crest:** a monogram of the team tag on the team's first colour, bordered in its second (ADR 0010). The view also carries the monogram's text colour, which Rust picks (black or white) so the contrast against the first colour meets WCAG AA. *(Proposed.)*
+- **Crest:** a monogram of the team tag on the team's first colour, bordered in its second (ADR 0010). The view also carries the monogram's text colour, which Rust picks (black or white) so the contrast against the first colour meets WCAG AA.
 - **Overall:** a whole number ([attributes](attributes.md)).
 - **Role names, attribute names and their groups** are UI messages. **Team, region and country names** are package messages.
 

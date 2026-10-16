@@ -8,7 +8,7 @@
 
 A save is one SQLite file, and it is the world (ADR 0004). This spec fixes where the game keeps its files, including a **portable mode** where everything lives in one folder next to the executable, and how saves are created, listed and opened. The CLI and the desktop app find the same folder, so a save made in one can be played in the other.
 
-Items marked *(Proposed)* are my proposals, not yet confirmed.
+Items marked *(Proposed)* came from review and aren't confirmed yet.
 
 ## Rules
 
@@ -17,7 +17,7 @@ Items marked *(Proposed)* are my proposals, not yet confirmed.
 The data folder is chosen in this order:
 
 1. **`--data-dir <path>`** (CLI only): that folder.
-2. **Portable mode:** a file named `portable` next to the executable, with any content, makes the data folder `<executable folder>/data/`. *(Proposed name.)*
+2. **Portable mode:** a file named `portable` next to the executable, with any content, makes the data folder `<executable folder>/data/`.
 3. **Otherwise, the OS data folder:** `dirs::data_dir()` joined with `esports-manager`:
    - Linux: `$XDG_DATA_HOME/esports-manager`, by default `~/.local/share/esports-manager`
    - Windows: `%APPDATA%\esports-manager`
@@ -43,11 +43,12 @@ How the folder is picked is decided in one pure function in `app`. Its inputs ar
 
 ### Save files (`db`)
 
-- **One SQLite file per save:** `<data>/saves/<file name>.esmsave`. *(Proposed extension.)*
-- **The display name** is what the user typed. It must be unique among saves, ignoring case, and it is stored in the save. The file name is the name's slug (lowercase ASCII letters, digits and `-`), with `-2`, `-3`, … added if a different save already uses that slug.
+- **One SQLite file per save:** `<data>/saves/<file name>.esmsave`.
+- **The display name** is what the user typed. It must be unique among saves, ignoring case, and it is stored in the save. The file name is the name's slug (lowercase ASCII letters, digits and `-`), with `-2`, `-3`, … added if a different save already uses that slug. A name with no ASCII letters or digits, such as "호랑이", gets the slug `save`.
+- **Length limits** count Unicode scalar values, not bytes. The UI doesn't enforce them itself; it shows the backend's errors.
 - **`save_meta`** is a one-row table in every save:
   - display name, manager name, team id, genre
-  - world seed
+  - world seed, and each package's id, version and content hash
   - schema version, and the game version that created the save
   - current game date
   - `created_at` and `last_played_at`, which are real time supplied by the adapter, never read by the domain
@@ -55,18 +56,20 @@ How the folder is picked is decided in one pure function in `app`. Its inputs ar
 
 ### Creating
 
-- A new save is written to `<file name>.esmsave.tmp` in one transaction, then renamed into place.
-- If anything fails, the temporary file is removed and no save appears in the list.
+- A new save is written to a temporary file whose name is unique to that attempt (`<file name>.<attempt>.tmp`), in one transaction, then moved into place.
+- **Moving never replaces an existing file.** If the final name appeared in the meantime, creation fails with a name-taken error, and the other save is untouched.
+- If anything fails, the temporary file is removed and no save appears in the list. A `.tmp` file left by a crash is removed the next time the game starts, unless another process holds it open.
 
 ### Listing (`db`, through the `app` port)
 
 - **The list is built by scanning `saves/*.esmsave`** and reading each file's `save_meta`. There is no separate index to drift, and a save copied into the folder by hand shows up.
-- It is sorted by `last_played_at`, newest first.
+- It is sorted by `last_played_at`, newest first, then by display name, then by file name, so the order is the same on every run.
 - A file that can't be read is listed as damaged, with a reason (not a database, missing `save_meta`, newer schema). The other saves are still listed, and the list never fails because of one file.
 - `.tmp` files are ignored.
 
 ### Opening
 
+- **One process at a time.** An open save is held exclusively by the process that opened it. Opening a save that the CLI or another window already has open is refused with a save-in-use error. This also means two processes never interleave writes to one world. *(Proposed.)*
 - Opening a save sets `last_played_at`.
 - A save whose schema version is newer than the game's is refused with an error saying it was made by a newer version. Older saves are migrated (ADR 0004); there are none yet.
 - Deleting and renaming saves come later.
@@ -173,6 +176,36 @@ How the folder is picked is decided in one pure function in `app`. Its inputs ar
 - **When** it is opened at 12:00
 - **Then** its `last_played_at` is 12:00
 
+### SAVE-017 — A name with no ASCII letters still gets a file
+
+- **Given** an empty data folder
+- **When** a new game named "호랑이" is created
+- **Then** it is written to `saves/save.esmsave`, and listed as "호랑이"
+
+### SAVE-018 — Creation never replaces an existing save
+
+- **Given** a creation whose final file `saves/tigers.esmsave` appears before it moves its temporary file into place
+- **When** it finishes
+- **Then** it fails with a name-taken error, and the existing `tigers.esmsave` is unchanged
+
+### SAVE-019 — A crash's leftovers are cleaned up
+
+- **Given** a `.tmp` file in `saves/` left by a crashed creation
+- **When** the game starts
+- **Then** the file is removed, and a new game with the same name succeeds
+
+### SAVE-020 — An open save can't be opened twice
+
+- **Given** a save that the CLI has open
+- **When** the desktop app tries to open it
+- **Then** it is refused with a save-in-use error
+
+### SAVE-021 — Saves played at the same moment have a stable order
+
+- **Given** two saves named "Beta" and "Alpha" with the same `last_played_at`
+- **When** the saves are listed twice
+- **Then** both lists show "Alpha" before "Beta"
+
 ## Enforcement
 
 These land with the code in the implementing PR:
@@ -183,5 +216,5 @@ These land with the code in the implementing PR:
 
 ## Open questions
 
-- Whether a portable build should also offer to move existing OS-folder saves into its folder. *(Proposed: no; users copy files.)*
+- Portable builds don't move existing OS-folder saves into their folder; users copy the files.
 - Settings (language, delegation defaults) and logs: where they live comes with the settings screen.

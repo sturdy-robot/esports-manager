@@ -64,7 +64,7 @@ Attributes describe what a person can do and who they are. Every attribute must 
 - **`esports::moba`:** the MOBA attributes, the role set, and `overall(player)`, which picks the main role's weights and calls the domain mean.
 - **The weights live in exactly one place:** `rules/` in the package. The generator's role bias ([world generation](world-generation.md)) reads the same table, so what a role values is defined once.
 
-### Role weight table *(Proposed)*
+### Role weight table
 
 Integer weights; each role's column sums to 100.
 
