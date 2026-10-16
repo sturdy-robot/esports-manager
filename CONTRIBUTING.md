@@ -67,7 +67,30 @@ Every gate is enforced; there are no advisory checks ([ADR 0008](docs/adr/0008-e
 - **Frontend:** TypeScript strict, Biome, knip, Vitest, Playwright at desktop and compact sizes with accessibility checks.
 - **Cross-cutting:** generated bindings and JSON Schemas up to date, locale coverage, spec-to-test traceability, `reuse lint`, Conventional Commits.
 
-`just check` runs all of them. CI runs the same recipe. The development environment setup is added to this document together with the workspace skeleton.
+`just check` runs all of them, and CI runs the same recipes. The thresholds, the allowed crate graph and the denied genre words live in [`quality.toml`](quality.toml). Lowering a threshold or allowing a new dependency edge is a change to the ADR it comes from.
+
+## Development setup
+
+You need:
+
+- [rustup](https://rustup.rs/). The toolchain version is pinned in `rust-toolchain.toml`; run `rustup toolchain install` in the repository to get it.
+- [`just`](https://just.systems/) to run the recipes.
+- The gate tools: `cargo install --locked cargo-llvm-cov cargo-mutants cargo-deny cargo-machete`. `cargo binstall` is faster if you have it.
+- [`reuse`](https://reuse.software/) (`pipx install reuse`) for the licence check.
+
+Then:
+
+```bash
+just            # list the recipes
+just test       # fast test run
+just check      # every gate, as CI runs them
+just fmt        # format Rust code
+cargo run -p cli --bin esm   # the headless CLI
+```
+
+The repository checks that no off-the-shelf tool covers (crate graph, genre vocabulary, spec traceability, per-crate coverage) live in [`xtask/`](xtask/src/main.rs) and run through `cargo xtask <check>`.
+
+The desktop app and the frontend toolchain are added in the next milestone step; their setup will be documented here.
 
 ## Commit messages
 

@@ -1,0 +1,4 @@
+# cargo-mutants configuration (ADR 0008).
+# xtask is development tooling, gated by its own tests but not by mutation.
+exclude_globs = ["xtask/**"]
+test_tool = "cargo"

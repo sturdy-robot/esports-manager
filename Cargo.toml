@@ -1,0 +1,49 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/domain",
+    "crates/esports",
+    "crates/app",
+    "crates/packages",
+    "crates/db",
+    "crates/cli",
+    "xtask",
+]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.99"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/esports-manager/esports-manager"
+publish = false
+
+[workspace.dependencies]
+domain = { path = "crates/domain" }
+esports = { path = "crates/esports" }
+app = { path = "crates/app" }
+packages = { path = "crates/packages" }
+db = { path = "crates/db" }
+
+anyhow = "1.0.104"
+cargo_metadata = "0.23.1"
+rand_chacha = "0.10.0"
+rand_core = "0.10.1"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0.21"
+toml = "1.1.8"
+
+# Lint policy: ADR 0008. Every allow below needs a reason.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+wildcard_enum_match_arm = "deny"
+# Crate names are short (`domain`, `app`), so `domain::rng::RngProvider`-style
+# repetition is the clearest naming, not noise.
+module_name_repetitions = "allow"

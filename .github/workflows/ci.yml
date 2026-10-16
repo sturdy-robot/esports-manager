@@ -8,6 +8,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   reuse:
     name: REUSE compliance
@@ -26,3 +33,54 @@ jobs:
       - uses: amannn/action-semantic-pull-request@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  rust:
+    name: Rust gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just,cargo-llvm-cov,cargo-deny,cargo-machete
+      # The same recipes `just check` runs locally (ADR 0008).
+      - run: just fmt-check clippy arch vocab trace coverage deny machete
+
+  mutants:
+    name: Mutation testing (changed code)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just,cargo-mutants
+      - run: just base=origin/${{ github.base_ref }} mutants
+      - name: Upload mutants report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutants.out
+          path: mutants.out
+
+  build:
+    name: Build and test (${{ matrix.os }})
+    if: github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace --locked

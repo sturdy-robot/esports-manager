@@ -42,6 +42,19 @@ The game will be available in English and Brazilian Portuguese, on Linux, Window
 - [Architecture Decision Records](docs/adr/README.md)
 - [Specs](docs/specs/README.md)
 
+## Building from source
+
+There is nothing to play yet. To build the workspace and run the checks, install [rustup](https://rustup.rs/) and [`just`](https://just.systems/), then:
+
+```bash
+git clone https://github.com/esports-manager/esports-manager.git
+cd esports-manager
+rustup toolchain install   # installs the pinned toolchain
+just test
+```
+
+[CONTRIBUTING.md](CONTRIBUTING.md#development-setup) covers the full development setup and `just check`.
+
 ## Contributing
 
 Contributions are welcome: code, design, writing, translation, testing and ideas. Start with [CONTRIBUTING.md](CONTRIBUTING.md), which covers the architecture, the workflow (spec → tests → implementation) and the quality gates every change must pass.
