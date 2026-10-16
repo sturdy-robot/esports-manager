@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["src/**", "tools/**", "e2e/**", "*.ts", "*.json", "!src/bindings.ts"]
+    "includes": ["src/**", "tools/**", "e2e/**", "smoke/**", "*.ts", "*.json", "!src/bindings.ts"]
   },
   "formatter": {
     "indentStyle": "space",

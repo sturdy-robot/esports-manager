@@ -64,7 +64,7 @@ Tests must be meaningful: mutation testing runs on every PR, and a surviving mut
 Every gate is enforced; there are no advisory checks ([ADR 0008](docs/adr/0008-enforcement-policy.md)). If a gate is wrong, change it in a PR, don't work around it.
 
 - **Rust:** `cargo fmt`, `clippy` (pedantic, no `unwrap`/`expect`/`panic` outside tests, no wildcard enum arms, no `unsafe`), the architecture test, coverage thresholds per crate, `cargo-mutants` on the diff, `cargo-deny`, `cargo-machete`.
-- **Frontend:** TypeScript strict, Biome, knip, Vitest with coverage minimums. Playwright at desktop and compact sizes with accessibility checks comes with the first screens.
+- **Frontend:** TypeScript strict, Biome, knip, Vitest with coverage minimums, Playwright at desktop and compact sizes with axe accessibility checks, and a smoke test of the real desktop binary through `tauri-driver`.
 - **Cross-cutting:** generated bindings and JSON Schemas up to date, locale coverage, spec-to-test traceability, `reuse lint`, Conventional Commits.
 
 `just check` runs all of them, and CI runs the same recipes. The thresholds, the allowed crate graph and the denied genre words live in [`quality.toml`](quality.toml). Lowering a threshold or allowing a new dependency edge is a change to the ADR it comes from.
@@ -79,6 +79,7 @@ You need:
 - [`just`](https://just.systems/) to run the recipes.
 - The gate tools: `cargo install --locked cargo-llvm-cov cargo-mutants cargo-deny cargo-machete`. `cargo binstall` is faster if you have it.
 - [`reuse`](https://reuse.software/) (`pipx install reuse`) for the licence check.
+- For the end-to-end gates: `pnpm exec playwright install chromium` (browser tests), and `cargo install --locked tauri-driver` plus WebKitWebDriver (`webkit2gtk-driver` on Debian/Ubuntu, part of `webkit2gtk4.1` on Fedora) and `xvfb-run` for the desktop smoke test.
 
 Then:
 
@@ -90,6 +91,8 @@ just test       # fast Rust test run
 just check      # every gate, as CI runs them
 just fmt        # format Rust and frontend code
 just bindings   # regenerate src/bindings.ts after changing a Tauri command or DTO
+just e2e        # browser E2E tests (desktop and compact sizes, axe)
+just smoke      # start the real desktop binary and check it talks to the backend
 cargo run -p cli --bin esm   # the headless CLI
 ```
 
@@ -104,6 +107,7 @@ The repository checks that no off-the-shelf tool covers (crate graph, genre voca
 - **Text:** every user-visible string is a Fluent message in `src/locales/<locale>/*.ftl`, with **every locale updated in the same change** (English and Brazilian Portuguese today). Use `<Localized id="…">` or `l10n.getString("…")` with a literal id. The i18n tests fail on a missing translation, a mismatched `$variable`, an unused message, or text written directly in JSX.
 - **Styling:** Tailwind utilities backed by the tokens in `src/styles/tokens.css`. Don't hard-code colours. Every `--text-*` token must keep WCAG AA contrast on every `--surface-*` token; a test enforces it.
 - **Logic** that isn't a component (formatting, i18n, checks) lives in `src/lib/` or `tools/`, where Vitest's 80% coverage minimum applies.
+- **E2E tests** live in `e2e/` and run against `vite --mode e2e`, where `src/test/e2e-ipc.ts` answers backend commands. Add a handler there for each new command a screen calls.
 - `just hooks` installs fast pre-commit checks (lefthook). They are optional; CI runs everything anyway.
 
 ## Commit messages

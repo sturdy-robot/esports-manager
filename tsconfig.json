@@ -18,5 +18,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "tools", "vite.config.ts"]
+  "include": ["src", "tools", "e2e", "smoke", "vite.config.ts", "playwright.config.ts"]
 }
