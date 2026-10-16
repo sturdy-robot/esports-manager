@@ -211,8 +211,8 @@ fn the_fixture_is_valid() {
     assert_eq!(package.template.teams[0].reputation.value(), 50);
     assert_eq!(package.template.roles.roles().len(), 5);
     assert_eq!(package.template.roster.subs, 2);
-    assert!((package.template.generation.mu_per_reputation - 0.4).abs() < f64::EPSILON);
-    assert_eq!(package.template.generation.age_max, 28);
+    assert!((package.template.generation.common.mu_per_reputation - 0.4).abs() < f64::EPSILON);
+    assert_eq!(package.template.generation.common.age_max, 28);
     assert_eq!(package.texts.len(), 2);
     assert_eq!(package.content_hash, Fixture::new().files().content_hash());
 }

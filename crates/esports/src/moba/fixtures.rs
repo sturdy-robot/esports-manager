@@ -22,6 +22,7 @@ use super::content::{GenerationParams, PinnedAttributes, PinnedPlayer, RosterRul
 use super::generation::generate;
 use super::roles::RoleSet;
 use super::world::{World, WorldTemplate};
+use domain::generation::Constants;
 
 /// The same streams the application's RNG provider hands out.
 pub struct Seeded(pub WorldSeed);
@@ -130,25 +131,27 @@ pub fn template() -> WorldTemplate {
         roles,
         roster: RosterRules { subs: 2 },
         generation: GenerationParams {
-            mu_base: 35.0,
-            mu_per_reputation: 0.4,
-            sigma_base: 12.0,
-            sigma_per_reputation: 0.07,
-            sigma_min: 2.0,
+            common: Constants {
+                mu_base: 35.0,
+                mu_per_reputation: 0.4,
+                sigma_base: 12.0,
+                sigma_per_reputation: 0.07,
+                sigma_min: 2.0,
+                style_mean: 50.0,
+                style_spread: 15.0,
+                consistency_mean: 55.0,
+                consistency_spread: 15.0,
+                potential_peak_age: 24.0,
+                potential_per_year: 2.5,
+                potential_spread: 6.0,
+                age_mean: 22.0,
+                age_spread: 2.5,
+                age_min: 17,
+                age_max: 28,
+                nickname_pool_factor: 3,
+            },
             attribute_spread: 6.0,
             bias_scale: 8.0,
-            style_mean: 50.0,
-            style_spread: 15.0,
-            consistency_mean: 55.0,
-            consistency_spread: 15.0,
-            potential_peak_age: 24.0,
-            potential_per_year: 2.5,
-            potential_spread: 6.0,
-            age_mean: 22.0,
-            age_spread: 2.5,
-            age_min: 17,
-            age_max: 28,
-            nickname_pool_factor: 3,
         },
     }
 }

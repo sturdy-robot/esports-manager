@@ -2,6 +2,7 @@
 //! players, the roster shape and the generator's constants.
 
 use domain::date::GameDate;
+use domain::generation::Constants;
 use domain::id::ContentId;
 use domain::rating::Rating;
 
@@ -44,34 +45,14 @@ pub struct RosterRules {
     pub subs: u8,
 }
 
-/// The generator's constants (world generation spec). Starting values, to be
-/// tuned in sim-bench.
+/// The generator's constants (world generation spec): the genre-agnostic
+/// ones, and how MOBA skills spread around a player's base.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GenerationParams {
-    /// The team mean is `mu_base` + `mu_per_reputation` × reputation + region level.
-    pub mu_base: f64,
-    pub mu_per_reputation: f64,
-    /// The team spread is max(`sigma_min`, `sigma_base` − `sigma_per_reputation` × reputation).
-    pub sigma_base: f64,
-    pub sigma_per_reputation: f64,
-    pub sigma_min: f64,
-    /// Spread of each attribute around the player's base.
+    pub common: Constants,
+    /// Spread of each attribute that counts toward overall around the
+    /// player's base.
     pub attribute_spread: f64,
     /// Scale of the role bias.
     pub bias_scale: f64,
-    /// Aggression and Work Ethic.
-    pub style_mean: f64,
-    pub style_spread: f64,
-    pub consistency_mean: f64,
-    pub consistency_spread: f64,
-    /// Potential gains `potential_per_year` for each year under this age.
-    pub potential_peak_age: f64,
-    pub potential_per_year: f64,
-    pub potential_spread: f64,
-    pub age_mean: f64,
-    pub age_spread: f64,
-    pub age_min: u8,
-    pub age_max: u8,
-    /// The nickname pool needs this many distinct entries per generated player.
-    pub nickname_pool_factor: u32,
 }
