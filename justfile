@@ -106,11 +106,12 @@ coverage-frontend:
 e2e:
     pnpm e2e
 
-# Needs tauri-driver, and WebKitWebDriver plus xvfb-run on Linux.
+# Needs tauri-driver, and WebKitWebDriver plus xvfb-run on Linux. GTK is
+# kept off any Wayland session, which WebKitWebDriver sessions crash on.
 # Start the real desktop binary and check the UI reaches the backend.
 smoke:
     pnpm tauri build --debug --no-bundle
-    {{ if os() == "linux" { "env -u WAYLAND_DISPLAY xvfb-run -a pnpm smoke" } else { "pnpm smoke" } }}
+    {{ if os() == "linux" { "env -u WAYLAND_DISPLAY GDK_BACKEND=x11 xvfb-run -a pnpm smoke" } else { "pnpm smoke" } }}
 
 # Licences, bans and sources. Advisories run weekly in CI (`just advisories`).
 deny:

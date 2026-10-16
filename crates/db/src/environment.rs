@@ -3,7 +3,9 @@
 
 use std::path::{Path, PathBuf};
 
-use app::locations::{DataLocations, Environment, PORTABLE_MARKER, Platform};
+use app::locations::{
+    DataLocations, Environment, LocationError, PORTABLE_MARKER, Platform, resolve,
+};
 
 /// The environment of this process, with an optional `--data-dir`.
 #[must_use]
@@ -21,6 +23,16 @@ pub fn current(data_dir_flag: Option<PathBuf>) -> Environment {
         os_data_dir: dirs::data_dir(),
         platform: platform(),
     }
+}
+
+/// The data folders of this process. The CLI and the desktop app both call
+/// this, so for the same environment they always agree (SAVE-007).
+///
+/// # Errors
+///
+/// When there is no data folder at all.
+pub fn locations(data_dir_flag: Option<PathBuf>) -> Result<DataLocations, LocationError> {
+    resolve(&current(data_dir_flag))
 }
 
 const fn platform() -> Platform {
@@ -54,7 +66,6 @@ pub fn prepare(locations: &DataLocations) -> Result<(), (PathBuf, std::io::Error
 #[cfg(test)]
 mod tests {
     use super::*;
-    use app::locations::resolve;
 
     fn temp(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("esm-env-{name}-{}", std::process::id()));
@@ -72,6 +83,15 @@ mod tests {
         if cfg!(target_os = "linux") {
             assert_eq!(environment.platform, Platform::Linux);
         }
+    }
+
+    #[test]
+    fn locations_resolve_the_current_environment() {
+        assert_eq!(
+            locations(Some(PathBuf::from("/tmp/x"))).unwrap().root(),
+            Path::new("/tmp/x")
+        );
+        assert_eq!(locations(None), resolve(&current(None)));
     }
 
     #[test]

@@ -394,8 +394,7 @@ fn package_failure(errors: Vec<app::content::PackageError>) -> Failed {
 }
 
 fn store(cli: &Cli) -> Result<SqliteSaveStore, Failed> {
-    let environment = db::environment::current(cli.data_dir.clone());
-    let locations = app::locations::resolve(&environment)
+    let locations = db::environment::locations(cli.data_dir.clone())
         .map_err(|e| Failed::from(Message::new("error-storage").text("detail", e.to_string())))?;
     db::environment::prepare(&locations).map_err(|(dir, error)| {
         Failed::from(

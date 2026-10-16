@@ -29,7 +29,8 @@ pub struct MessageArg {
 #[serde(tag = "kind", content = "value", rename_all = "camelCase")]
 pub enum ArgValue {
     Text(String),
-    Number(i64),
+    /// Counts and limits; a JavaScript number holds them exactly.
+    Number(#[specta(type = i32)] i64),
     Message(String),
 }
 

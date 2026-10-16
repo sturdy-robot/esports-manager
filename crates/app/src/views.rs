@@ -160,7 +160,9 @@ pub enum SaveSummary {
         manager_name: String,
         team_message: String,
         game_date: String,
-        /// Seconds since the Unix epoch; the UI formats it.
+        /// Seconds since the Unix epoch; the UI formats it. A JavaScript
+        /// number holds it exactly.
+        #[specta(type = u32)]
         last_played_at: i64,
     },
     #[serde(rename_all = "camelCase")]
