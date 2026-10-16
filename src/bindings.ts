@@ -59,7 +59,7 @@ export type Crest = {
 	text: string,
 };
 
-export type DamageView = "notASave" | "newerVersion" | "inUse";
+export type DamageView = "notASave" | "newerVersion";
 
 /**  A use case's failure, as messages an adapter can show. */
 export type Failure = {
@@ -148,7 +148,9 @@ export type RosterView = {
 };
 
 /**  One entry of Load Game. */
-export type SaveSummary = { status: "ready"; file: string; name: string; managerName: string; teamMessage: string; gameDate: string; 
+export type SaveSummary = { status: "ready"; file: string; 
+/**  Another process (or window) has it open, so it can't be opened. */
+inUse: boolean; name: string; managerName: string; teamMessage: string; gameDate: string; 
 /**
  *  Seconds since the Unix epoch; the UI formats it. A JavaScript
  *  number holds it exactly.

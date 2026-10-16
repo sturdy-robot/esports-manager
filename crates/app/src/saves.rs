@@ -64,8 +64,6 @@ pub enum Damage {
     NotASave,
     /// Made by a newer version of the game.
     NewerVersion,
-    /// Another process has it open.
-    InUse,
 }
 
 /// One file in the saves folder.
@@ -74,6 +72,9 @@ pub struct SaveListing {
     /// The file name, such as `ana-s-tigers.esmsave`. It identifies the save.
     pub file: String,
     pub save: Result<SaveMeta, Damage>,
+    /// Whether a process holds the save open. Its metadata is still listed;
+    /// only opening it is refused.
+    pub in_use: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -82,10 +83,23 @@ pub enum SaveError {
     NameTaken(String),
     #[error("there is no save `{0}`")]
     NotFound(String),
-    #[error("the save can't be used: {0:?}")]
-    Damaged(Damage),
+    #[error("the save is not a save file")]
+    NotASave,
+    #[error("the save was made by a newer version of the game")]
+    NewerVersion,
+    #[error("the save is open in another process")]
+    InUse,
     #[error("storage failed: {0}")]
     Storage(String),
+}
+
+impl From<Damage> for SaveError {
+    fn from(damage: Damage) -> Self {
+        match damage {
+            Damage::NotASave => Self::NotASave,
+            Damage::NewerVersion => Self::NewerVersion,
+        }
+    }
 }
 
 /// Where saves live.

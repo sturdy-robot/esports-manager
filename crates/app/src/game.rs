@@ -201,7 +201,7 @@ pub fn list_saves(store: &impl SaveStore) -> Result<Vec<SaveSummary>, SaveError>
         .list()?
         .into_iter()
         .map(|listing| match listing.save {
-            Ok(meta) => summary(listing.file, &meta),
+            Ok(meta) => summary(listing.file, &meta, listing.in_use),
             Err(damage) => SaveSummary::Damaged {
                 file: listing.file,
                 damage: damage_view(damage),
@@ -212,9 +212,10 @@ pub fn list_saves(store: &impl SaveStore) -> Result<Vec<SaveSummary>, SaveError>
 
 /// The Load Game entry of a readable save.
 #[must_use]
-pub fn summary(file: String, meta: &SaveMeta) -> SaveSummary {
+pub fn summary(file: String, meta: &SaveMeta, in_use: bool) -> SaveSummary {
     SaveSummary::Ready {
         file,
+        in_use,
         name: meta.name.clone(),
         manager_name: meta.manager_name.clone(),
         team_message: name_message(&meta.team),
@@ -227,7 +228,6 @@ const fn damage_view(damage: Damage) -> DamageView {
     match damage {
         Damage::NotASave => DamageView::NotASave,
         Damage::NewerVersion => DamageView::NewerVersion,
-        Damage::InUse => DamageView::InUse,
     }
 }
 
@@ -427,9 +427,9 @@ pub fn save_message(error: &SaveError) -> Message {
         SaveError::NotFound(file) => {
             Message::new("error-save-not-found").text("file", file.clone())
         }
-        SaveError::Damaged(Damage::NotASave) => Message::new("error-save-not-a-save"),
-        SaveError::Damaged(Damage::NewerVersion) => Message::new("error-save-newer"),
-        SaveError::Damaged(Damage::InUse) => Message::new("error-save-in-use"),
+        SaveError::NotASave => Message::new("error-save-not-a-save"),
+        SaveError::NewerVersion => Message::new("error-save-newer"),
+        SaveError::InUse => Message::new("error-save-in-use"),
         SaveError::Storage(detail) => Message::new("error-storage").text("detail", detail.clone()),
     }
 }

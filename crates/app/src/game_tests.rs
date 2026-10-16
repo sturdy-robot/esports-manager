@@ -83,11 +83,13 @@ impl SaveStore for Store {
             .map(|(file, stored)| SaveListing {
                 file: file.clone(),
                 save: Ok(stored.meta.clone()),
+                in_use: false,
             })
             .collect();
         listings.push(SaveListing {
             file: "broken.esmsave".into(),
             save: Err(Damage::NotASave),
+            in_use: false,
         });
         Ok(listings)
     }
@@ -309,6 +311,7 @@ fn saves_list_with_their_summary_and_damage() {
         [
             SaveSummary::Ready {
                 file: "0.esmsave".into(),
+                in_use: false,
                 name: "Tigers".into(),
                 manager_name: "Ana".into(),
                 team_message: "team-a".into(),
@@ -322,7 +325,6 @@ fn saves_list_with_their_summary_and_damage() {
         ]
     );
     assert_eq!(damage_view(Damage::NewerVersion), DamageView::NewerVersion);
-    assert_eq!(damage_view(Damage::InUse), DamageView::InUse);
 }
 
 #[test]
@@ -538,9 +540,9 @@ fn every_failure_has_a_message() {
     let saves = [
         SaveError::NameTaken("n".into()),
         SaveError::NotFound("f".into()),
-        SaveError::Damaged(Damage::NotASave),
-        SaveError::Damaged(Damage::NewerVersion),
-        SaveError::Damaged(Damage::InUse),
+        SaveError::NotASave,
+        SaveError::NewerVersion,
+        SaveError::InUse,
         SaveError::Storage("d".into()),
     ];
     let ids: Vec<String> = saves

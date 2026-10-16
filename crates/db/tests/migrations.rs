@@ -34,6 +34,10 @@ fn the_first_schema_version_still_opens() {
 
     let dir = folder("fixture-open");
     std::fs::copy(&path, dir.join("fixture.esmsave")).unwrap();
+    // Listing never migrates, so it must read a save of any older version.
+    let store = SqliteSaveStore::new(dir.clone());
+    let listed = store.list().unwrap();
+    assert_eq!(listed[0].save.as_ref().unwrap().name, "Fixture");
     let mut open = SqliteSaveStore::new(dir)
         .open("fixture.esmsave", Timestamp(2_000))
         .unwrap();

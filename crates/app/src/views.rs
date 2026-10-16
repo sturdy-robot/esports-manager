@@ -146,7 +146,6 @@ pub struct PlayerProfile {
 pub enum DamageView {
     NotASave,
     NewerVersion,
-    InUse,
 }
 
 /// One entry of Load Game.
@@ -156,6 +155,8 @@ pub enum SaveSummary {
     #[serde(rename_all = "camelCase")]
     Ready {
         file: String,
+        /// Another process (or window) has it open, so it can't be opened.
+        in_use: bool,
         name: String,
         manager_name: String,
         team_message: String,

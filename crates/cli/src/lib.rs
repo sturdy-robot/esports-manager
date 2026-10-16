@@ -291,6 +291,7 @@ fn print_saves(cli: &Cli, out: &mut impl Write, saves: &[SaveSummary]) -> Result
         let line = match save {
             SaveSummary::Ready {
                 file,
+                in_use,
                 name,
                 manager_name,
                 team_message,
@@ -301,7 +302,8 @@ fn print_saves(cli: &Cli, out: &mut impl Write, saves: &[SaveSummary]) -> Result
                 .text("manager", manager_name.clone())
                 .message("team", team_message.clone())
                 .text("date", game_date.clone())
-                .text("file", file.clone()),
+                .text("file", file.clone())
+                .text("inUse", if *in_use { "yes" } else { "no" }),
             SaveSummary::Damaged { file, damage } => Message::new("cli-save-damaged")
                 .text("file", file.clone())
                 .message("damage", damage_message(*damage)),
@@ -315,7 +317,6 @@ const fn damage_message(damage: DamageView) -> &'static str {
     match damage {
         DamageView::NotASave => "save-damage-not-a-save",
         DamageView::NewerVersion => "save-damage-newer-version",
-        DamageView::InUse => "save-damage-in-use",
     }
 }
 
@@ -461,20 +462,8 @@ mod tests {
 
     #[test]
     fn every_damage_has_a_message() {
-        let ids = [
-            DamageView::NotASave,
-            DamageView::NewerVersion,
-            DamageView::InUse,
-        ]
-        .map(damage_message);
-        assert_eq!(
-            ids,
-            [
-                "save-damage-not-a-save",
-                "save-damage-newer-version",
-                "save-damage-in-use"
-            ]
-        );
+        let ids = [DamageView::NotASave, DamageView::NewerVersion].map(damage_message);
+        assert_eq!(ids, ["save-damage-not-a-save", "save-damage-newer-version"]);
     }
 
     #[test]

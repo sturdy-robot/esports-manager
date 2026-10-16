@@ -1,12 +1,18 @@
 -- The first save schema: the world a New Game generates (saves spec).
 -- Ids are the content's stable string ids. `position` keeps the order the
 -- world was built in, so every query can order by it (ADR 0003).
+--
+-- Connections run with `foreign_keys = ON`, and Diesel runs each migration
+-- in a transaction, where `PRAGMA foreign_keys = OFF` has no effect. A later
+-- migration that rebuilds a table (create, copy, drop, rename) must set
+-- `run_in_transaction = false` in its metadata.toml and switch foreign keys
+-- off itself.
 
 CREATE TABLE save_meta (
     id INTEGER PRIMARY KEY NOT NULL CHECK (id = 1),
     name TEXT NOT NULL,
     manager_name TEXT NOT NULL,
-    team_id TEXT NOT NULL,
+    team_id TEXT NOT NULL REFERENCES teams (id),
     genre TEXT NOT NULL CHECK (genre IN ('moba')),
     seed BIGINT NOT NULL,
     game_version TEXT NOT NULL,

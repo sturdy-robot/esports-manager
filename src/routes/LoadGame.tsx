@@ -10,7 +10,6 @@ import { ContentText, messageText } from "../lib/i18n/content";
 const DAMAGE: Record<DamageView, string> = {
   notASave: "save-damage-not-a-save",
   newerVersion: "save-damage-newer-version",
-  inUse: "save-damage-in-use",
 };
 
 /** Load Game: every save, newest first; damaged ones are shown but can't be opened. */
@@ -99,6 +98,16 @@ function SaveRow({ save, onOpen, gameDate, played }: SaveRowProps) {
         <span className="font-mono">{save.file}</span>
         <span>
           {l10n.getString("load-game-damaged", { damage: messageText(l10n, DAMAGE[save.damage]) })}
+        </span>
+      </div>
+    );
+  }
+  if (save.inUse) {
+    return (
+      <div className="flex min-h-11 flex-wrap items-center gap-x-4 rounded-md border border-border p-3 text-muted">
+        <span className="font-semibold">{save.name}</span>
+        <span>
+          {l10n.getString("load-game-damaged", { damage: l10n.getString("save-damage-in-use") })}
         </span>
       </div>
     );
