@@ -1,18 +1,18 @@
-# The core world (proposal)
+# The core world
 
-This is the content `content/core` ships for the walking skeleton, written down for review before any JSON is authored. Every name here is original (ADR 0010). The two regions are *inspired by* the Korean and Brazilian scenes, but borrow nothing from their leagues, teams or players. Review should still check each name against real organizations before it is committed.
+This is the content `content/core` ships for the walking skeleton. Every name here is original (ADR 0010). The two regions are *inspired by* the Korean and Brazilian scenes, but borrow nothing from their leagues, teams or players. Review should still check each name against real organizations before it is committed.
 
-Everything on this page is a **proposal** unless a line says it was decided.
+Accepted in review of PR #9.
 
 ## World
 
 - **Start date:** 2027-01-01, labelled **Season 1**.
-- **Countries (decided):** Brazil, South Korea, China, the United States, Argentina, Sweden, Vietnam, Germany, France, Spain and Italy.
+- **Countries:** Brazil, South Korea, China, the United States, Argentina, Sweden, Vietnam, Germany, France, Spain and Italy.
 - **Names and countries:**
   - **Name order:** Korea, China and Vietnam are family-first; the others are given-first.
   - **How names are written:** Korean names use Revised Romanization and Chinese names Pinyin without tone marks. Vietnamese, Portuguese, Spanish, German, French, Swedish and Italian names keep their diacritics.
   - **Country names** are package text, in `en` and `pt-BR`.
-- **Pool sizes:** at least 40 given names and 30 family names per country, and one shared pool of at least 400 nicknames. 18 teams × 7 players is 126 players, and the pool must be at least three times the number of generated players.
+- **Pool sizes:** at least 40 given names and 30 family names per country, and one shared pool of at least 400 nicknames that differ when case is ignored. 18 teams × 7 players is 126 players, and the pool must be at least three times the number of generated players.
 
 ## Regions
 
@@ -68,7 +68,7 @@ You decided on a few hand-made special cases, including a star inspired by Faker
 | Wildfire | Choi Min-jae | KR | Bot | Crimson Dynasty | 2004-05-09 (22) | Aggression 96, Consistency 25, Mechanics 88 |
 
 - **Kairos** is the generational mid star, a veteran at the top of the strongest team.
-- **Faisca** is the teenage prodigy: middling skills for now, with the highest ceiling in the world.
+- **Faisca** is the teenage prodigy: middling skills for now, with one of the highest ceilings in the world.
 - **Monsoon** is the veteran import: a Korean shotcaller in Pindorama whose hands are slowing down.
 - **Wildfire** is the volatile carry: brilliant mechanics and a hidden Consistency of 25.
 

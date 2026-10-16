@@ -43,6 +43,7 @@ content/core/
 - **Two entities with the same id in one package are an error** that names both files.
 - References between entities use ids (`"region": "region:seorabeol"`). A reference to an id that doesn't exist is an error.
 - At load time, string ids resolve to compact typed ids. String ids are what the save stores as the stable identity of package content.
+- Generated players get ids containing `.`, which package slugs can't contain ([world generation](world-generation.md)).
 
 ### Validation (`packages`, messages in the UI catalog)
 
@@ -50,21 +51,25 @@ content/core/
 - **The loader collects every error** in the package, not just the first.
 - Each error has a code, the file, the JSON path within the file, and typed arguments. The UI and the CLI render it through Fluent (ADR 0007); the loader never produces prose.
 - If a package has any error, nothing is generated and no save is written.
+- Besides the format rules here, the loader checks that the content can be generated from: nationality mixes, name pools, the role set, nicknames and pinned rosters ([world generation](world-generation.md)). New Game never fails part-way because of package content.
 
 ### Text (`packages`, rendered by the UI)
 
 - **Names that can be translated are Fluent messages** in the package's `locales/<locale>/*.ftl`: regions, competitions, teams and nationalities. Each one's message id is derived from its entity id by one rule: replace `:` with `-` (`team:azure_tigers` → `team-azure_tigers`).
 - **People's names are data**, written in the JSON or drawn from name pools. They are proper nouns and are never translated.
-- A package declares the locales it supports in its manifest. Every derived message must exist in the package's first declared locale; a missing one is an error. A message missing in another locale falls back to that first locale when shown. *(Proposed.)*
+- A package declares the locales it supports in its manifest. Every derived message must exist in the package's first declared locale; a missing one is an error. A message missing in another locale falls back to that first locale when shown.
 - At New Game, the package's `.ftl` text is copied into the save, so a save keeps working if the package is later removed. The UI loads it from the save with its own catalogs.
 
 ### Manifest (`packages`)
 
-`manifest.json` declares `id`, `version` (semver), `title`, `license` (SPDX expression), `authors`, `genre` (`moba`), `locales`, and `dependencies` (empty for `core`). Load order and dependency resolution come with user packages.
+`manifest.json` declares `id`, `version` (semver), `title`, `license` (SPDX expression), `authors`, `genre` (`moba`), `locales`, and `dependencies` (empty for `core`). ADR 0005 also lists load order. That field is added with user packages, when something reads it: while only core loads it would be validated and then ignored, which ADR 0005 exists to prevent.
 
 ### Schemas (`packages`)
 
-JSON Schemas are generated from the Rust package types with `schemars` and committed under `content/schemas/`. `manifest.json` and each content file can point at its schema with `$schema`, so editors offer completion and validation.
+JSON Schemas are generated from the Rust package types with `schemars` and committed under `content/schemas/`. Each content type's schema accepts one entity or a list.
+
+- **A file that holds one object** may carry a top-level `$schema` field pointing at its schema. The loader accepts and skips it: it is editor metadata, not content. It is the only field allowed besides the type's own.
+- **A file that holds a list** can't carry `$schema`, because its top level is an array. Editors associate schemas by path instead: the repository's `.vscode/settings.json` maps `content/*/teams/**/*.json` and the other type folders to their schemas.
 
 ## Data
 
@@ -154,6 +159,12 @@ JSON Schemas are generated from the Rust package types with `schemars` and commi
 - **When** a new game is started from it
 - **Then** the result is the validation report, and no save file exists
 
+### PKG-013 — `$schema` is accepted on single-object files
+
+- **Given** a team file holding one object with a `$schema` field
+- **When** the package is loaded
+- **Then** it loads with no errors, and the team has no extra data
+
 ## Enforcement
 
 These land with the code in the implementing PR:
@@ -167,4 +178,4 @@ These land with the code in the implementing PR:
 
 - Override-by-id and load order across packages (with user packages).
 - `.zip` packages and asset overrides (with user packages and art).
-- Whether a pinned player can leave any role field out and have the generator pick one. *(Proposed: yes, via the team's missing roles.)*
+- Whether a pinned player can leave its role out and have the generator pick one of the team's missing roles.
