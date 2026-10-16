@@ -146,9 +146,17 @@ fn request(manager: &str, team: &str, save: &str, seed: u64) -> NewGameRequest {
         manager_name: manager.into(),
         team: team.into(),
         save_name: save.into(),
-        seed,
+        seed: Some(seed.to_string()),
+        random_seed: 999,
         now: Timestamp(1_000),
     }
+}
+
+/// Changes the stored world of the only save, as a later day of play would.
+fn edit_world(store: &Store, change: impl FnOnce(&mut World)) {
+    let mut saves = store.0.borrow_mut();
+    let stored = saves.values_mut().next().unwrap();
+    change(&mut stored.world);
 }
 
 fn started(store: &Store) -> Stored {
@@ -160,7 +168,6 @@ fn started(store: &Store) -> Stored {
 
 #[test]
 fn new_game_offers_every_region_and_its_teams() {
-    // spec: NEWG-001
     // Given
     let content = content();
     // When
@@ -198,7 +205,7 @@ fn a_new_game_creates_a_save_for_the_chosen_team() {
     )
     .unwrap();
     // Then
-    assert_eq!(created.team, id("team:a"));
+    assert_eq!(created.team, "team:a");
     let mut save = store.open(&created.file, Timestamp(2_000)).unwrap();
     assert_eq!(save.meta().manager_name, "Ana");
     assert_eq!(save.meta().name, "Ana's A");
@@ -298,7 +305,9 @@ fn a_taken_save_name_is_reported() {
     let result = new_game(&content(), &store, &request("Bo", "team:b", "tigers", 2));
     assert_eq!(
         result,
-        Err(NewGameError::Save(SaveError::NameTaken("tigers".into())))
+        Err(NewGameError::Invalid(vec![RequestProblem::SaveNameTaken {
+            name: "tigers".into()
+        }]))
     );
 }
 
@@ -412,27 +421,142 @@ fn each_row_carries_what_the_table_shows() {
 #[test]
 fn the_overall_shown_is_the_attributes_specs_overall() {
     // spec: ROST-005
-    // Given
+    // Given a player whose stored overall is 74.50
     let store = Store::default();
-    let mut save = started(&store);
-    let kairos = save.player(&id("player:kairos")).unwrap().unwrap();
-    let expected = save
-        .roles()
+    let file = new_game(&content(), &store, &request("Ana", "team:a", "A", 42))
         .unwrap()
-        .get(&id("role:mid"))
-        .unwrap()
-        .overall(&kairos.attributes)
-        .display();
+        .file;
+    edit_world(&store, |world| {
+        let kairos = world
+            .players
+            .iter_mut()
+            .find(|p| p.id == id("player:kairos"))
+            .unwrap();
+        kairos.attributes = esports::moba::attributes::MobaAttributes::uniform(
+            domain::rating::Rating::from_hundredths(7450).unwrap(),
+        );
+    });
+    let mut save = store.open(&file, Timestamp(2)).unwrap();
     // When
     let view = roster(&mut save, None).unwrap();
     // Then
     let shown = view
         .starters
         .iter()
+        .chain(&view.subs)
         .find(|p| p.id == "player:kairos")
         .unwrap()
         .overall;
-    assert_eq!(shown, expected);
+    assert_eq!(shown, 75);
+}
+
+#[test]
+fn players_in_the_same_role_and_group_are_ordered_by_nickname() {
+    let store = Store::default();
+    let file = new_game(&content(), &store, &request("Ana", "team:a", "A", 42))
+        .unwrap()
+        .file;
+    edit_world(&store, |world| {
+        let mut subs: Vec<&mut Player> = world
+            .players
+            .iter_mut()
+            .filter(|p| p.team == id("team:a") && !p.starter)
+            .collect();
+        subs[0].role = id("role:top");
+        subs[0].nickname = "Zed".into();
+        subs[1].role = id("role:top");
+        subs[1].nickname = "Abe".into();
+    });
+    let mut save = store.open(&file, Timestamp(2)).unwrap();
+    let view = roster(&mut save, None).unwrap();
+    let names: Vec<&str> = view.subs.iter().map(|p| p.nickname.as_str()).collect();
+    assert_eq!(names, ["Abe", "Zed"]);
+}
+
+#[test]
+fn every_request_problem_is_reported_together_with_a_taken_name() {
+    let store = Store::default();
+    new_game(&content(), &store, &request("Ana", "team:a", "Tigers", 1)).unwrap();
+    let mut second = request("", "team:b", "TIGERS", 2);
+    second.seed = Some("forty-two".into());
+    assert_eq!(
+        new_game(&content(), &store, &second),
+        Err(NewGameError::Invalid(vec![
+            RequestProblem::EmptyManagerName,
+            RequestProblem::SaveNameTaken {
+                name: "TIGERS".into()
+            },
+            RequestProblem::InvalidSeed {
+                seed: "forty-two".into()
+            },
+        ]))
+    );
+}
+
+#[test]
+fn a_blank_seed_uses_the_random_one_and_ids_are_trimmed() {
+    let store = Store::default();
+    let mut blank = request("Ana", " team:a ", "A", 0);
+    blank.seed = Some("  ".into());
+    let file = new_game(&content(), &store, &blank).unwrap().file;
+    let save = store.open(&file, Timestamp(2)).unwrap();
+    assert_eq!(save.meta().seed, WorldSeed::new(999));
+    let mut none = request("Ana", "team:a", "B", 0);
+    none.seed = None;
+    let file = new_game(&content(), &store, &none).unwrap().file;
+    assert_eq!(
+        store.open(&file, Timestamp(2)).unwrap().meta().seed,
+        WorldSeed::new(999)
+    );
+}
+
+#[test]
+fn invisible_characters_are_refused() {
+    let store = Store::default();
+    let zero_width = new_game(&content(), &store, &request("Ana", "team:a", "\u{200B}", 1));
+    assert_eq!(
+        zero_width,
+        Err(NewGameError::Invalid(vec![
+            RequestProblem::EmptySaveName,
+            RequestProblem::ControlCharacters { field: "save" },
+        ]))
+    );
+    let override_ = new_game(
+        &content(),
+        &store,
+        &request("Ana\u{202E}", "team:a", "Save", 1),
+    );
+    assert_eq!(
+        override_,
+        Err(NewGameError::Invalid(vec![
+            RequestProblem::ControlCharacters { field: "manager" }
+        ]))
+    );
+}
+
+#[test]
+fn find_save_prefers_the_file_and_refuses_ambiguous_names() {
+    let store = Store::default();
+    new_game(&content(), &store, &request("Ana", "team:a", "Tigers", 1)).unwrap();
+    // A save named after another save's file name.
+    new_game(
+        &content(),
+        &store,
+        &request("Ana", "team:b", "0.esmsave", 2),
+    )
+    .unwrap();
+    assert_eq!(find_save(&store, "0.esmsave"), Ok("0.esmsave".to_owned()));
+    assert_eq!(find_save(&store, "tigers"), Ok("0.esmsave".to_owned()));
+    assert_eq!(
+        find_save(&store, "Nothing"),
+        Err(QueryError::Save(SaveError::NotFound("Nothing".to_owned())))
+    );
+    // Two saves with one name can only come from files copied in by hand.
+    store.0.borrow_mut().get_mut("1.esmsave").unwrap().meta.name = "Tigers".into();
+    assert_eq!(
+        find_save(&store, "TIGERS"),
+        Err(QueryError::AmbiguousSave("TIGERS".to_owned()))
+    );
 }
 
 #[test]
@@ -507,6 +631,8 @@ fn every_failure_has_a_message() {
         RequestProblem::SaveNameTooLong,
         RequestProblem::ControlCharacters { field: "save" },
         RequestProblem::UnknownTeam { team: "x".into() },
+        RequestProblem::SaveNameTaken { name: "n".into() },
+        RequestProblem::InvalidSeed { seed: "s".into() },
     ]));
     let ids: Vec<&str> = invalid.iter().map(|m| m.id.as_str()).collect();
     assert_eq!(
@@ -517,7 +643,9 @@ fn every_failure_has_a_message() {
             "error-save-name-empty",
             "error-save-name-long",
             "error-control-characters",
-            "error-unknown-team"
+            "error-unknown-team",
+            "error-save-name-taken",
+            "error-invalid-seed"
         ]
     );
     assert_eq!(

@@ -81,6 +81,52 @@ fn without_a_seed_each_game_gets_its_own_world() {
     let one = stdout(&esm(&data, &["--json", "roster", "--save", "One"]));
     let two = stdout(&esm(&data, &["--json", "roster", "--save", "Two"]));
     assert_ne!(one, two);
+    // Each save records the seed it was built from.
+    let store = db::SqliteSaveStore::new(data.join("saves"));
+    let seeds: Vec<u64> = app::saves::SaveStore::list(&store)
+        .unwrap()
+        .into_iter()
+        .map(|listing| listing.save.unwrap().seed.value())
+        .collect();
+    assert_eq!(seeds.len(), 2);
+    assert_ne!(seeds[0], seeds[1]);
+}
+
+#[test]
+fn a_closed_output_is_not_an_error() {
+    let data = folder("pipe");
+    assert!(new_game(&data, "Piped", Some("1")).status.success());
+    let mut child = Command::new(env!("CARGO_BIN_EXE_esm"))
+        .arg("--data-dir")
+        .arg(&data)
+        .args(["roster", "--save", "Piped"])
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    // Close the read end before the CLI writes, as `| head -0` would.
+    drop(child.stdout.take());
+    let output = child.wait_with_output().unwrap();
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(String::from_utf8_lossy(&output.stderr), "");
+}
+
+#[test]
+fn an_unknown_locale_is_a_bad_argument() {
+    let data = folder("locale");
+    assert_eq!(
+        esm(&data, &["--locale", "xx", "saves"]).status.code(),
+        Some(2)
+    );
+    assert_eq!(
+        esm(&data, &["--locale", "pt-BR", "saves"]).status.code(),
+        Some(0)
+    );
 }
 
 #[test]
@@ -129,6 +175,7 @@ fn esm_teams_lists_the_ids_new_game_accepts() {
 
 #[test]
 fn the_core_world_offers_both_regions() {
+    // spec: NEWG-001
     let data = folder("regions");
     let options = json(&esm(&data, &["--json", "teams"]));
     let regions: Vec<(String, String, usize)> = options["regions"]
@@ -158,6 +205,28 @@ fn the_core_world_offers_both_regions() {
             )
         ]
     );
+    // Each team has a name, a three-letter tag, crest colours and 1 to 5 stars.
+    let teams = options["regions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|r| r["teams"].as_array().unwrap());
+    for team in teams {
+        assert!(team["nameMessage"].as_str().unwrap().starts_with("team-"));
+        assert_eq!(
+            team["crest"]["tag"].as_str().unwrap().chars().count(),
+            3,
+            "{team}"
+        );
+        for colour in ["fill", "border", "text"] {
+            let value = team["crest"][colour].as_str().unwrap();
+            assert!(value.len() == 7 && value.starts_with('#'), "{team}");
+        }
+        assert!(
+            (1..=5).contains(&team["strength"].as_u64().unwrap()),
+            "{team}"
+        );
+    }
 }
 
 #[test]

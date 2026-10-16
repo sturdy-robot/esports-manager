@@ -19,7 +19,6 @@ tauri-build.workspace = true
 [dependencies]
 app.workspace = true
 db.workspace = true
-getrandom.workspace = true
 packages.workspace = true
 serde.workspace = true
 specta.workspace = true

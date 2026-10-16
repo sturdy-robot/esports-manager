@@ -6,7 +6,7 @@ export function usePersonName(): (player: RosterPlayer) => string {
   const { l10n } = useLocalization();
   return (player) =>
     l10n.getString("person-full-name", {
-      order: player.nameOrder === "familyFirst" ? "family-first" : "given-first",
+      order: player.nameOrder,
       given: player.givenName,
       family: player.familyName,
     });

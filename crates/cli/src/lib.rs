@@ -9,9 +9,10 @@ mod text;
 use std::io::Write;
 use std::path::PathBuf;
 
+use app::content::ContentSource;
 use app::game::{self, NewGameRequest};
 use app::messages::{Message, package_error};
-use app::saves::{SaveStore, Timestamp};
+use app::saves::SaveStore;
 use app::views::{DamageView, RosterPlayer, SaveSummary};
 use clap::{Parser, Subcommand};
 use db::SqliteSaveStore;
@@ -37,8 +38,8 @@ pub struct Cli {
     /// The package to build new worlds from.
     #[arg(long, global = true, default_value = "content/core")]
     pub content: PathBuf,
-    /// The language of text output: en or pt-BR.
-    #[arg(long, global = true, default_value = "en")]
+    /// The language of text output.
+    #[arg(long, global = true, default_value = "en", value_parser = text::LOCALES)]
     pub locale: String,
     /// Print the view as JSON instead of text.
     #[arg(long, global = true)]
@@ -84,12 +85,18 @@ pub enum Command {
     },
 }
 
-/// A use case failed; the messages say why.
-struct Failed(Vec<Message>);
+/// Why a command stopped.
+enum Failed {
+    /// A use case failed; the messages say why.
+    Messages(Vec<Message>),
+    /// Whoever read the output stopped reading (`esm roster | head -1`).
+    /// That isn't an error.
+    OutputClosed,
+}
 
 impl From<Message> for Failed {
     fn from(message: Message) -> Self {
-        Self(vec![message])
+        Self::Messages(vec![message])
     }
 }
 
@@ -97,8 +104,8 @@ impl From<Message> for Failed {
 /// code.
 pub fn run(cli: &Cli, out: &mut impl Write, err: &mut impl Write) -> u8 {
     match execute(cli, out) {
-        Ok(()) => 0,
-        Err(Failed(messages)) => {
+        Ok(()) | Err(Failed::OutputClosed) => 0,
+        Err(Failed::Messages(messages)) => {
             let text = Text::new(&cli.locale, &[]);
             for message in &messages {
                 let _ = writeln!(err, "{}", text.render(message));
@@ -109,33 +116,40 @@ pub fn run(cli: &Cli, out: &mut impl Write, err: &mut impl Write) -> u8 {
 }
 
 fn execute(cli: &Cli, out: &mut impl Write) -> Result<(), Failed> {
-    let content = PackageDir(cli.content.clone());
     match &cli.command {
-        Command::Teams => teams(cli, out, &content),
+        Command::Teams => teams(cli, out),
         Command::NewGame {
             manager,
             team,
             save,
             seed,
-        } => new_game(cli, out, &content, (manager, team, save, *seed)),
+        } => new_game(cli, out, (manager, team, save, *seed)),
         Command::Saves => saves(cli, out),
         Command::Roster { save, team } => roster(cli, out, save, team.as_deref()),
         Command::Player { save, player: id } => player(cli, out, save, id),
     }
 }
 
-fn teams(cli: &Cli, out: &mut impl Write, content: &PackageDir) -> Result<(), Failed> {
-    let options = game::new_game_options(content).map_err(package_failure)?;
+/// The package `--content` names, loaded once per command.
+fn content(cli: &Cli) -> Result<app::content::Package, Failed> {
+    PackageDir(cli.content.clone())
+        .load()
+        .map_err(package_failure)
+}
+
+fn teams(cli: &Cli, out: &mut impl Write) -> Result<(), Failed> {
+    let package = content(cli)?;
+    let options = game::new_game_options(&package).map_err(package_failure)?;
     if cli.json {
         return print_json(out, &options);
     }
-    let package = packages::load(&cli.content).map_err(package_failure)?;
     let text = Text::new(&cli.locale, &package.texts);
     for region in &options.regions {
-        let mut line = Message::new("cli-region").message("region", region.name_message.clone());
-        line = match &region.league_message {
-            Some(league) => line.message("league", league.clone()),
-            None => line.text("league", ""),
+        let line = match &region.league_message {
+            Some(league) => Message::new("cli-region")
+                .message("region", region.name_message.clone())
+                .message("league", league.clone()),
+            None => Message::new("cli-region-only").message("region", region.name_message.clone()),
         };
         print(out, &text.render(&line))?;
         for team in &region.teams {
@@ -153,40 +167,28 @@ fn teams(cli: &Cli, out: &mut impl Write, content: &PackageDir) -> Result<(), Fa
 fn new_game(
     cli: &Cli,
     out: &mut impl Write,
-    content: &PackageDir,
     (manager, team, save, seed): (&str, &str, &str, Option<u64>),
 ) -> Result<(), Failed> {
+    let package = content(cli)?;
     let store = store(cli)?;
     let request = NewGameRequest {
         manager_name: manager.to_owned(),
         team: team.to_owned(),
         save_name: save.to_owned(),
-        seed: match seed {
-            Some(seed) => seed,
-            None => random_seed()?,
-        },
-        now: now(),
+        seed: seed.map(|seed| seed.to_string()),
+        random_seed: db::environment::random_seed().map_err(|e| {
+            Failed::from(Message::new("error-entropy").text("detail", e.to_string()))
+        })?,
+        now: db::environment::now(),
     };
-    let created = game::new_game(content, &store, &request)
-        .map_err(|error| Failed(game::new_game_messages(&error)))?;
+    let opened = game::new_game(&package, &store, &request)
+        .map_err(|error| Failed::Messages(game::new_game_messages(&error)))?;
     if cli.json {
-        #[derive(Serialize)]
-        struct Created<'a> {
-            file: &'a str,
-            team: String,
-        }
-        return print_json(
-            out,
-            &Created {
-                file: &created.file,
-                team: created.team.to_string(),
-            },
-        );
+        return print_json(out, &opened);
     }
-    let package = packages::load(&cli.content).map_err(package_failure)?;
     let line = Message::new("cli-new-game-created")
-        .text("file", created.file.clone())
-        .message("team", created.team.message_id());
+        .text("file", opened.file.clone())
+        .message("team", opened.team.replace(':', "-"));
     print(out, &Text::new(&cli.locale, &package.texts).render(&line))
 }
 
@@ -321,13 +323,9 @@ const fn damage_message(damage: DamageView) -> &'static str {
 }
 
 fn full_name(text: &Text, player: &RosterPlayer) -> String {
-    let order = match player.name_order {
-        app::views::NameOrderView::GivenFirst => "given-first",
-        app::views::NameOrderView::FamilyFirst => "family-first",
-    };
     text.render(
         &Message::new("person-full-name")
-            .text("order", order)
+            .text("order", player.name_order.as_str())
             .text("given", player.given_name.clone())
             .text("family", player.family_name.clone()),
     )
@@ -379,19 +377,24 @@ fn pad(text: &str, width: usize) -> String {
 }
 
 fn print(out: &mut impl Write, line: &str) -> Result<(), Failed> {
-    writeln!(out, "{line}")
-        .map_err(|e| Failed::from(Message::new("error-storage").text("detail", e.to_string())))
+    writeln!(out, "{line}").map_err(|error| {
+        if error.kind() == std::io::ErrorKind::BrokenPipe {
+            Failed::OutputClosed
+        } else {
+            Failed::from(Message::new("error-output").text("detail", error.to_string()))
+        }
+    })
 }
 
 fn print_json(out: &mut impl Write, value: &impl Serialize) -> Result<(), Failed> {
     let json = serde_json::to_string_pretty(value)
-        .map_err(|e| Failed::from(Message::new("error-storage").text("detail", e.to_string())))?;
+        .map_err(|e| Failed::from(Message::new("error-output").text("detail", e.to_string())))?;
     print(out, &json)
 }
 
 #[expect(clippy::needless_pass_by_value, reason = "passed to `map_err` by name")]
 fn package_failure(errors: Vec<app::content::PackageError>) -> Failed {
-    Failed(errors.iter().map(package_error).collect())
+    Failed::Messages(errors.iter().map(package_error).collect())
 }
 
 fn store(cli: &Cli) -> Result<SqliteSaveStore, Failed> {
@@ -407,41 +410,12 @@ fn store(cli: &Cli) -> Result<SqliteSaveStore, Failed> {
 
 /// The save a `--save` argument names: a save's name (ignoring case) or its
 /// file.
+/// The save a `--save` argument names: its file, or its name ignoring case.
 fn open(store: &SqliteSaveStore, wanted: &str) -> Result<db::SqliteSave, Failed> {
-    let listings = store
-        .list()
-        .map_err(|e| Failed::from(game::save_message(&e)))?;
-    let lowered = wanted.to_lowercase();
-    let file = listings
-        .iter()
-        .find(|l| {
-            l.file == wanted
-                || l.save
-                    .as_ref()
-                    .is_ok_and(|meta| meta.name.to_lowercase() == lowered)
-        })
-        .map_or_else(|| wanted.to_owned(), |l| l.file.clone());
+    let file = game::find_save(store, wanted).map_err(|e| Failed::from(game::query_message(&e)))?;
     store
-        .open(&file, now())
+        .open(&file, db::environment::now())
         .map_err(|e| Failed::from(game::save_message(&e)))
-}
-
-fn random_seed() -> Result<u64, Failed> {
-    getrandom::u64()
-        .map_err(|e| Failed::from(Message::new("error-storage").text("detail", e.to_string())))
-}
-
-/// Real time, for save timestamps. Adapters are the only place it is read
-/// (ADR 0003).
-fn now() -> Timestamp {
-    #[allow(
-        clippy::disallowed_methods,
-        reason = "save timestamps are real time, read only by adapters (ADR 0003)"
-    )]
-    let elapsed = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs());
-    Timestamp(i64::try_from(elapsed).unwrap_or(i64::MAX))
 }
 
 #[cfg(test)]
@@ -464,10 +438,5 @@ mod tests {
     fn every_damage_has_a_message() {
         let ids = [DamageView::NotASave, DamageView::NewerVersion].map(damage_message);
         assert_eq!(ids, ["save-damage-not-a-save", "save-damage-newer-version"]);
-    }
-
-    #[test]
-    fn now_is_after_2026() {
-        assert!(now().0 > 1_767_225_600);
     }
 }

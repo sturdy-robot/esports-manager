@@ -16,13 +16,13 @@ app.workspace = true
 clap.workspace = true
 db.workspace = true
 fluent-bundle.workspace = true
-getrandom.workspace = true
 packages.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 unic-langid.workspace = true
 
 [dev-dependencies]
+fluent-syntax.workspace = true
 serde_json.workspace = true
 
 [lints]

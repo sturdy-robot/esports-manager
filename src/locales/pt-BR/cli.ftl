@@ -1,6 +1,7 @@
 ## A CLI sem interface, `esm` (especificação do novo jogo).
 
 cli-region = { $region } · { $league }
+cli-region-only = { $region }
 cli-team = { $tag }  { $name }  { $stars }/5  { $id }
 cli-new-game-created = { $file } criado com { $team }.
 cli-saves-empty = Nenhum jogo salvo ainda.

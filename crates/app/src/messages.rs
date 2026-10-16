@@ -61,11 +61,14 @@ impl Message {
         self
     }
 
+    /// A number argument, clamped to the `i32` range a JavaScript number
+    /// and the bindings promise to hold exactly.
     #[must_use]
     pub fn number(mut self, name: &str, value: impl Into<i64>) -> Self {
+        let value = value.into().clamp(i64::from(i32::MIN), i64::from(i32::MAX));
         self.args.push(MessageArg {
             name: name.to_owned(),
-            value: ArgValue::Number(value.into()),
+            value: ArgValue::Number(value),
         });
         self
     }
@@ -243,6 +246,8 @@ mod tests {
         let values: Vec<&ArgValue> = syntax.args.iter().map(|a| &a.value).collect();
         assert_eq!(values, [&ArgValue::Number(3), &ArgValue::Number(14)]);
         assert_eq!(count(usize::MAX), i64::MAX);
+        let huge = Message::new("cli-team").number("stars", i64::MAX);
+        assert_eq!(huge.args[0].value, ArgValue::Number(i64::from(i32::MAX)));
     }
 
     #[test]

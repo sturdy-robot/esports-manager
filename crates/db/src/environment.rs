@@ -35,6 +35,29 @@ pub fn locations(data_dir_flag: Option<PathBuf>) -> Result<DataLocations, Locati
     resolve(&current(data_dir_flag))
 }
 
+/// Real time, for save timestamps. Adapters are the only place it is read
+/// (ADR 0003); both call this.
+#[must_use]
+pub fn now() -> app::saves::Timestamp {
+    #[allow(
+        clippy::disallowed_methods,
+        reason = "save timestamps are real time, read only by adapters (ADR 0003)"
+    )]
+    let elapsed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    app::saves::Timestamp(i64::try_from(elapsed).unwrap_or(i64::MAX))
+}
+
+/// A world seed from OS entropy, for a New Game that doesn't give one.
+///
+/// # Errors
+///
+/// When the OS has no entropy to give.
+pub fn random_seed() -> Result<u64, getrandom::Error> {
+    getrandom::u64()
+}
+
 const fn platform() -> Platform {
     if cfg!(target_os = "linux") {
         Platform::Linux
@@ -84,6 +107,12 @@ mod tests {
         if cfg!(target_os = "linux") {
             assert_eq!(environment.platform, Platform::Linux);
         }
+    }
+
+    #[test]
+    fn now_is_after_2026_and_seeds_differ() {
+        assert!(now().0 > 1_767_225_600);
+        assert_ne!(random_seed().unwrap(), random_seed().unwrap());
     }
 
     #[test]
