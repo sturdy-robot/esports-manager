@@ -28,6 +28,9 @@ db = { path = "crates/db" }
 
 anyhow = "1.0.104"
 cargo_metadata = "0.23.1"
+diesel = { version = "2.3.14", default-features = false, features = ["sqlite", "32-column-tables"] }
+diesel_migrations = { version = "2.3.2", features = ["sqlite"] }
+dirs = "7.0.0"
 fluent-syntax = "0.12.0"
 # Pure-Rust maths, so floating-point results are the same on every OS (ADR 0003).
 libm = "0.2.16"

@@ -11,7 +11,9 @@ use esports::moba::roles::{Role, RoleSet};
 use fluent_syntax::ast;
 
 use crate::convert::{Located, Manifest};
-use crate::parse::{Entry, Parsed, TextFile};
+use app::saves::ContentText;
+
+use crate::parse::{Entry, Parsed};
 use crate::report::{NameKind, PackageError, Problem};
 
 /// Everything that converted cleanly, by kind.
@@ -171,7 +173,7 @@ fn references(content: &Content<'_>, errors: &mut Vec<PackageError>) {
 }
 
 fn text(
-    texts: &[TextFile],
+    texts: &[ContentText],
     content: &Content<'_>,
     manifest: &Manifest,
     errors: &mut Vec<PackageError>,

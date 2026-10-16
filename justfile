@@ -34,6 +34,14 @@ dev:
 bindings:
     UPDATE_BINDINGS=1 cargo test --locked -p esports-manager typescript_bindings_are_up_to_date
 
+# Regenerates crates/db/src/schema.rs from the migrations (ADR 0004). Needs
+# diesel_cli: `cargo install diesel_cli --no-default-features --features sqlite-bundled`.
+db-schema:
+    mkdir -p target
+    rm -f target/schema.db
+    cd crates/db && diesel migration run --database-url ../../target/schema.db
+    rustfmt --edition 2024 crates/db/src/schema.rs
+
 # Regenerates the package JSON Schemas in content/schemas from the Rust types (ADR 0005).
 schemas:
     UPDATE_SCHEMAS=1 cargo test --locked -p packages json_schemas_are_up_to_date
