@@ -1,16 +1,10 @@
 version = 1
 
+# Everything written for this project, code and base-game content alike, is
+# GPL-3.0-or-later (ADR 0010). Files with their own SPDX header keep it.
+# Third-party files must add their own annotation below or carry a header.
 [[annotations]]
-path = "esm/**"
-SPDX-FileCopyrightText = "Pedrenrique G. Guimarães"
-SPDX-License-Identifier = "GPL-3.0-or-later"
-
-[[annotations]]
-path = "tests/**"
-SPDX-FileCopyrightText = "Pedrenrique G. Guimarães"
-SPDX-License-Identifier = "GPL-3.0-or-later"
-
-[[annotations]]
-path = "frontend/**"
-SPDX-FileCopyrightText = "Pedrenrique G. Guimarães"
+path = "**"
+precedence = "closest"
+SPDX-FileCopyrightText = "2020-2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>"
 SPDX-License-Identifier = "GPL-3.0-or-later"
