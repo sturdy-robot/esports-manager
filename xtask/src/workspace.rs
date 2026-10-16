@@ -37,8 +37,11 @@ mod tests {
     fn member_dirs_lists_every_member_with_its_directory() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
         let dirs = member_dirs(&metadata(&root).unwrap());
-        let root = root.canonicalize().unwrap();
-        assert_eq!(dirs["domain"], root.join("crates/domain"));
-        assert_eq!(dirs["xtask"], root.join("xtask"));
+        // Compared by suffix: canonical paths differ in form across OSes
+        // (Windows adds a `\\?\` prefix).
+        assert!(dirs["domain"].is_absolute());
+        assert!(dirs["domain"].ends_with(Path::new("crates").join("domain")));
+        assert!(dirs["xtask"].ends_with("xtask"));
+        assert!(!dirs.contains_key("serde"));
     }
 }
