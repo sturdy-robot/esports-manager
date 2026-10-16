@@ -10,11 +10,30 @@ default:
     @just --list
 
 # Run every gate. CI runs this same recipe.
-check: fmt-check clippy arch vocab trace coverage deny machete reuse mutants
+check: rust-check frontend-check reuse mutants
 
-# Format all Rust code.
+# Rust gates.
+rust-check: fmt-check clippy arch vocab trace coverage deny machete
+
+# Frontend gates.
+frontend-check: typecheck lint knip coverage-frontend
+
+# Install frontend dependencies exactly as locked.
+install:
+    pnpm install --frozen-lockfile
+
+# Run the desktop app with hot reload.
+dev:
+    pnpm tauri dev
+
+# Regenerate src/bindings.ts from the Tauri commands (ADR 0006).
+bindings:
+    UPDATE_BINDINGS=1 cargo test --locked -p esports-manager typescript_bindings_are_up_to_date
+
+# Format all Rust and frontend code.
 fmt:
     cargo fmt --all
+    pnpm format
 
 fmt-check:
     cargo fmt --all --check
@@ -46,6 +65,21 @@ coverage:
 # HTML coverage report in target/llvm-cov/html.
 coverage-html:
     cargo llvm-cov --workspace --exclude xtask --locked --html
+
+typecheck:
+    pnpm typecheck
+
+# Biome lint and format check.
+lint:
+    pnpm lint
+
+# No unused files, exports or dependencies.
+knip:
+    pnpm knip
+
+# Vitest with coverage minimums (vite.config.ts).
+coverage-frontend:
+    pnpm coverage
 
 # Licences, bans and sources. Advisories run weekly in CI (`just advisories`).
 deny:

@@ -13,6 +13,8 @@ app = 90
 packages = 80
 db = 80
 cli = 60
+# The desktop adapter in src-tauri/.
+esports-manager = 60
 
 # Allowed workspace dependencies for each crate (ADR 0001). Every workspace
 # member except `xtask` must appear here; a new crate needs an ADR change.
@@ -23,6 +25,7 @@ app = ["domain", "esports"]
 packages = ["domain", "esports", "app"]
 db = ["domain", "esports", "app"]
 cli = ["app", "packages", "db"]
+esports-manager = ["app", "packages", "db"]
 
 # External crates that must not appear anywhere in the normal dependency tree
 # of these crates (ADR 0001 rule 1).

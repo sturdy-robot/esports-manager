@@ -44,13 +44,15 @@ The game will be available in English and Brazilian Portuguese, on Linux, Window
 
 ## Building from source
 
-There is nothing to play yet. To build the workspace and run the checks, install [rustup](https://rustup.rs/) and [`just`](https://just.systems/), then:
+There is nothing to play yet. To build the workspace and run the tests, install [rustup](https://rustup.rs/), [`just`](https://just.systems/), Node.js with pnpm, and the [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your OS, then:
 
 ```bash
 git clone https://github.com/esports-manager/esports-manager.git
 cd esports-manager
 rustup toolchain install   # installs the pinned toolchain
+just install               # frontend dependencies
 just test
+just dev                   # opens the (still empty) desktop app
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md#development-setup) covers the full development setup and `just check`.

@@ -9,6 +9,7 @@ mod coverage;
 mod files;
 mod trace;
 mod vocab;
+mod workspace;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;

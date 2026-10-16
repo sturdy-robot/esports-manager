@@ -64,7 +64,7 @@ Tests must be meaningful: mutation testing runs on every PR, and a surviving mut
 Every gate is enforced; there are no advisory checks ([ADR 0008](docs/adr/0008-enforcement-policy.md)). If a gate is wrong, change it in a PR, don't work around it.
 
 - **Rust:** `cargo fmt`, `clippy` (pedantic, no `unwrap`/`expect`/`panic` outside tests, no wildcard enum arms, no `unsafe`), the architecture test, coverage thresholds per crate, `cargo-mutants` on the diff, `cargo-deny`, `cargo-machete`.
-- **Frontend:** TypeScript strict, Biome, knip, Vitest, Playwright at desktop and compact sizes with accessibility checks.
+- **Frontend:** TypeScript strict, Biome, knip, Vitest with coverage minimums. Playwright at desktop and compact sizes with accessibility checks comes with the first screens.
 - **Cross-cutting:** generated bindings and JSON Schemas up to date, locale coverage, spec-to-test traceability, `reuse lint`, Conventional Commits.
 
 `just check` runs all of them, and CI runs the same recipes. The thresholds, the allowed crate graph and the denied genre words live in [`quality.toml`](quality.toml). Lowering a threshold or allowing a new dependency edge is a change to the ADR it comes from.
@@ -74,6 +74,8 @@ Every gate is enforced; there are no advisory checks ([ADR 0008](docs/adr/0008-e
 You need:
 
 - [rustup](https://rustup.rs/). The toolchain version is pinned in `rust-toolchain.toml`; run `rustup toolchain install` in the repository to get it.
+- [Node.js](https://nodejs.org/) (the version in `.node-version`) and [pnpm](https://pnpm.io/) (the version in `package.json` → `packageManager`).
+- The [Tauri system prerequisites](https://tauri.app/start/prerequisites/) for your OS. On Debian/Ubuntu: `libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev`; on Fedora: `webkit2gtk4.1-devel openssl-devel libxdo-devel libappindicator-gtk3-devel librsvg2-devel`.
 - [`just`](https://just.systems/) to run the recipes.
 - The gate tools: `cargo install --locked cargo-llvm-cov cargo-mutants cargo-deny cargo-machete`. `cargo binstall` is faster if you have it.
 - [`reuse`](https://reuse.software/) (`pipx install reuse`) for the licence check.
@@ -81,16 +83,22 @@ You need:
 Then:
 
 ```bash
+just install    # frontend dependencies, as locked
+just dev        # run the desktop app with hot reload
 just            # list the recipes
-just test       # fast test run
+just test       # fast Rust test run
 just check      # every gate, as CI runs them
-just fmt        # format Rust code
+just fmt        # format Rust and frontend code
+just bindings   # regenerate src/bindings.ts after changing a Tauri command or DTO
 cargo run -p cli --bin esm   # the headless CLI
 ```
 
 The repository checks that no off-the-shelf tool covers (crate graph, genre vocabulary, spec traceability, per-crate coverage) live in [`xtask/`](xtask/src/main.rs) and run through `cargo xtask <check>`.
 
-The desktop app and the frontend toolchain are added in the next milestone step; their setup will be documented here.
+### Frontend layout
+
+- `src/bindings.ts` is **generated** from the Rust commands and DTOs (ADR 0006). Never edit it; run `just bindings`. A test fails if it is out of date.
+- Call the backend only through `commands` from `src/bindings.ts`. Biome rejects direct `@tauri-apps/api/core` imports.
 
 ## Commit messages
 

@@ -12,6 +12,7 @@ name = "esm"
 path = "src/main.rs"
 
 [dependencies]
+app.workspace = true
 
 [lints]
 workspace = true
