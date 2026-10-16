@@ -14,7 +14,7 @@ roster-column-nationality = Nac.
 roster-column-age = Idade
 roster-column-overall = Geral
 profile-overall = Geral { $overall }
-profile-born = Nascido em { $date }
+profile-born = Data de nascimento: { $date }
 profile-skills = Habilidades
 profile-traits = Traços
 profile-hidden = Ocultos
@@ -22,7 +22,7 @@ profile-unknown = ?
 # What screen readers say for profile-unknown.
 profile-unknown-label = desconhecido
 attribute-mechanics = Mecânica
-attribute-laning = Rota
+attribute-laning = Fase de rotas
 attribute-game-sense = Leitura de Jogo
 attribute-awareness = Percepção
 attribute-positioning = Posicionamento
