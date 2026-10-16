@@ -47,10 +47,11 @@ How the folder is picked is decided in one pure function in `app`. Its inputs ar
 - **`save_meta`** is a one-row table in every save:
   - display name, manager name, team id, genre
   - world seed, and each package's id, version and content hash
-  - schema version, and the game version that created the save
+  - the game version that created the save
   - current game date
   - `created_at` and `last_played_at`, which are real time supplied by the adapter, never read by the domain
 - The package text needed to show the world is copied into the save at New Game ([packages](packages.md)).
+- **The schema version** is the save's latest applied migration, which Diesel records in `__diesel_schema_migrations` in the same file (ADR 0004). `save_meta` doesn't repeat it: one copy can't disagree with another, and the version check reads it before anything else in the file.
 
 ### Creating
 
@@ -124,7 +125,7 @@ How the folder is picked is decided in one pure function in `app`. Its inputs ar
 
 - **Given** an empty data folder
 - **When** a new game named "Ana's Tigers" is created
-- **Then** `saves/ana-s-tigers.esmsave` exists, and its `save_meta` has that display name, the manager, the team, the genre, the seed, the schema version and the start date
+- **Then** `saves/ana-s-tigers.esmsave` exists, and its `save_meta` has that display name, the manager, the team, the genre, the seed, the game version and the start date, and the file records every migration as applied
 
 ### SAVE-009 — A failed creation leaves nothing behind
 

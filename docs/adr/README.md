@@ -22,4 +22,5 @@ An ADR records one decision that shapes the codebase: the context, the choice, w
 | 0007 | [Internationalization with Project Fluent](0007-i18n-fluent.md)              | Accepted |
 | 0008 | [Enforcement policy and quality gates](0008-enforcement-policy.md)          | Accepted |
 | 0009 | [Specs with Given/When/Then scenarios, traced to tests](0009-specs-and-traceability.md) | Accepted |
-| 0010 | [Fictional world, licensing and assets](0010-fictional-world-and-licensing.md) | Accepted |
+| 0010 | [Fictional world, licensing and assets](0010-fictional-world-and-licensing.md) | Accepted, amended by 0011 |
+| 0011 | [A package's licence is declared in its manifest](0011-package-licence-in-the-manifest.md) | Accepted |

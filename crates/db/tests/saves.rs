@@ -21,6 +21,16 @@ fn a_new_save_is_one_file_with_its_metadata() {
     assert_eq!(files(&dir), ["ana-s-tigers.esmsave"]);
     let open = store.open(&file, Timestamp(100)).unwrap();
     assert_eq!(open.meta(), &meta);
+    drop(open);
+    // The schema version is the file's record of applied migrations: every
+    // one the game has.
+    let migrations = std::fs::read_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/migrations"))
+        .unwrap()
+        .count();
+    assert_eq!(
+        raw_count(&dir.join(&file), "__diesel_schema_migrations"),
+        migrations
+    );
 }
 
 #[test]
@@ -483,6 +493,21 @@ fn saves_outside_the_folder_cannot_be_opened() {
 fn a_missing_folder_cannot_be_listed() {
     let store = SqliteSaveStore::new(std::env::temp_dir().join("esm-db-definitely-missing"));
     assert!(matches!(store.list(), Err(SaveError::Storage(_))));
+}
+
+/// The number of rows in `table`, read as a tool outside the game would.
+fn raw_count(path: &std::path::Path, table: &str) -> usize {
+    use diesel::{Connection, QueryableByName, RunQueryDsl, sqlite::SqliteConnection};
+    #[derive(QueryableByName)]
+    struct Count {
+        #[diesel(sql_type = diesel::sql_types::BigInt)]
+        rows: i64,
+    }
+    let mut connection = SqliteConnection::establish(path.to_str().unwrap()).unwrap();
+    let count: Count = diesel::sql_query(format!("SELECT COUNT(*) AS rows FROM {table}"))
+        .get_result(&mut connection)
+        .unwrap();
+    usize::try_from(count.rows).unwrap()
 }
 
 /// Runs raw SQL on a save, as a tool outside the game would.
