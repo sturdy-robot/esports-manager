@@ -10,7 +10,7 @@ default:
     @just --list
 
 # Run every gate. CI runs this same recipe.
-check: rust-check frontend-check reuse mutants
+check: rust-check frontend-check e2e smoke reuse mutants
 
 # Rust gates.
 rust-check: fmt-check clippy arch vocab trace coverage deny machete
@@ -84,6 +84,17 @@ knip:
 # Vitest with coverage minimums (vite.config.ts).
 coverage-frontend:
     pnpm coverage
+
+# First run: `pnpm exec playwright install chromium`.
+# Browser E2E tests at desktop and compact sizes, with axe.
+e2e:
+    pnpm e2e
+
+# Needs tauri-driver, and WebKitWebDriver plus xvfb-run on Linux.
+# Start the real desktop binary and check the UI reaches the backend.
+smoke:
+    pnpm tauri build --debug --no-bundle
+    {{ if os() == "linux" { "env -u WAYLAND_DISPLAY xvfb-run -a pnpm smoke" } else { "pnpm smoke" } }}
 
 # Licences, bans and sources. Advisories run weekly in CI (`just advisories`).
 deny:

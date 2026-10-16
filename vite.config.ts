@@ -10,6 +10,8 @@ export default defineConfig({
   envPrefix: ["VITE_", "TAURI_ENV_"],
   test: {
     environment: "jsdom",
+    // e2e/ belongs to Playwright.
+    include: ["src/**/*.test.{ts,tsx}", "tools/**/*.test.ts"],
     setupFiles: ["src/test/setup.ts"],
     restoreMocks: true,
     coverage: {

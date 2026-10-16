@@ -15,7 +15,9 @@
     "knip": "knip",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "hooks": "lefthook install"
+    "hooks": "lefthook install",
+    "e2e": "playwright test",
+    "smoke": "node smoke/app.smoke.ts"
   },
   "dependencies": {
     "@fluent/bundle": "0.19.1",
@@ -28,8 +30,10 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@biomejs/biome": "2.5.15",
     "@fluent/syntax": "0.19.0",
+    "@playwright/test": "1.64.0",
     "@tailwindcss/vite": "4.3.3",
     "@tauri-apps/cli": "2.12.3",
     "@testing-library/jest-dom": "7.0.1",
@@ -46,6 +50,7 @@
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "vite": "8.3.4",
-    "vitest": "5.0.4"
+    "vitest": "5.0.4",
+    "webdriverio": "10.0.2"
   }
 }
