@@ -639,7 +639,7 @@ fn an_unknown_player_is_an_error() {
 
 #[test]
 fn every_failure_has_a_message() {
-    let invalid = new_game_messages(&NewGameError::Invalid(vec![
+    let invalid = new_game_messages(NewGameError::Invalid(vec![
         RequestProblem::EmptyManagerName,
         RequestProblem::ManagerNameTooLong,
         RequestProblem::EmptySaveName,
@@ -671,13 +671,13 @@ fn every_failure_has_a_message() {
         invalid[3].args[0].value,
         crate::messages::ArgValue::Number(48)
     );
-    let package = new_game_messages(&NewGameError::Package(vec![PackageError::new(
+    let package = new_game_messages(NewGameError::Package(vec![PackageError::new(
         "a",
         "",
         Problem::MissingFile,
     )]));
     assert_eq!(package[0].id, "problem-missing-file");
-    let generation = new_game_messages(&NewGameError::Generation(
+    let generation = new_game_messages(NewGameError::Generation(
         GenerationError::NicknamesExhausted,
     ));
     assert_eq!(generation[0].id, "error-generation");
@@ -692,7 +692,7 @@ fn every_failure_has_a_message() {
     let ids: Vec<String> = saves
         .iter()
         .map(|e| {
-            new_game_messages(&NewGameError::Save(e.clone()))[0]
+            new_game_messages(NewGameError::Save(e.clone()))[0]
                 .id
                 .clone()
         })
@@ -709,15 +709,15 @@ fn every_failure_has_a_message() {
         ]
     );
     assert_eq!(
-        query_message(&QueryError::UnknownTeam("t".into())).id,
+        query_message(QueryError::UnknownTeam("t".into())).id,
         "error-unknown-team"
     );
     assert_eq!(
-        query_message(&QueryError::UnknownPlayer("p".into())).id,
+        query_message(QueryError::UnknownPlayer("p".into())).id,
         "error-unknown-player"
     );
     assert_eq!(
-        query_message(&QueryError::Save(SaveError::NotFound("f".into()))).id,
+        query_message(QueryError::Save(SaveError::NotFound("f".into()))).id,
         "error-save-not-found"
     );
 }

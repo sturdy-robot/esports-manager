@@ -225,25 +225,25 @@ fn request_problems() -> Vec<RequestProblem> {
 
 /// Every message the use cases build for a failure.
 fn messages() -> Vec<Message> {
-    let mut all = new_game_messages(&NewGameError::Invalid(request_problems()));
+    let mut all = new_game_messages(NewGameError::Invalid(request_problems()));
     let package: Vec<PackageError> = problems()
         .into_iter()
         .map(|problem| PackageError::new("teams/a.json", "[0].tag", problem))
         .collect();
-    all.extend(new_game_messages(&NewGameError::Package(package)));
-    all.extend(new_game_messages(&NewGameError::Generation(
+    all.extend(new_game_messages(NewGameError::Package(package)));
+    all.extend(new_game_messages(NewGameError::Generation(
         GenerationError::NicknamesExhausted,
     )));
     for error in save_errors() {
-        all.extend(new_game_messages(&NewGameError::Save(error.clone())));
-        all.push(query_message(&QueryError::Save(error)));
+        all.extend(new_game_messages(NewGameError::Save(error.clone())));
+        all.push(query_message(QueryError::Save(error)));
     }
     for error in [
         QueryError::UnknownTeam("team:x".into()),
         QueryError::UnknownPlayer("player:x".into()),
         QueryError::AmbiguousSave("Tigers".into()),
     ] {
-        all.push(query_message(&error));
+        all.push(query_message(error));
     }
     all
 }

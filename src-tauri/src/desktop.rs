@@ -54,7 +54,7 @@ impl Desktop {
     /// The package's problems.
     pub fn new_game_options(&self) -> Result<NewGameOptions, Failure> {
         game::new_game_options(&self.content).map_err(|errors| Failure {
-            messages: errors.iter().map(package_error).collect(),
+            messages: errors.into_iter().map(package_error).collect(),
         })
     }
 
@@ -66,11 +66,11 @@ impl Desktop {
     /// When the save or the package can't be read.
     pub fn content_text(&mut self) -> Result<Vec<ContentText>, Failure> {
         match &mut self.open {
-            Some((_, save)) => save.texts().map_err(|e| fail(game::save_message(&e))),
+            Some((_, save)) => save.texts().map_err(|e| fail(game::save_message(e))),
             None => packages::load(&self.content.0)
                 .map(|p| p.texts)
                 .map_err(|errors| Failure {
-                    messages: errors.iter().map(package_error).collect(),
+                    messages: errors.into_iter().map(package_error).collect(),
                 }),
         }
     }
@@ -96,7 +96,7 @@ impl Desktop {
         };
         let created =
             game::new_game(&self.content, &self.store, &request).map_err(|error| Failure {
-                messages: game::new_game_messages(&error),
+                messages: game::new_game_messages(error),
             })?;
         self.open_save(&created.file, now)
     }
@@ -105,7 +105,7 @@ impl Desktop {
     ///
     /// When the saves folder can't be read.
     pub fn list_saves(&self) -> Result<Vec<SaveSummary>, Failure> {
-        let saves = game::list_saves(&self.store).map_err(|e| fail(game::save_message(&e)))?;
+        let saves = game::list_saves(&self.store).map_err(|e| fail(game::save_message(e)))?;
         // The save this app holds open shows as locked to its own probe; to
         // the player it is simply the game they're playing.
         Ok(saves
@@ -135,7 +135,7 @@ impl Desktop {
         let save = self
             .store
             .open(file, now)
-            .map_err(|e| fail(game::save_message(&e)))?;
+            .map_err(|e| fail(game::save_message(e)))?;
         let opened = GameOpened::new(file.to_owned(), &save.meta().team);
         self.open = Some((file.to_owned(), save));
         Ok(opened)
@@ -152,14 +152,14 @@ impl Desktop {
     ///
     /// When no save is open, the team doesn't exist or storage fails.
     pub fn roster(&mut self, team: Option<&str>) -> Result<RosterView, Failure> {
-        game::roster(self.save()?, team).map_err(|e| fail(game::query_message(&e)))
+        game::roster(self.save()?, team).map_err(|e| fail(game::query_message(e)))
     }
 
     /// # Errors
     ///
     /// When no save is open, the player doesn't exist or storage fails.
     pub fn player(&mut self, id: &str) -> Result<PlayerProfile, Failure> {
-        game::player_profile(self.save()?, id).map_err(|e| fail(game::query_message(&e)))
+        game::player_profile(self.save()?, id).map_err(|e| fail(game::query_message(e)))
     }
 }
 
