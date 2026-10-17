@@ -117,21 +117,23 @@ fn is_save_name(file: &str) -> bool {
 impl SaveStore for SqliteSaveStore {
     type Save = SqliteSave;
 
-    fn create(&self, save: NewSave<'_>) -> Result<String, SaveError> {
+    fn create(&self, save: NewSave) -> Result<String, SaveError> {
         // One creation at a time in the folder, from reading the names to
         // moving the save into place, so two processes can't both take a
         // free name (SAVE-010). The use case checks names earlier, to report
         // the problem with the others; this is the check that guarantees it.
         let _creating = lock::wait(&self.path(CREATION))?;
-        let wanted = save.meta.name.to_lowercase();
+        // Kept for the commit's error, after writing has taken the save.
+        let name = save.meta.name.clone();
+        let wanted = name.to_lowercase();
         if self
             .names()?
             .iter()
-            .any(|name| name.to_lowercase() == wanted)
+            .any(|taken| taken.to_lowercase() == wanted)
         {
-            return Err(SaveError::NameTaken(save.meta.name.clone()));
+            return Err(SaveError::NameTaken(name));
         }
-        let stem = free_stem(&slug(&save.meta.name), |stem| {
+        let stem = free_stem(&slug(&name), |stem| {
             self.path(&format!("{stem}.{EXTENSION}")).exists()
         });
         let file = format!("{stem}.{EXTENSION}");
@@ -145,7 +147,7 @@ impl SaveStore for SqliteSaveStore {
         // never removes a save still being written.
         let held = lock::acquire(&temporary)?;
         let written = write::write_new(&temporary, save)
-            .and_then(|()| write::commit(&temporary, &self.path(&file), &save.meta.name));
+            .and_then(|()| write::commit(&temporary, &self.path(&file), &name));
         if written.is_err() {
             let _ = std::fs::remove_file(&temporary);
             let _ = std::fs::remove_file(journal(&temporary));
