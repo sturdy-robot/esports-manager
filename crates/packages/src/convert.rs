@@ -45,24 +45,28 @@ impl<T> Located<T> {
     }
 }
 
-/// Collects problems while converting one entity.
-struct Converter<'a, T> {
-    entry: &'a Entry<T>,
+/// Collects problems while converting one entity, whose definition the
+/// caller has taken apart.
+struct Converter<'a> {
+    file: String,
+    path: String,
     errors: &'a mut Vec<PackageError>,
     ok: bool,
 }
 
-impl<'a, T> Converter<'a, T> {
-    fn new(entry: &'a Entry<T>, errors: &'a mut Vec<PackageError>) -> Self {
+impl<'a> Converter<'a> {
+    fn new(file: String, path: String, errors: &'a mut Vec<PackageError>) -> Self {
         Self {
-            entry,
+            file,
+            path,
             errors,
             ok: true,
         }
     }
 
     fn fail(&mut self, field: &str, problem: Problem) {
-        self.errors.push(self.entry.error(field, problem));
+        let error = PackageError::new(&self.file, join(&self.path, field), problem);
+        self.errors.push(error);
         self.ok = false;
     }
 
@@ -116,14 +120,14 @@ impl<'a, T> Converter<'a, T> {
     fn finish<V>(self, value: Option<V>) -> Option<Located<V>> {
         let value = value.filter(|_| self.ok)?;
         Some(Located {
-            file: self.entry.file.clone(),
-            path: self.entry.path.clone(),
+            file: self.file,
+            path: self.path,
             value,
         })
     }
 }
 
-pub fn manifest(entry: &Entry<ManifestDef>, errors: &mut Vec<PackageError>) -> Option<Manifest> {
+pub fn manifest(entry: Entry<ManifestDef>, errors: &mut Vec<PackageError>) -> Option<Manifest> {
     let ManifestDef {
         schema: _,
         id,
@@ -133,9 +137,9 @@ pub fn manifest(entry: &Entry<ManifestDef>, errors: &mut Vec<PackageError>) -> O
         authors,
         genre,
         locales,
-    } = &entry.def;
-    let mut c = Converter::new(entry, errors);
-    let id_ok = ContentId::is_slug(id);
+    } = entry.def;
+    let mut c = Converter::new(entry.file, entry.path, errors);
+    let id_ok = ContentId::is_slug(&id);
     if !id_ok {
         c.fail("id", Problem::InvalidId { id: id.clone() });
     }
@@ -147,67 +151,62 @@ pub fn manifest(entry: &Entry<ManifestDef>, errors: &mut Vec<PackageError>) -> O
     if !version_ok {
         c.fail("version", Problem::InvalidFormat);
     }
-    let parsed_genre = Genre::from_str(genre).ok();
+    let parsed_genre = Genre::from_str(&genre).ok();
     if parsed_genre.is_none() {
-        c.fail(
-            "genre",
-            Problem::UnsupportedGenre {
-                genre: genre.clone(),
-            },
-        );
+        c.fail("genre", Problem::UnsupportedGenre { genre });
     }
     if locales.is_empty() {
         c.fail("locales", Problem::Empty);
     }
     let value = parsed_genre.map(|genre| Manifest {
-        id: id.clone(),
-        version: version.clone(),
-        title: title.clone(),
-        license: license.clone(),
-        authors: authors.clone(),
+        id,
+        version,
+        title,
+        license,
+        authors,
         genre,
-        locales: locales.clone(),
+        locales,
     });
     c.finish(value).map(|located| located.value)
 }
 
-pub fn world(entry: &Entry<WorldDef>, errors: &mut Vec<PackageError>) -> Option<WorldSettings> {
+pub fn world(entry: Entry<WorldDef>, errors: &mut Vec<PackageError>) -> Option<WorldSettings> {
     let WorldDef {
         schema: _,
         start_date,
-    } = &entry.def;
-    let mut c = Converter::new(entry, errors);
-    let start_date = c.date("start_date", start_date);
+    } = entry.def;
+    let mut c = Converter::new(entry.file, entry.path, errors);
+    let start_date = c.date("start_date", &start_date);
     c.finish(start_date.map(|start_date| WorldSettings { start_date }))
         .map(|located| located.value)
 }
 
-pub fn region(entry: &Entry<RegionDef>, errors: &mut Vec<PackageError>) -> Option<Located<Region>> {
+pub fn region(entry: Entry<RegionDef>, errors: &mut Vec<PackageError>) -> Option<Located<Region>> {
     let RegionDef {
         schema: _,
         id,
         level,
         nationalities,
-    } = &entry.def;
-    let mut c = Converter::new(entry, errors);
-    let id = c.own_id("id", id, "region");
+    } = entry.def;
+    let mut c = Converter::new(entry.file, entry.path, errors);
+    let id = c.own_id("id", &id, "region");
     let mut mix = Vec::new();
-    for (nationality, &weight) in nationalities {
+    for (nationality, weight) in nationalities {
         let field = format!("nationalities.{nationality}");
-        if let Some(nationality) = c.reference(&field, nationality) {
+        if let Some(nationality) = c.reference(&field, &nationality) {
             mix.push((nationality, weight));
         }
     }
     let value = id.map(|id| Region {
         id,
-        level: *level,
+        level,
         nationalities: mix,
     });
     c.finish(value)
 }
 
 pub fn nationality(
-    entry: &Entry<NationalityDef>,
+    entry: Entry<NationalityDef>,
     errors: &mut Vec<PackageError>,
 ) -> Option<Located<Nationality>> {
     let NationalityDef {
@@ -215,10 +214,10 @@ pub fn nationality(
         id,
         code,
         name_order,
-    } = &entry.def;
-    let mut c = Converter::new(entry, errors);
-    let id = c.own_id("id", id, "nationality");
-    let code = CountryCode::parse(code);
+    } = entry.def;
+    let mut c = Converter::new(entry.file, entry.path, errors);
+    let id = c.own_id("id", &id, "nationality");
+    let code = CountryCode::parse(&code);
     if code.is_none() {
         c.fail("code", Problem::InvalidFormat);
     }
@@ -235,7 +234,7 @@ pub fn nationality(
 }
 
 pub fn name_pool(
-    entry: &Entry<NamePoolDef>,
+    entry: Entry<NamePoolDef>,
     errors: &mut Vec<PackageError>,
 ) -> Option<Located<NamePool>> {
     let NamePoolDef {
@@ -244,34 +243,34 @@ pub fn name_pool(
         nationality,
         given,
         family,
-    } = &entry.def;
-    let mut c = Converter::new(entry, errors);
-    let id = c.own_id("id", id, "name_pool");
-    let nationality = c.reference("nationality", nationality);
+    } = entry.def;
+    let mut c = Converter::new(entry.file, entry.path, errors);
+    let id = c.own_id("id", &id, "name_pool");
+    let nationality = c.reference("nationality", &nationality);
     let value = id.and(nationality).map(|nationality| NamePool {
         nationality,
-        given: given.clone(),
-        family: family.clone(),
+        given,
+        family,
     });
     c.finish(value)
 }
 
 pub fn nickname_pool(
-    entry: &Entry<NicknamePoolDef>,
+    entry: Entry<NicknamePoolDef>,
     errors: &mut Vec<PackageError>,
 ) -> Option<Located<Vec<String>>> {
     let NicknamePoolDef {
         schema: _,
         id,
         nicknames,
-    } = &entry.def;
-    let mut c = Converter::new(entry, errors);
-    let id = c.own_id("id", id, "nickname_pool");
-    c.finish(id.map(|_| nicknames.clone()))
+    } = entry.def;
+    let mut c = Converter::new(entry.file, entry.path, errors);
+    let id = c.own_id("id", &id, "nickname_pool");
+    c.finish(id.map(|_| nicknames))
 }
 
 pub fn competition(
-    entry: &Entry<CompetitionDef>,
+    entry: Entry<CompetitionDef>,
     errors: &mut Vec<PackageError>,
 ) -> Option<Located<Competition>> {
     let CompetitionDef {
@@ -279,10 +278,10 @@ pub fn competition(
         id,
         region,
         teams,
-    } = &entry.def;
-    let mut c = Converter::new(entry, errors);
-    let id = c.own_id("id", id, "competition");
-    let region = c.reference("region", region);
+    } = entry.def;
+    let mut c = Converter::new(entry.file, entry.path, errors);
+    let id = c.own_id("id", &id, "competition");
+    let region = c.reference("region", &region);
     let teams: Vec<ContentId> = teams
         .iter()
         .enumerate()
@@ -294,7 +293,7 @@ pub fn competition(
     c.finish(value)
 }
 
-pub fn team(entry: &Entry<TeamDef>, errors: &mut Vec<PackageError>) -> Option<Located<Team>> {
+pub fn team(entry: Entry<TeamDef>, errors: &mut Vec<PackageError>) -> Option<Located<Team>> {
     let TeamDef {
         schema: _,
         id,
@@ -302,11 +301,11 @@ pub fn team(entry: &Entry<TeamDef>, errors: &mut Vec<PackageError>) -> Option<Lo
         tag,
         colours,
         reputation,
-    } = &entry.def;
-    let mut c = Converter::new(entry, errors);
-    let id = c.own_id("id", id, "team");
-    let region = c.reference("region", region);
-    let tag = Tag::parse(tag);
+    } = entry.def;
+    let mut c = Converter::new(entry.file, entry.path, errors);
+    let id = c.own_id("id", &id, "team");
+    let region = c.reference("region", &region);
+    let tag = Tag::parse(&tag);
     if tag.is_none() {
         c.fail("tag", Problem::InvalidFormat);
     }
@@ -318,8 +317,8 @@ pub fn team(entry: &Entry<TeamDef>, errors: &mut Vec<PackageError>) -> Option<Lo
         }
         colour
     };
-    let colours = colour(0, first).zip(colour(1, second));
-    let reputation_value = Reputation::new(*reputation);
+    let colours = colour(0, &first).zip(colour(1, &second));
+    let reputation_value = Reputation::new(reputation);
     if reputation_value.is_none() {
         c.fail("reputation", Problem::OutOfRange);
     }
@@ -337,7 +336,7 @@ pub fn team(entry: &Entry<TeamDef>, errors: &mut Vec<PackageError>) -> Option<Lo
 }
 
 pub fn player(
-    entry: &Entry<PlayerDef>,
+    entry: Entry<PlayerDef>,
     errors: &mut Vec<PackageError>,
 ) -> Option<Located<PinnedPlayer>> {
     let PlayerDef {
@@ -351,17 +350,13 @@ pub fn player(
         nationality,
         birth_date,
         attributes,
-    } = &entry.def;
-    let mut c = Converter::new(entry, errors);
-    let id = c.own_id("id", id, "player");
-    let team = c.reference("team", team);
-    let role = c.reference("role", role);
-    let nationality = nationality
-        .as_ref()
-        .and_then(|text| c.reference("nationality", text));
-    let birth_date = birth_date
-        .as_ref()
-        .and_then(|text| c.date("birth_date", text));
+    } = entry.def;
+    let mut c = Converter::new(entry.file, entry.path, errors);
+    let id = c.own_id("id", &id, "player");
+    let team = c.reference("team", &team);
+    let role = c.reference("role", &role);
+    let nationality = nationality.and_then(|text| c.reference("nationality", &text));
+    let birth_date = birth_date.and_then(|text| c.date("birth_date", &text));
     let PinnedAttributesDef {
         mechanics,
         laning,
@@ -378,7 +373,7 @@ pub fn player(
         potential,
     } = attributes;
     let mut rating =
-        |field: &str, points: &Option<u32>| c.rating(&format!("attributes.{field}"), *points);
+        |field: &str, points: Option<u32>| c.rating(&format!("attributes.{field}"), points);
     let attributes = PinnedAttributes {
         mechanics: rating("mechanics", mechanics),
         laning: rating("laning", laning),
@@ -399,9 +394,9 @@ pub fn player(
             id: id?,
             team: team?,
             role: role?,
-            nickname: nickname.clone(),
-            given_name: given_name.clone(),
-            family_name: family_name.clone(),
+            nickname,
+            given_name,
+            family_name,
             nationality,
             birth_date,
             attributes,
@@ -412,7 +407,7 @@ pub fn player(
 
 /// The role set and the roster shape it comes with.
 pub fn role_set(
-    entry: &Entry<RoleSetDef>,
+    entry: Entry<RoleSetDef>,
     errors: &mut Vec<PackageError>,
 ) -> Option<Located<(RoleSet, RosterRules)>> {
     let RoleSetDef {
@@ -420,25 +415,26 @@ pub fn role_set(
         id,
         roles,
         subs,
-    } = &entry.def;
-    let mut c = Converter::new(entry, errors);
-    let id = c.own_id("id", id, "role_set");
+    } = entry.def;
+    let mut c = Converter::new(entry.file, entry.path, errors);
+    let id = c.own_id("id", &id, "role_set");
     let mut definitions = Vec::new();
-    for (index, role) in roles.iter().enumerate() {
+    let declared = roles.len();
+    for (index, role) in roles.into_iter().enumerate() {
         let RoleDef { id, weights } = role;
-        if let Some(id) = c.own_id(&format!("roles[{index}].id"), id, "role") {
+        if let Some(id) = c.own_id(&format!("roles[{index}].id"), &id, "role") {
             definitions.push((
                 id,
                 weights
-                    .iter()
-                    .map(|(&key, &w)| (attribute(key), w))
+                    .into_iter()
+                    .map(|(key, w)| (attribute(key), w))
                     .collect(),
             ));
         }
     }
     // When every role id failed, those errors are reported already; an
     // empty role set on top would be a second, misleading error.
-    let role_set = if definitions.is_empty() && !roles.is_empty() {
+    let role_set = if definitions.is_empty() && declared > 0 {
         None
     } else {
         match RoleSet::new(definitions) {
@@ -453,7 +449,7 @@ pub fn role_set(
     };
     let value = id
         .and(role_set)
-        .map(|role_set| (role_set, RosterRules { subs: *subs }));
+        .map(|role_set| (role_set, RosterRules { subs }));
     c.finish(value)
 }
 
@@ -472,7 +468,7 @@ const fn attribute(key: WeightKey) -> OverallAttribute {
 }
 
 pub fn generation(
-    entry: &Entry<GenerationDef>,
+    entry: Entry<GenerationDef>,
     errors: &mut Vec<PackageError>,
 ) -> Option<Located<GenerationParams>> {
     let GenerationDef {
@@ -497,9 +493,9 @@ pub fn generation(
         age_min,
         age_max,
         nickname_pool_factor,
-    } = &entry.def;
-    let mut c = Converter::new(entry, errors);
-    let id = c.own_id("id", id, "generation");
+    } = entry.def;
+    let mut c = Converter::new(entry.file, entry.path, errors);
+    let id = c.own_id("id", &id, "generation");
     let non_negative = [
         ("sigma_min", sigma_min),
         ("attribute_spread", attribute_spread),
@@ -509,50 +505,50 @@ pub fn generation(
         ("age_spread", age_spread),
     ];
     for (field, value) in non_negative {
-        if *value < 0.0 {
+        if value < 0.0 {
             c.fail(field, Problem::OutOfRange);
         }
     }
     if age_min > age_max {
         c.fail("age_min", Problem::OutOfRange);
     }
-    if *nickname_pool_factor == 0 {
+    if nickname_pool_factor == 0 {
         c.fail("nickname_pool_factor", Problem::OutOfRange);
     }
     let value = id.map(|_| GenerationParams {
         common: Constants {
-            mu_base: *mu_base,
-            mu_per_reputation: *mu_per_reputation,
-            sigma_base: *sigma_base,
-            sigma_per_reputation: *sigma_per_reputation,
-            sigma_min: *sigma_min,
-            style_mean: *style_mean,
-            style_spread: *style_spread,
-            consistency_mean: *consistency_mean,
-            consistency_spread: *consistency_spread,
-            potential_peak_age: *potential_peak_age,
-            potential_per_year: *potential_per_year,
-            potential_spread: *potential_spread,
-            age_mean: *age_mean,
-            age_spread: *age_spread,
-            age_min: *age_min,
-            age_max: *age_max,
-            nickname_pool_factor: *nickname_pool_factor,
+            mu_base,
+            mu_per_reputation,
+            sigma_base,
+            sigma_per_reputation,
+            sigma_min,
+            style_mean,
+            style_spread,
+            consistency_mean,
+            consistency_spread,
+            potential_peak_age,
+            potential_per_year,
+            potential_spread,
+            age_mean,
+            age_spread,
+            age_min,
+            age_max,
+            nickname_pool_factor,
         },
-        attribute_spread: *attribute_spread,
-        bias_scale: *bias_scale,
+        attribute_spread,
+        bias_scale,
     });
     c.finish(value)
 }
 
 /// Every converted entity of one kind, in file order.
 pub fn all<D, V>(
-    entries: &[Entry<D>],
+    entries: Vec<Entry<D>>,
     errors: &mut Vec<PackageError>,
-    convert: impl Fn(&Entry<D>, &mut Vec<PackageError>) -> Option<Located<V>>,
+    convert: impl Fn(Entry<D>, &mut Vec<PackageError>) -> Option<Located<V>>,
 ) -> Vec<Located<V>> {
     entries
-        .iter()
+        .into_iter()
         .filter_map(|entry| convert(entry, errors))
         .collect()
 }
