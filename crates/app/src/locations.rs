@@ -35,7 +35,7 @@ impl Platform {
 }
 
 /// What the adapters gather from the real environment.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Environment {
     /// `--data-dir`, from the CLI.
     pub data_dir_flag: Option<PathBuf>,
@@ -48,13 +48,13 @@ pub struct Environment {
 }
 
 /// The folders the game uses.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DataLocations {
     root: PathBuf,
     portable: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum LocationError {
     #[error("there is no data folder: the OS reports none and no --data-dir was given")]
     NoDataFolder,

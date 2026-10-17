@@ -17,7 +17,7 @@ use serde::Deserialize;
 
 /// What New Game sends. The seed is text because a `u64` doesn't survive a
 /// JavaScript number.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, specta::Type)]
+#[derive(Debug, PartialEq, Eq, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NewGameInput {
     pub manager_name: String,
@@ -164,7 +164,7 @@ impl Desktop {
 }
 
 /// How the main window is built.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct WindowConfig {
     pub label: &'static str,
     pub width: u32,

@@ -2,7 +2,7 @@ use serde::Serialize;
 
 /// What the game reports about itself. Every adapter shows the version from
 /// here, so there is one source for it.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[derive(Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct About {
     pub version: String,

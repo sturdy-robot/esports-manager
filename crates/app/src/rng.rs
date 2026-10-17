@@ -8,7 +8,7 @@ use rand_core::SeedableRng;
 ///
 /// This is the only place generators are constructed. Domain and genre code
 /// receive a stream; they never create one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct RngProvider {
     seed: WorldSeed,
 }

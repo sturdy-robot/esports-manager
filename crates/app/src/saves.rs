@@ -59,7 +59,7 @@ pub enum Damage {
 }
 
 /// One file in the saves folder.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct SaveListing {
     /// The file name, such as `ana-s-tigers.esmsave`. It identifies the save.
     pub file: String,

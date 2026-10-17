@@ -28,7 +28,7 @@ const CREATION: &str = ".create";
 const TEMPORARY_JOURNAL: &str = "tmp-journal";
 
 /// Saves in one folder.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SqliteSaveStore {
     dir: PathBuf,
 }

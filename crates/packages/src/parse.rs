@@ -31,7 +31,7 @@ pub const FOLDERS: [(&str, &str); 9] = [
 ];
 
 /// One entity and where it came from.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Entry<T> {
     pub file: String,
     /// `[2]` for the third entity of a list file, empty for a single object.
