@@ -1,6 +1,12 @@
+<!--
+SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # 0010. Fictional world, licensing and assets
 
-- **Status:** Accepted; how packages declare their licence is amended by [0011](0011-package-licence-in-the-manifest.md)
+- **Status:** Accepted; how packages declare their licence is amended by [0011](0011-package-licence-in-the-manifest.md), and how files declare theirs by [0012](0012-licence-headers-in-every-file.md)
 - **Date:** 2026-10-15
 - **Related:** [0005](0005-esm-packages.md)
 
