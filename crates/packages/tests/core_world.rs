@@ -23,7 +23,7 @@ fn core() -> packages::Package {
 }
 
 fn world(seed: u64) -> World {
-    generate(&core().template, &RngProvider::new(WorldSeed::new(seed))).unwrap()
+    generate(core().template, &RngProvider::new(WorldSeed::new(seed))).unwrap()
 }
 
 /// Every field of every player, one line each.

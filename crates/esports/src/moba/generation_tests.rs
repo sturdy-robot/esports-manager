@@ -212,8 +212,8 @@ fn same_template_and_seed_give_the_same_world() {
     // Given
     let template = template(vec![team("a", "up", 70), team("b", "down", 40)]);
     // When
-    let first = generate(&template, &seed(42)).unwrap();
-    let second = generate(&template, &seed(42)).unwrap();
+    let first = generate(template.clone(), &seed(42)).unwrap();
+    let second = generate(template, &seed(42)).unwrap();
     // Then
     assert_eq!(first, second);
 }
@@ -224,8 +224,8 @@ fn a_different_seed_changes_the_players_not_the_structure() {
     // Given
     let template = template(vec![team("a", "up", 70), team("b", "down", 40)]);
     // When
-    let one = generate(&template, &seed(1)).unwrap();
-    let two = generate(&template, &seed(2)).unwrap();
+    let one = generate(template.clone(), &seed(1)).unwrap();
+    let two = generate(template, &seed(2)).unwrap();
     // Then
     assert_eq!(
         (&one.regions, &one.competitions, &one.teams),
@@ -247,7 +247,7 @@ fn the_best_player_in_each_role_starts() {
     weak.attributes = flat(68);
     template.players = vec![weak, strong];
     // When
-    let world = generate(&template, &seed(7)).unwrap();
+    let world = generate(template, &seed(7)).unwrap();
     // Then
     let mids: Vec<(&str, bool)> = players_of(&world, "a")
         .into_iter()
@@ -268,7 +268,7 @@ fn ties_for_a_starting_place_go_to_the_lower_id() {
     a.attributes = flat(60);
     template.players = vec![b, a];
     // When
-    let world = generate(&template, &seed(7)).unwrap();
+    let world = generate(template, &seed(7)).unwrap();
     // Then
     let starters: Vec<&str> = players_of(&world, "a")
         .into_iter()
@@ -282,7 +282,7 @@ fn ties_for_a_starting_place_go_to_the_lower_id() {
 fn every_team_starts_exactly_one_player_per_role() {
     let template = template(vec![team("a", "up", 70), team("b", "down", 40)]);
     for value in 0..20 {
-        let world = generate(&template, &seed(value)).unwrap();
+        let world = generate(template.clone(), &seed(value)).unwrap();
         for slug in ["a", "b"] {
             let mut starters: Vec<&str> = players_of(&world, slug)
                 .into_iter()
@@ -303,7 +303,7 @@ fn higher_reputation_means_stronger_players() {
     // When
     let (mut strong, mut weak) = (Vec::new(), Vec::new());
     for value in 0..200 {
-        let world = generate(&template, &seed(value)).unwrap();
+        let world = generate(template.clone(), &seed(value)).unwrap();
         strong.extend(
             players_of(&world, "strong")
                 .into_iter()
@@ -341,7 +341,7 @@ fn the_region_level_shifts_every_team() {
     // When
     let (mut up, mut down) = (Vec::new(), Vec::new());
     for value in 0..200 {
-        let world = generate(&template, &seed(value)).unwrap();
+        let world = generate(template.clone(), &seed(value)).unwrap();
         up.extend(
             players_of(&world, "up_team")
                 .into_iter()
@@ -367,7 +367,7 @@ fn a_role_shapes_the_attributes() {
     let (mut mid_mechanics, mut support_mechanics) = (Vec::new(), Vec::new());
     let (mut mid_calls, mut support_calls) = (Vec::new(), Vec::new());
     for value in 0..200 {
-        let world = generate(&template, &seed(value)).unwrap();
+        let world = generate(template.clone(), &seed(value)).unwrap();
         for player in &world.players {
             let mechanics = player.attributes.skills.mechanics.points();
             let calls = player.attributes.skills.shotcalling.points();
@@ -397,7 +397,7 @@ fn nationalities_follow_the_regions_mix() {
     // When
     let (mut korean, mut total) = (0_u32, 0_u32);
     for value in 0..200 {
-        let world = generate(&template, &seed(value)).unwrap();
+        let world = generate(template.clone(), &seed(value)).unwrap();
         for player in &world.players {
             total += 1;
             korean += u32::from(player.nationality == id("nationality:kr"));
@@ -419,7 +419,7 @@ fn a_pinned_player_keeps_every_pinned_field() {
     kairos.attributes.mechanics = Some(rating(95));
     template.players = vec![kairos];
     // When
-    let world = generate(&template, &seed(3)).unwrap();
+    let world = generate(template, &seed(3)).unwrap();
     // Then
     let kairos = world
         .players
@@ -452,7 +452,7 @@ fn pinned_names_nationality_and_every_attribute_are_kept() {
         ..flat(80)
     };
     template.players = vec![player];
-    let world = generate(&template, &seed(3)).unwrap();
+    let world = generate(template, &seed(3)).unwrap();
     let p = &world.players[0];
     assert_eq!(
         (p.given_name.as_str(), p.family_name.as_str()),
@@ -481,7 +481,7 @@ fn names_come_from_the_pinned_nationalitys_pool() {
     player.nationality = Some(id("nationality:br"));
     template.players = vec![player];
     for value in 0..20 {
-        let world = generate(&template, &seed(value)).unwrap();
+        let world = generate(template.clone(), &seed(value)).unwrap();
         let p = &world.players[0];
         assert!(["Caio", "Ana"].contains(&p.given_name.as_str()));
         assert!(["Ribeiro", "Silva", "Costa"].contains(&p.family_name.as_str()));
@@ -499,8 +499,8 @@ fn adding_a_team_leaves_the_others_alone() {
         team("c", "down", 40),
     ]);
     // When
-    let one = generate(&before, &seed(42)).unwrap();
-    let two = generate(&after, &seed(42)).unwrap();
+    let one = generate(before, &seed(42)).unwrap();
+    let two = generate(after, &seed(42)).unwrap();
     // Then
     let shape = |w: &World, slug: &str| {
         players_of(w, slug)
@@ -531,8 +531,8 @@ fn pinning_a_field_shifts_no_other_draw() {
     let mut with_date = pinned("p", "a", "top");
     with_date.birth_date = Some("2003-05-05".parse().unwrap());
     dated.players = vec![with_date];
-    let one = generate(&plain, &seed(4)).unwrap();
-    let two = generate(&dated, &seed(4)).unwrap();
+    let one = generate(plain, &seed(4)).unwrap();
+    let two = generate(dated, &seed(4)).unwrap();
     let (a, b) = (&one.players[0], &two.players[0]);
     assert_eq!(
         (&a.given_name, &a.family_name, &a.nationality),
@@ -565,8 +565,8 @@ fn how_pools_are_split_never_changes_the_world() {
     });
     split.nicknames.reverse();
     assert_eq!(
-        generate(&joined, &seed(8)).unwrap(),
-        generate(&split, &seed(8)).unwrap()
+        generate(joined, &seed(8)).unwrap(),
+        generate(split.clone(), &seed(8)).unwrap()
     );
 }
 
@@ -577,7 +577,7 @@ fn a_birth_date_after_the_start_is_an_error() {
     late.birth_date = Some("2030-01-01".parse().unwrap());
     template.players = vec![late];
     assert_eq!(
-        generate(&template, &seed(1)),
+        generate(template, &seed(1)),
         Err(GenerationError::BornAfterStart(id("player:late")))
     );
 }
@@ -587,7 +587,7 @@ fn a_pinned_player_on_no_team_is_an_error() {
     let mut template = template(vec![team("a", "up", 70)]);
     template.players = vec![pinned("p", "nowhere", "top")];
     assert_eq!(
-        generate(&template, &seed(1)),
+        generate(template, &seed(1)),
         Err(GenerationError::Unknown(id("team:nowhere")))
     );
 }
@@ -599,7 +599,7 @@ fn potential_is_never_below_current_ability() {
     let template = template(vec![team("a", "up", 95), team("b", "down", 20)]);
     for value in 0..50 {
         // When
-        let world = generate(&template, &seed(value)).unwrap();
+        let world = generate(template.clone(), &seed(value)).unwrap();
         // Then
         for player in &world.players {
             assert!(player.attributes.core.potential >= world.overall(player).unwrap());
@@ -616,7 +616,7 @@ fn a_pinned_potential_may_sit_below_current_ability() {
         ..flat(80)
     };
     template.players = vec![veteran];
-    let world = generate(&template, &seed(1)).unwrap();
+    let world = generate(template, &seed(1)).unwrap();
     assert_eq!(world.players[0].attributes.core.potential, rating(40));
 }
 
@@ -626,7 +626,7 @@ fn young_players_have_more_room_to_grow() {
     let start = template.settings.start_date;
     let (mut young, mut old) = (Vec::new(), Vec::new());
     for value in 0..200 {
-        let world = generate(&template, &seed(value)).unwrap();
+        let world = generate(template.clone(), &seed(value)).unwrap();
         for player in &world.players {
             let room = player.attributes.core.potential.points() - overall(&world, player);
             match player.birth_date.age_on(start).unwrap() {
@@ -652,7 +652,7 @@ fn the_roster_shape_follows_the_role_set() {
     template.roles = roles(&CORE_WEIGHTS[..3]);
     template.roster = RosterRules { subs: 1 };
     // When
-    let world = generate(&template, &seed(9)).unwrap();
+    let world = generate(template, &seed(9)).unwrap();
     // Then
     for slug in ["a", "b"] {
         let players = players_of(&world, slug);
@@ -668,7 +668,7 @@ fn the_roster_shape_follows_the_role_set() {
 fn rosters_have_every_role_and_subs_in_different_roles() {
     let template = template(vec![team("a", "up", 60), team("b", "down", 50)]);
     for value in 0..50 {
-        let world = generate(&template, &seed(value)).unwrap();
+        let world = generate(template.clone(), &seed(value)).unwrap();
         for slug in ["a", "b"] {
             let mut counts: BTreeMap<&str, usize> = BTreeMap::new();
             for player in players_of(&world, slug) {
@@ -685,7 +685,7 @@ fn rosters_have_every_role_and_subs_in_different_roles() {
 fn generated_ids_number_the_teams_slots() {
     let mut template = template(vec![team("a", "up", 60)]);
     template.players = vec![pinned("star", "a", "mid")];
-    let world = generate(&template, &seed(1)).unwrap();
+    let world = generate(template, &seed(1)).unwrap();
     let ids: Vec<&str> = world.players.iter().map(|p| p.id.as_str()).collect();
     assert_eq!(
         ids,
@@ -713,7 +713,7 @@ fn nicknames_are_unique_and_pinned_ones_are_reserved() {
     let mut star = pinned("star", "a", "mid");
     star.nickname = Some("nick3".to_owned());
     template.players = vec![star];
-    let world = generate(&template, &seed(5)).unwrap();
+    let world = generate(template, &seed(5)).unwrap();
     let mut seen: Vec<String> = world
         .players
         .iter()
@@ -731,7 +731,7 @@ fn ages_and_birth_dates_agree() {
     let start = template.settings.start_date;
     let mut ages = std::collections::BTreeSet::new();
     for value in 0..100 {
-        let world = generate(&template, &seed(value)).unwrap();
+        let world = generate(template.clone(), &seed(value)).unwrap();
         for player in &world.players {
             let age = player.birth_date.age_on(start).unwrap();
             assert!((17..=28).contains(&age), "{age}");
@@ -749,7 +749,7 @@ fn birth_dates_cover_the_whole_year_of_an_age() {
     let start = template.settings.start_date;
     let (mut earliest, mut latest) = (start, start.years_before(30).unwrap());
     for value in 0..300 {
-        for player in generate(&template, &seed(value)).unwrap().players {
+        for player in generate(template.clone(), &seed(value)).unwrap().players {
             earliest = earliest.min(player.birth_date);
             latest = latest.max(player.birth_date);
         }
@@ -762,20 +762,20 @@ fn birth_dates_cover_the_whole_year_of_an_age() {
 fn templates_built_by_hand_report_what_is_wrong() {
     let mut unknown_region = template(vec![team("a", "nowhere", 60)]);
     assert_eq!(
-        generate(&unknown_region, &seed(1)),
+        generate(unknown_region.clone(), &seed(1)),
         Err(GenerationError::Unknown(id("region:nowhere")))
     );
     unknown_region.teams = vec![team("a", "up", 60)];
     unknown_region.players = vec![pinned("p", "a", "coach")];
     assert_eq!(
-        generate(&unknown_region, &seed(1)),
+        generate(unknown_region, &seed(1)),
         Err(GenerationError::Unknown(id("role:coach")))
     );
 
     let mut empty_mix = template(vec![team("a", "up", 60)]);
     empty_mix.regions[0].nationalities = vec![(id("nationality:kr"), 0)];
     assert_eq!(
-        generate(&empty_mix, &seed(1)),
+        generate(empty_mix.clone(), &seed(1)),
         Err(GenerationError::EmptyMix(id("region:up")))
     );
 
@@ -784,20 +784,20 @@ fn templates_built_by_hand_report_what_is_wrong() {
         .name_pools
         .retain(|pool| pool.nationality != id("nationality:br"));
     assert_eq!(
-        generate(&no_names, &seed(1)),
+        generate(no_names.clone(), &seed(1)),
         Err(GenerationError::EmptyNames(id("nationality:br")))
     );
 
     let mut empty_given = template(vec![team("a", "down", 60)]);
     empty_given.name_pools[1].given.clear();
     assert_eq!(
-        generate(&empty_given, &seed(1)),
+        generate(empty_given.clone(), &seed(1)),
         Err(GenerationError::EmptyNames(id("nationality:br")))
     );
     let mut empty_family = template(vec![team("a", "down", 60)]);
     empty_family.name_pools[1].family.clear();
     assert_eq!(
-        generate(&empty_family, &seed(1)),
+        generate(empty_family.clone(), &seed(1)),
         Err(GenerationError::EmptyNames(id("nationality:br")))
     );
 
@@ -806,7 +806,7 @@ fn templates_built_by_hand_report_what_is_wrong() {
         .map(|n| pinned(&format!("p{n}"), "a", "mid"))
         .collect();
     assert_eq!(
-        generate(&crowded, &seed(1)),
+        generate(crowded, &seed(1)),
         Err(GenerationError::IncompletableRoster(id("team:a")))
     );
 
@@ -817,7 +817,7 @@ fn templates_built_by_hand_report_what_is_wrong() {
         .map(|(n, role)| pinned(&format!("p{n}"), "a", role))
         .collect();
     assert_eq!(
-        generate(&cornered, &seed(1)),
+        generate(cornered, &seed(1)),
         Err(GenerationError::IncompletableRoster(id("team:a")))
     );
 
@@ -830,14 +830,14 @@ fn templates_built_by_hand_report_what_is_wrong() {
     .map(|(n, role)| pinned(&format!("p{n}"), "a", role))
     .collect();
     assert_eq!(
-        generate(&overfull, &seed(1)),
+        generate(overfull, &seed(1)),
         Err(GenerationError::IncompletableRoster(id("team:a")))
     );
 
     let mut few_nicknames = template(vec![team("a", "up", 60)]);
     few_nicknames.nicknames.truncate(6);
     assert_eq!(
-        generate(&few_nicknames, &seed(1)),
+        generate(few_nicknames.clone(), &seed(1)),
         Err(GenerationError::NicknamesExhausted)
     );
 }
@@ -845,7 +845,7 @@ fn templates_built_by_hand_report_what_is_wrong() {
 #[test]
 fn every_skill_is_drawn_independently() {
     let template = template(vec![team("a", "up", 60)]);
-    let world = generate(&template, &seed(11)).unwrap();
+    let world = generate(template, &seed(11)).unwrap();
     for player in &world.players {
         let skills: std::collections::BTreeSet<Rating> = MobaSkill::ALL
             .iter()
@@ -863,7 +863,7 @@ fn potential_adds_room_for_each_year_under_the_peak() {
     young.birth_date = Some("2006-06-01".parse().unwrap());
     young.attributes = flat(60);
     template.players = vec![young];
-    let world = generate(&template, &seed(1)).unwrap();
+    let world = generate(template, &seed(1)).unwrap();
     // Age 20, four years under 24: 60 + 2.5 × 4.
     assert_eq!(world.players[0].attributes.core.potential, rating(70));
 }
@@ -904,7 +904,7 @@ fn starters_are_the_highest_overall_then_the_lowest_id() {
 fn the_generated_world_is_pinned() {
     use std::fmt::Write;
     let world = generate(
-        &template(vec![team("a", "up", 70), team("b", "down", 40)]),
+        template(vec![team("a", "up", 70), team("b", "down", 40)]),
         &seed(42),
     )
     .unwrap();

@@ -159,5 +159,5 @@ pub fn template() -> WorldTemplate {
 /// The template's world for `seed`.
 #[must_use]
 pub fn world(seed: u64) -> World {
-    generate(&template(), &Seeded(WorldSeed::new(seed))).unwrap()
+    generate(template(), &Seeded(WorldSeed::new(seed))).unwrap()
 }
