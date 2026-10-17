@@ -41,12 +41,13 @@ pub struct SaveMeta {
     pub packages: Vec<PackageRecord>,
 }
 
-/// Everything a new save holds.
-#[derive(Debug, Clone, Copy)]
-pub struct NewSave<'a> {
-    pub meta: &'a SaveMeta,
-    pub world: &'a World,
-    pub texts: &'a [ContentText],
+/// Everything a new save holds. The store takes it whole, since New Game
+/// has no use for it once it is written.
+#[derive(Debug)]
+pub struct NewSave {
+    pub meta: SaveMeta,
+    pub world: World,
+    pub texts: Vec<ContentText>,
 }
 
 /// Why a save file can't be used.
@@ -103,7 +104,7 @@ pub trait SaveStore {
     ///
     /// When the name is taken (ignoring case) or storage fails. A failed
     /// creation leaves nothing behind.
-    fn create(&self, save: NewSave<'_>) -> Result<String, SaveError>;
+    fn create(&self, save: NewSave) -> Result<String, SaveError>;
 
     /// Every save in the folder, newest first; damaged files included.
     ///

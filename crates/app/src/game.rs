@@ -145,16 +145,16 @@ pub fn new_game(
         created_at: request.now,
         last_played_at: request.now,
         packages: vec![PackageRecord {
-            id: package.manifest.id.clone(),
-            version: package.manifest.version.clone(),
+            id: package.manifest.id,
+            version: package.manifest.version,
             content_hash: package.content_hash,
         }],
     };
     let file = store
         .create(NewSave {
-            meta: &meta,
-            world: &world,
-            texts: &package.texts,
+            meta,
+            world,
+            texts: package.texts,
         })
         .map_err(NewGameError::Save)?;
     Ok(GameOpened::new(file, &team))

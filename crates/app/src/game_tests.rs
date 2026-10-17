@@ -56,23 +56,17 @@ struct Store(RefCell<BTreeMap<String, Stored>>);
 impl SaveStore for Store {
     type Save = Stored;
 
-    fn create(&self, save: NewSave<'_>) -> Result<String, SaveError> {
+    fn create(&self, save: NewSave) -> Result<String, SaveError> {
         let mut saves = self.0.borrow_mut();
         if saves
             .values()
             .any(|s| s.meta.name.to_lowercase() == save.meta.name.to_lowercase())
         {
-            return Err(SaveError::NameTaken(save.meta.name.clone()));
+            return Err(SaveError::NameTaken(save.meta.name));
         }
         let file = format!("{}.esmsave", saves.len());
-        saves.insert(
-            file.clone(),
-            Stored {
-                meta: save.meta.clone(),
-                world: save.world.clone(),
-                texts: save.texts.to_vec(),
-            },
-        );
+        let NewSave { meta, world, texts } = save;
+        saves.insert(file.clone(), Stored { meta, world, texts });
         Ok(file)
     }
 

@@ -8,7 +8,8 @@ use app::saves::{NewSave, SaveError, SaveMeta};
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::MigrationHarness;
-use esports::moba::world::World;
+use esports::moba::roles::RoleSet;
+use esports::moba::world::{Player, World};
 
 use super::MIGRATIONS;
 use super::meta::{connect, storage};
@@ -26,7 +27,7 @@ fn to_query(error: SaveError) -> diesel::result::Error {
     diesel::result::Error::QueryBuilderError(Box::new(error))
 }
 
-pub(super) fn write_new(path: &Path, save: NewSave<'_>) -> Result<(), SaveError> {
+pub(super) fn write_new(path: &Path, save: NewSave) -> Result<(), SaveError> {
     let mut connection = connect(path)?;
     connection
         .run_pending_migrations(MIGRATIONS)
@@ -36,11 +37,11 @@ pub(super) fn write_new(path: &Path, save: NewSave<'_>) -> Result<(), SaveError>
         .map_err(storage)
 }
 
-fn insert_world(connection: &mut SqliteConnection, save: NewSave<'_>) -> QueryResult<()> {
+fn insert_world(connection: &mut SqliteConnection, save: NewSave) -> QueryResult<()> {
     let NewSave { meta, world, texts } = save;
-    insert_places(connection, world)?;
-    insert_teams(connection, world)?;
-    insert_people(connection, world)?;
+    insert_places(connection, &world)?;
+    insert_teams(connection, &world)?;
+    insert_people(connection, &world.roles, world.players)?;
     let SaveMeta {
         name,
         manager_name,
@@ -56,12 +57,12 @@ fn insert_world(connection: &mut SqliteConnection, save: NewSave<'_>) -> QueryRe
     diesel::insert_into(save_meta::table)
         .values(SaveMetaRow {
             id: 1,
-            name: name.clone(),
-            manager_name: manager_name.clone(),
+            name,
+            manager_name,
             team_id: team.to_string(),
-            genre: rows::genre_to_db(*genre).to_owned(),
+            genre: rows::genre_to_db(genre).to_owned(),
             seed: rows::seed_to_db(seed.value()),
-            game_version: game_version.clone(),
+            game_version,
             game_date: game_date.to_string(),
             created_at: created_at.0,
             last_played_at: last_played_at.0,
@@ -69,13 +70,13 @@ fn insert_world(connection: &mut SqliteConnection, save: NewSave<'_>) -> QueryRe
         .execute(connection)?;
 
     let package_rows = package_records
-        .iter()
+        .into_iter()
         .enumerate()
         .map(|(index, record)| {
             Ok(PackageRow {
-                id: record.id.clone(),
+                id: record.id,
                 position: rows::position(index)?,
-                version: record.version.clone(),
+                version: record.version,
                 content_hash: record.content_hash.to_vec(),
             })
         })
@@ -86,16 +87,16 @@ fn insert_world(connection: &mut SqliteConnection, save: NewSave<'_>) -> QueryRe
         .execute(connection)?;
 
     let text_rows: Vec<TextRow> = texts
-        .iter()
+        .into_iter()
         .map(
             |ContentText {
                  locale,
                  file,
                  source,
              }| TextRow {
-                locale: locale.clone(),
-                file: file.clone(),
-                source: source.clone(),
+                locale,
+                file,
+                source,
             },
         )
         .collect();
@@ -187,9 +188,12 @@ fn insert_teams(connection: &mut SqliteConnection, world: &World) -> QueryResult
     Ok(())
 }
 
-fn insert_people(connection: &mut SqliteConnection, world: &World) -> QueryResult<()> {
-    let role_rows = world
-        .roles
+fn insert_people(
+    connection: &mut SqliteConnection,
+    roles: &RoleSet,
+    players: Vec<Player>,
+) -> QueryResult<()> {
+    let role_rows = roles
         .roles()
         .iter()
         .enumerate()
@@ -200,9 +204,8 @@ fn insert_people(connection: &mut SqliteConnection, world: &World) -> QueryResul
         .values(&role_rows)
         .execute(connection)?;
 
-    let player_rows = world
-        .players
-        .iter()
+    let player_rows = players
+        .into_iter()
         .enumerate()
         .map(|(index, player)| PlayerRow::from_domain(player, index))
         .collect::<Result<Vec<_>, _>>()

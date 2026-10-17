@@ -336,7 +336,7 @@ pub struct PlayerRow {
 }
 
 impl PlayerRow {
-    pub fn from_domain(player: &Player, index: usize) -> Result<Self, SaveError> {
+    pub fn from_domain(player: Player, index: usize) -> Result<Self, SaveError> {
         let Player {
             id,
             team,
@@ -354,10 +354,10 @@ impl PlayerRow {
             position: position(index)?,
             team_id: team.to_string(),
             role_id: role.to_string(),
-            starter: *starter,
-            nickname: nickname.clone(),
-            given_name: given_name.clone(),
-            family_name: family_name.clone(),
+            starter,
+            nickname,
+            given_name,
+            family_name,
             nationality_id: nationality.to_string(),
             birth_date: birth_date.to_string(),
             mechanics: hundredths(skills.mechanics),

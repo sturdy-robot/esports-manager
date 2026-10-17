@@ -50,8 +50,13 @@ pub fn texts() -> Vec<ContentText> {
     ]
 }
 
-pub fn new_save<'a>(meta: &'a SaveMeta, world: &'a World, texts: &'a [ContentText]) -> NewSave<'a> {
-    NewSave { meta, world, texts }
+/// A copy of the parts, so a test can write the same world twice.
+pub fn new_save(meta: &SaveMeta, world: &World, texts: &[ContentText]) -> NewSave {
+    NewSave {
+        meta: meta.clone(),
+        world: world.clone(),
+        texts: texts.to_vec(),
+    }
 }
 
 /// An empty folder unique to one test.
