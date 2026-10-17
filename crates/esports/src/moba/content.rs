@@ -47,7 +47,7 @@ pub struct RosterRules {
 
 /// The generator's constants (world generation spec): the genre-agnostic
 /// ones, and how MOBA skills spread around a player's base.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GenerationParams {
     pub common: Constants,
     /// Spread of each attribute that counts toward overall around the

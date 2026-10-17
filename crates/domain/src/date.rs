@@ -15,7 +15,7 @@ pub struct GameDate {
 }
 
 /// A year, month and day that don't form a supported date.
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum DateError {
     #[error("`{0}` is not a date written as YYYY-MM-DD")]
     Format(String),

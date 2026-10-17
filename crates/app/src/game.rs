@@ -64,7 +64,7 @@ pub fn new_game_options(content: &impl ContentSource) -> Result<NewGameOptions, 
 }
 
 /// What the user asks New Game for.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct NewGameRequest {
     pub manager_name: String,
     pub team: String,
@@ -100,7 +100,7 @@ pub enum RequestProblem {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum NewGameError {
     Invalid(Vec<RequestProblem>),
     Package(Vec<PackageError>),
@@ -317,7 +317,7 @@ const fn damage_view(damage: Damage) -> DamageView {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum QueryError {
     UnknownTeam(String),
     UnknownPlayer(String),

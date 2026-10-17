@@ -55,7 +55,7 @@ pub struct RegionOption {
 }
 
 /// What New Game offers.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[derive(Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NewGameOptions {
     pub regions: Vec<RegionOption>,
@@ -125,7 +125,7 @@ pub struct RosterPlayer {
 }
 
 /// The roster screen: starters, then subs, each in role-set order.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[derive(Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RosterView {
     pub team: TeamHeader,
@@ -141,7 +141,7 @@ pub struct AttributeView {
     pub value: Option<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[derive(Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerProfile {
     pub player: RosterPlayer,
@@ -162,7 +162,7 @@ pub enum DamageView {
 }
 
 /// One entry of Load Game.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[derive(Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase", tag = "status")]
 pub enum SaveSummary {
     #[serde(rename_all = "camelCase")]
@@ -184,7 +184,7 @@ pub enum SaveSummary {
 }
 
 /// The save that is now open: the result of New Game and Load Game.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[derive(Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GameOpened {
     pub file: String,
@@ -205,7 +205,7 @@ impl GameOpened {
 }
 
 /// A use case's failure, as messages an adapter can show.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[derive(Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Failure {
     pub messages: Vec<Message>,

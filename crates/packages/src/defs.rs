@@ -11,7 +11,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 
 /// `manifest.json`.
-#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ManifestDef {
     #[serde(rename = "$schema", default)]
@@ -32,7 +32,7 @@ pub struct ManifestDef {
 }
 
 /// `world.json`.
-#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct WorldDef {
     #[serde(rename = "$schema", default)]
@@ -43,7 +43,7 @@ pub struct WorldDef {
 }
 
 /// A region, in `regions/`.
-#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RegionDef {
     #[serde(rename = "$schema", default)]
@@ -64,7 +64,7 @@ pub enum NameOrderDef {
 }
 
 /// A nationality, in `nationalities/`.
-#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NationalityDef {
     #[serde(rename = "$schema", default)]
@@ -77,7 +77,7 @@ pub struct NationalityDef {
 }
 
 /// Given and family names of one nationality, in `name-pools/`.
-#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NamePoolDef {
     #[serde(rename = "$schema", default)]
@@ -89,7 +89,7 @@ pub struct NamePoolDef {
 }
 
 /// Nicknames, in `nicknames/`. All pools are merged into one.
-#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NicknamePoolDef {
     #[serde(rename = "$schema", default)]
@@ -99,7 +99,7 @@ pub struct NicknamePoolDef {
 }
 
 /// A league, in `competitions/`.
-#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CompetitionDef {
     #[serde(rename = "$schema", default)]
@@ -110,7 +110,7 @@ pub struct CompetitionDef {
 }
 
 /// A team, in `teams/`.
-#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TeamDef {
     #[serde(rename = "$schema", default)]
@@ -161,7 +161,7 @@ pub struct PinnedAttributesDef {
 
 /// A player pinned by hand, in `players/`. Every field left out is
 /// generated.
-#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PlayerDef {
     #[serde(rename = "$schema", default)]
@@ -205,7 +205,7 @@ pub struct RoleDef {
 }
 
 /// The role set and roster shape, in `roles/`. A package defines exactly one.
-#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RoleSetDef {
     #[serde(rename = "$schema", default)]
@@ -219,7 +219,7 @@ pub struct RoleSetDef {
 
 /// The generator's constants, in `generation/`. A package defines exactly
 /// one. See the world generation spec for what each one does.
-#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct GenerationDef {
     #[serde(rename = "$schema", default)]

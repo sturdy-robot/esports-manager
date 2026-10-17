@@ -166,7 +166,7 @@ fn exactly_one<D, V>(
 }
 
 /// The package in a directory, as the application's content source.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PackageDir(pub std::path::PathBuf);
 
 impl app::content::ContentSource for PackageDir {

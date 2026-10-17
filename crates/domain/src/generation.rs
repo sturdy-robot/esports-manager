@@ -19,7 +19,7 @@ use crate::world::{NamePool, Region, Reputation};
 
 /// The generator's genre-agnostic constants (`generation/` in a package).
 /// Starting values, to be tuned in sim-bench.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Constants {
     /// The team mean is `mu_base` + `mu_per_reputation` × reputation + region level.
     pub mu_base: f64,
@@ -91,7 +91,7 @@ pub fn birth_date(rng: &mut impl Rng, constants: &Constants, start: GameDate) ->
 
 /// Why a nationality or name couldn't be drawn. A package that loaded rules
 /// both out.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum DrawError {
     /// The region has no nationality to draw.
     EmptyMix(ContentId),
@@ -100,7 +100,7 @@ pub enum DrawError {
 }
 
 /// Who a player is: nationality and names.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Identity {
     pub nationality: ContentId,
     pub given_name: String,
@@ -109,7 +109,7 @@ pub struct Identity {
 
 /// Given and family names by nationality, every pool merged and sorted, so
 /// how a package splits its files never changes the world.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct NamePools<'a> {
     names: BTreeMap<&'a ContentId, (Vec<&'a str>, Vec<&'a str>)>,
 }
@@ -220,7 +220,7 @@ const NICKNAME_TRIES: u32 = 32;
 /// matters. Each player draws from the whole pool and redraws only when the
 /// nickname is taken, so another player changes it only by taking the very
 /// one drawn (world generation spec).
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Nicknames<'a> {
     pool: Vec<&'a str>,
     taken: BTreeSet<usize>,

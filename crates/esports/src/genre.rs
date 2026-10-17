@@ -27,7 +27,7 @@ impl fmt::Display for Genre {
 }
 
 /// A genre identifier that no supported genre uses.
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
 #[error("unknown genre id `{id}`")]
 pub struct UnknownGenre {
     pub id: String,

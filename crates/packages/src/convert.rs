@@ -32,7 +32,7 @@ use crate::parse::{Entry, join};
 use app::content::{PackageError, Problem};
 
 /// A converted value and where it came from, for later cross-checks.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Located<T> {
     pub file: String,
     pub path: String,
