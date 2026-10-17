@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Gathers the real environment for [`app::locations::resolve`], and makes
 //! sure the chosen folders can be written (saves spec).
 

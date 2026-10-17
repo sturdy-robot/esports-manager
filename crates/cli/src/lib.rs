@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Headless adapter: play, script and benchmark the game without the UI
 //! (ADR 0001). It translates arguments, calls use cases in `app`, and prints.
 //!

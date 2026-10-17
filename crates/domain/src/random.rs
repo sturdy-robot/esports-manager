@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Draws from a random stream (ADR 0003).
 //!
 //! Domain code receives a stream and never creates one. Every draw here gives

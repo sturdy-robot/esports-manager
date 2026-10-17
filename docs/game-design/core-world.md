@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # The core world
 
 This is the content `content/core` ships for the walking skeleton. Every name here is original (ADR 0010). The two regions are *inspired by* the Korean and Brazilian scenes, but borrow nothing from their leagues, teams or players. Review should still check each name against real organizations before it is committed.

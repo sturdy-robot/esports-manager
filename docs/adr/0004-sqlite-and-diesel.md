@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # 0004. SQLite as the source of truth, accessed through Diesel
 
 - **Status:** Accepted

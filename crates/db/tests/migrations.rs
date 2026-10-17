@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Every schema version keeps a fixture save, and every later version must
 //! open it (ADR 0004). The fixture for a version is written once, when its
 //! migration lands, and never regenerated: `UPDATE_FIXTURES=1` only writes

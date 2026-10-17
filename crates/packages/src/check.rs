@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Checks across entities: unique ids, references that resolve, text that
 //! exists, and content the generator can always use (packages and world
 //! generation specs). A package that passes never makes New Game fail.

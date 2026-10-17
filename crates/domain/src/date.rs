@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! In-game calendar dates (ADR 0003: no wall-clock in the domain).
 //!
 //! Dates are proleptic Gregorian, with no time zone. The day-number

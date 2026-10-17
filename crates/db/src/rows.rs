@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Row types: the only place Diesel types meet domain types (ADR 0001 rule
 //! 3). Every conversion is written out field by field, and every enum maps
 //! through one exhaustive function each way (ADR 0004).

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Every error message the use cases build formats cleanly through the
 //! game's catalogs: each variable its text names is passed, with the right
 //! kind of value, in every locale (ADR 0007). The examples cover every

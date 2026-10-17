@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 ## Erros do Novo Jogo, dos jogos salvos e das consultas.
 
 error-manager-name-empty = Digite o nome do treinador.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Architecture test: the crate graph matches ADR 0001.
 
 use std::collections::{BTreeMap, BTreeSet};

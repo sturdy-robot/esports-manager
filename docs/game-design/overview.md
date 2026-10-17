@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Game design overview
 
 This document is the shared understanding of what eSports Manager is. It was agreed in the October 2026 design sessions that started the Rust rewrite. Detailed rules live in [specs](../specs/README.md), structural decisions in [ADRs](../adr/README.md).

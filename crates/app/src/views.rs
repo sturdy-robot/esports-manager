@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! View DTOs: exactly what each screen shows, already derived (ADR 0006).
 //! The CLI's `--json` prints them as they are, so the CLI and the UI see the
 //! same view. Fields holding a Fluent message id end in `message`.

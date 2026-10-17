@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 ## A CLI sem interface, `esm` (especificação do novo jogo).
 
 cli-region = { $region } · { $league }

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The core package through the generator: the scenarios that hold for any
 //! world built from it, and the snapshot that must match on every OS.
 

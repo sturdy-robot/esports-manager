@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Classifying a package's files and deserializing each one into its
 //! [`defs`](crate::defs) type. Every problem is collected; nothing stops at
 //! the first error.

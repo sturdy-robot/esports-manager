@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Where the game keeps its files (saves spec).
 //!
 //! The choice is one pure function of the environment, so the CLI and the

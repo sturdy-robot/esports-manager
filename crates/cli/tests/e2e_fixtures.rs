@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The browser E2E tests answer with views the real backend produced:
 //! `src/test/fixtures/*.json`, made by this CLI from the core package: Ana's
 //! Azure Tigers from seed 42, and Bia's Onça Gaming from seed 7. This test fails when a view changes and the fixtures don't. Set

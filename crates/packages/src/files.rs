@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Reading a package directory into memory.
 //!
 //! Everything after this works on [`PackageFiles`], so the loader's rules are

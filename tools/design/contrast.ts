@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /** WCAG contrast checks over the design tokens (ADR 0006). */
 
 /** WCAG 2.x minimum contrast for normal-size text (level AA). */

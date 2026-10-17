@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Tauri commands. Commands live in a module, not at the crate root, because
 //! the command macros re-export helper items that clash at the root. Each one
 //! locks the desktop state and makes one call into it.

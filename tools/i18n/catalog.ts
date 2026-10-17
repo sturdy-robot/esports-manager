@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /**
  * Reads Fluent catalogs into a comparable shape: every entry (message or
  * term) with the variables it uses (ADR 0007).

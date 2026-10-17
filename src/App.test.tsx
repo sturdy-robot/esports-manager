@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";

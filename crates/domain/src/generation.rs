@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The genre-agnostic half of world generation (world generation spec,
 //! ADR 0002): team strength, ages and birth dates, nationality and names,
 //! nicknames, and the core traits every genre's players have. A genre's

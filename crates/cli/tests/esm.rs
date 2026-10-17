@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The `esm` binary end to end: the backend's end-to-end tests (ADR 0001).
 #![allow(clippy::unwrap_used, reason = "integration test helpers")]
 

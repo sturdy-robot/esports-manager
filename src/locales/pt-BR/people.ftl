@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 ## Pessoas, o elenco e o perfil do jogador.
 
 # $order é "given-first" ou "family-first", conforme a nacionalidade.

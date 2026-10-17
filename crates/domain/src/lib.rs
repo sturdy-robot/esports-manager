@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Genre-agnostic core of eSports Manager.
 //!
 //! Pure Rust: no IO, no wall-clock, no global randomness (ADR 0001, ADR 0003).

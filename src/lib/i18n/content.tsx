@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /**
  * Text whose message id comes from the backend (ADR 0007): DTO fields ending
  * in `Message`, and the `Message` values use cases return. This is the only

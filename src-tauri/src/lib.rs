@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Desktop adapter (ADR 0001). Each command translates its input, calls one
 //! use case in `app`, and returns a view DTO. No game rules live here.
 
@@ -178,6 +182,11 @@ mod tests {
         assert_eq!(roster["error"]["messages"][0]["id"], "error-no-save-open");
     }
 
+    // REUSE-IgnoreStart
+    /// The generated bindings' licence header (ADR 0012).
+    const BINDINGS_HEADER: &str = "// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>\n//\n// SPDX-License-Identifier: GPL-3.0-or-later\n";
+    // REUSE-IgnoreEnd
+
     /// The committed bindings must match the commands (ADR 0006). Set
     /// `UPDATE_BINDINGS=1` to rewrite them (`just bindings`).
     #[test]
@@ -186,7 +195,10 @@ mod tests {
         let generated =
             std::env::temp_dir().join(format!("esm-bindings-{}.ts", std::process::id()));
         super::specta_builder::<tauri::Wry>()
-            .export(specta_typescript::Typescript::default(), &generated)
+            .export(
+                specta_typescript::Typescript::default().header(BINDINGS_HEADER),
+                &generated,
+            )
             .unwrap();
         let generated_text = std::fs::read_to_string(&generated).unwrap();
         std::fs::remove_file(&generated).unwrap();

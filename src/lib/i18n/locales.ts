@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 import { negotiateLanguages } from "@fluent/langneg";
 
 /** Locales the game ships, complete for every message (ADR 0007). */

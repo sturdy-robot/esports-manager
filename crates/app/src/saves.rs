@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The save port (saves spec): what the application needs from storage. The
 //! `db` crate implements it with one SQLite file per save.
 

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! A small, valid world template for tests in other crates: one region,
 //! two teams, one pinned player. Enabled by the `test-support` feature.
 #![allow(

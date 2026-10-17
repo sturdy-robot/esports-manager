@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /**
  * The repository-wide i18n gates (ADR 0007). They run with the other tests,
  * so `just check` and CI fail on any violation.

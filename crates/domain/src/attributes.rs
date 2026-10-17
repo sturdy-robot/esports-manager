@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The attributes every genre shares (attributes spec).
 //!
 //! Genre modules add their own skills. These are the traits, which describe
