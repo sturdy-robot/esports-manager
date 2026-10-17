@@ -10,7 +10,13 @@
   "birth_date": "1997-03-14",
   "attributes": {
     "mechanics": 95,
+    "laning": 96,
     "game_sense": 97,
+    "awareness": 97,
+    "positioning": 95,
+    "champion_pool_breadth": 98,
+    "shotcalling": 96,
+    "teamwork": 95,
     "composure": 96
   }
 }
