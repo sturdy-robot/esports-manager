@@ -22,7 +22,7 @@
       "nameMessage": "nationality-kr"
     },
     "nickname": "Kairos",
-    "overall": 83,
+    "overall": 96,
     "roleId": "role:mid",
     "roleMessage": "role-mid"
   },
@@ -33,7 +33,7 @@
     },
     {
       "nameMessage": "attribute-laning",
-      "value": 76
+      "value": 96
     },
     {
       "nameMessage": "attribute-game-sense",
@@ -41,19 +41,19 @@
     },
     {
       "nameMessage": "attribute-awareness",
-      "value": 80
+      "value": 97
     },
     {
       "nameMessage": "attribute-positioning",
-      "value": 69
+      "value": 95
     },
     {
       "nameMessage": "attribute-champion-pool-breadth",
-      "value": 68
+      "value": 98
     },
     {
       "nameMessage": "attribute-shotcalling",
-      "value": 71
+      "value": 96
     }
   ],
   "starter": true,
@@ -72,7 +72,7 @@
   "traits": [
     {
       "nameMessage": "attribute-teamwork",
-      "value": 77
+      "value": 95
     },
     {
       "nameMessage": "attribute-aggression",

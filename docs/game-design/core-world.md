@@ -64,16 +64,16 @@ Seorabeol is the old name of the Silla capital, from which "Seoul" comes. Pindor
 
 ## Special players
 
-You decided on a few hand-made special cases, including a star inspired by Faker. Each one pins only what makes them special; the generator fills in the rest ([world generation](../specs/world-generation.md)).
+You decided on a few hand-made special cases, including a star inspired by Faker. Each one pins only what makes them special; the generator fills in the rest ([world generation](../specs/world-generation.md)). Kairos is the exception: he pins every attribute that counts toward a mid's overall, so his overall is 96 in every world.
 
 | Nickname | Name | Country | Role | Team | Born (age at start) | Pinned |
 |---|---|---|---|---|---|---|
-| Kairos | Han Do-yun | KR | Mid | Azure Tigers | 1997-03-14 (29) | Mechanics 95, Game Sense 97, Composure 96 |
+| Kairos | Han Do-yun | KR | Mid | Azure Tigers | 1997-03-14 (29) | Mechanics 95, Laning 96, Game Sense 97, Awareness 97, Positioning 95, Champion Pool Breadth 98, Shotcalling 96, Teamwork 95, Composure 96 (overall 96) |
 | Faisca | Caio Ribeiro | BR | Bot | Onça Gaming | 2009-08-20 (17) | Potential 94 |
 | Monsoon | Park Ji-hoon | KR | Support | Tempestade | 1998-11-02 (28) | Shotcalling 90, Teamwork 88, Mechanics 62 |
 | Wildfire | Choi Min-jae | KR | Bot | Crimson Dynasty | 2004-05-09 (22) | Aggression 96, Consistency 25, Mechanics 88 |
 
-- **Kairos** is the generational mid star, a veteran at the top of the strongest team.
+- **Kairos** is the generational mid star, a veteran at the top of the strongest team, and the best player in the world.
 - **Faisca** is the teenage prodigy: middling skills for now, with one of the highest ceilings in the world.
 - **Monsoon** is the veteran import: a Korean shotcaller in Pindorama whose hands are slowing down.
 - **Wildfire** is the volatile carry: brilliant mechanics and a hidden Consistency of 25.
