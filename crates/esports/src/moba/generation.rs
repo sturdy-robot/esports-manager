@@ -51,34 +51,47 @@ pub enum GenerationError {
 /// When the template refers to something it doesn't define, or can't
 /// supply a draw. A template from a package that loaded never fails.
 pub fn generate(
-    template: &WorldTemplate,
+    mut template: WorldTemplate,
     streams: &impl StreamSource,
 ) -> Result<World, GenerationError> {
-    let mut teams = template.teams.clone();
-    teams.sort_by(|a, b| a.id.cmp(&b.id));
+    template.teams.sort_by(|a, b| a.id.cmp(&b.id));
     if let Some(stray) = template
         .players
         .iter()
-        .find(|p| !teams.iter().any(|t| t.id == p.team))
+        .find(|p| !template.teams.iter().any(|t| t.id == p.team))
     {
         return Err(GenerationError::Unknown(stray.team.clone()));
     }
-    let generator = Generator::new(template);
+    let generator = Generator::new(&template);
 
     let mut players = Vec::new();
-    for team in &teams {
+    for team in &template.teams {
         players.extend(generator.team(team, streams)?);
     }
-    assign_nicknames(template, &mut players, streams)?;
-    pick_starters(template, &mut players);
+    assign_nicknames(&template, &mut players, streams)?;
+    pick_starters(&template, &mut players);
 
-    Ok(World {
-        settings: template.settings,
-        regions: template.regions.clone(),
-        nationalities: template.nationalities.clone(),
-        competitions: template.competitions.clone(),
+    // What only generation needs stays behind.
+    let WorldTemplate {
+        settings,
+        regions,
+        nationalities,
+        name_pools: _,
+        nicknames: _,
+        competitions,
         teams,
-        roles: template.roles.clone(),
+        players: _,
+        roles,
+        roster: _,
+        generation: _,
+    } = template;
+    Ok(World {
+        settings,
+        regions,
+        nationalities,
+        competitions,
+        teams,
+        roles,
         players,
     })
 }

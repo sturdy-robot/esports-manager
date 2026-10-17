@@ -132,7 +132,8 @@ pub fn new_game(
         team,
         seed,
     } = validate(request, &package, &taken).map_err(NewGameError::Invalid)?;
-    let world = generate(&package.template, &RngProvider::new(WorldSeed::new(seed)))
+    let game_date = package.template.settings.start_date;
+    let world = generate(package.template, &RngProvider::new(WorldSeed::new(seed)))
         .map_err(NewGameError::Generation)?;
     let meta = SaveMeta {
         name: save_name,
@@ -141,7 +142,7 @@ pub fn new_game(
         genre: package.manifest.genre,
         seed: WorldSeed::new(seed),
         game_version: crate::about().version,
-        game_date: package.template.settings.start_date,
+        game_date,
         created_at: request.now,
         last_played_at: request.now,
         packages: vec![PackageRecord {

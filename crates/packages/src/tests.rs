@@ -1397,7 +1397,7 @@ fn a_pinned_nationality_needs_names() {
     );
     let package = fixture.load().unwrap();
     let world = esports::moba::generation::generate(
-        &package.template,
+        package.template,
         &app::rng::RngProvider::new(domain::rng::WorldSeed::new(1)),
     )
     .unwrap();
