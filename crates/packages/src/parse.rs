@@ -44,10 +44,6 @@ impl<T> Entry<T> {
     pub fn at(&self, field: &str) -> String {
         join(&self.path, field)
     }
-
-    pub fn error(&self, field: &str, problem: Problem) -> PackageError {
-        PackageError::new(&self.file, self.at(field), problem)
-    }
 }
 
 #[derive(Debug, Default)]

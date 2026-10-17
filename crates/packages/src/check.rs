@@ -30,13 +30,53 @@ pub struct Content<'a> {
     pub start_date: Option<GameDate>,
 }
 
-pub fn check(parsed: &Parsed, content: &Content<'_>, errors: &mut Vec<PackageError>) {
+/// What the definitions declare, as written. It is read before conversion
+/// takes the definitions apart, and an entity that failed to convert for an
+/// unrelated reason still counts: references to it don't cascade into a
+/// second, misleading error, and a manifest with an unrelated mistake
+/// doesn't hide every text problem.
+pub struct Declared {
+    regions: BTreeSet<ContentId>,
+    nationalities: BTreeSet<ContentId>,
+    teams: BTreeSet<ContentId>,
+    /// `None` when the package has no role set.
+    roles: Option<BTreeSet<ContentId>>,
+    /// `None` when the package has no manifest.
+    locales: Option<Vec<String>>,
+}
+
+/// Checks that ids are unique, and reads what the definitions declare.
+pub fn declared(parsed: &Parsed, errors: &mut Vec<PackageError>) -> Declared {
     duplicates(parsed, errors);
-    references(parsed, content, errors);
-    // The locales come from the manifest as written, so a manifest with an
-    // unrelated mistake doesn't hide every text problem.
-    if let Some(manifest) = &parsed.manifest {
-        text(&parsed.texts, content, &manifest.def.locales, errors);
+    let roles = (!parsed.role_sets.is_empty()).then(|| {
+        parsed
+            .role_sets
+            .iter()
+            .flat_map(|set| &set.def.roles)
+            .filter_map(|role| ContentId::parse(&role.id).ok())
+            .collect()
+    });
+    Declared {
+        regions: defined(&parsed.regions, |d| &d.id),
+        nationalities: defined(&parsed.nationalities, |d| &d.id),
+        teams: defined(&parsed.teams, |d| &d.id),
+        roles,
+        locales: parsed
+            .manifest
+            .as_ref()
+            .map(|manifest| manifest.def.locales.clone()),
+    }
+}
+
+pub fn check(
+    declared: &Declared,
+    texts: &[ContentText],
+    content: &Content<'_>,
+    errors: &mut Vec<PackageError>,
+) {
+    references(declared, content, errors);
+    if let Some(locales) = &declared.locales {
+        text(texts, content, locales, errors);
     }
     mixes_and_pools(content, errors);
     duplicate_nicknames(content, errors);
@@ -94,9 +134,7 @@ fn duplicates(parsed: &Parsed, errors: &mut Vec<PackageError>) {
     }
 }
 
-/// The ids a package defines, as written: an entity that failed to convert
-/// for an unrelated reason still exists, so references to it don't cascade
-/// into a second, misleading error.
+/// The ids a package defines, as written.
 fn defined<T>(entries: &[Entry<T>], id: impl Fn(&T) -> &str) -> BTreeSet<ContentId> {
     entries
         .iter()
@@ -104,18 +142,14 @@ fn defined<T>(entries: &[Entry<T>], id: impl Fn(&T) -> &str) -> BTreeSet<Content
         .collect()
 }
 
-fn references(parsed: &Parsed, content: &Content<'_>, errors: &mut Vec<PackageError>) {
-    let regions = defined(&parsed.regions, |d| &d.id);
-    let nationalities = defined(&parsed.nationalities, |d| &d.id);
-    let teams = defined(&parsed.teams, |d| &d.id);
-    let roles: Option<BTreeSet<ContentId>> = (!parsed.role_sets.is_empty()).then(|| {
-        parsed
-            .role_sets
-            .iter()
-            .flat_map(|set| &set.def.roles)
-            .filter_map(|role| ContentId::parse(&role.id).ok())
-            .collect()
-    });
+fn references(declared: &Declared, content: &Content<'_>, errors: &mut Vec<PackageError>) {
+    let Declared {
+        regions,
+        nationalities,
+        teams,
+        roles,
+        locales: _,
+    } = declared;
 
     let mut require = |set: &BTreeSet<ContentId>,
                        at: &dyn Fn(Problem) -> PackageError,
@@ -133,7 +167,7 @@ fn references(parsed: &Parsed, content: &Content<'_>, errors: &mut Vec<PackageEr
         for (nationality, _) in &region.value.nationalities {
             let field = format!("nationalities.{nationality}");
             require(
-                &nationalities,
+                nationalities,
                 &|p| region.error(&field, p),
                 &field,
                 nationality,
@@ -142,7 +176,7 @@ fn references(parsed: &Parsed, content: &Content<'_>, errors: &mut Vec<PackageEr
     }
     for pool in content.name_pools {
         require(
-            &nationalities,
+            nationalities,
             &|p| pool.error("nationality", p),
             "nationality",
             &pool.value.nationality,
@@ -151,19 +185,19 @@ fn references(parsed: &Parsed, content: &Content<'_>, errors: &mut Vec<PackageEr
     for competition in content.competitions {
         let value = &competition.value;
         require(
-            &regions,
+            regions,
             &|p| competition.error("region", p),
             "region",
             &value.region,
         );
         for (index, team) in value.teams.iter().enumerate() {
             let field = format!("teams[{index}]");
-            require(&teams, &|p| competition.error(&field, p), &field, team);
+            require(teams, &|p| competition.error(&field, p), &field, team);
         }
     }
     for team in content.teams {
         require(
-            &regions,
+            regions,
             &|p| team.error("region", p),
             "region",
             &team.value.region,
@@ -171,13 +205,13 @@ fn references(parsed: &Parsed, content: &Content<'_>, errors: &mut Vec<PackageEr
     }
     for player in content.players {
         let value = &player.value;
-        require(&teams, &|p| player.error("team", p), "team", &value.team);
-        if let Some(roles) = &roles {
+        require(teams, &|p| player.error("team", p), "team", &value.team);
+        if let Some(roles) = roles {
             require(roles, &|p| player.error("role", p), "role", &value.role);
         }
         if let Some(nationality) = &value.nationality {
             require(
-                &nationalities,
+                nationalities,
                 &|p| player.error("nationality", p),
                 "nationality",
                 nationality,
