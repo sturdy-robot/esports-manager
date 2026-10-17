@@ -264,14 +264,14 @@ pub fn find_save(store: &impl SaveStore, wanted: &str) -> Result<String, QueryEr
         return Ok(wanted.to_owned());
     }
     let lowered = wanted.to_lowercase();
-    let mut named = listings.iter().filter(|listing| {
+    let mut named = listings.into_iter().filter(|listing| {
         listing
             .save
             .as_ref()
             .is_ok_and(|meta| meta.name.to_lowercase() == lowered)
     });
     match (named.next(), named.next()) {
-        (Some(only), None) => Ok(only.file.clone()),
+        (Some(only), None) => Ok(only.file),
         (Some(_), Some(_)) => Err(QueryError::AmbiguousSave(wanted.to_owned())),
         (None, _) => Err(QueryError::Save(SaveError::NotFound(wanted.to_owned()))),
     }
