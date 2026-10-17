@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Enforced quality configuration, read by `cargo xtask`.
 #
 # These numbers and lists are the gates described in the ADRs. Weakening one

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 ## O menu principal, Novo Jogo, Carregar Jogo e as telas do elenco
 ## (especificações do novo jogo e do elenco).
 

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /**
  * Dates as the UI's language writes them. The backend sends a calendar date
  * (`2027-01-01`, no time zone) or a moment (seconds since the Unix epoch);

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # 0005. `.esm` content packages
 
 - **Status:** Accepted

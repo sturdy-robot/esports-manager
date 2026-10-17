@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Seed material for deterministic random streams (ADR 0003).
 //!
 //! A world has one [`WorldSeed`]. Each consumer of randomness derives its own

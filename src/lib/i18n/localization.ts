@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 import { FluentBundle, FluentResource } from "@fluent/bundle";
 import { ReactLocalization } from "@fluent/react";
 import type { ContentText } from "../../bindings";

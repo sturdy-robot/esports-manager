@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /**
  * Smoke test of the real desktop binary through tauri-driver (ADR 0008):
  * the app starts, the frontend loads, a command reaches the Rust side, and

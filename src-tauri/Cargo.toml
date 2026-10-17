@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 [package]
 name = "esports-manager"
 description = "eSports Manager desktop app: a thin Tauri adapter over the `app` crate (ADR 0001)"

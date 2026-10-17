@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! `schema.rs` must match the migrations (ADR 0004). Diesel's CLI writes it
 //! (`just db-schema`); this test compares the committed copy with a database
 //! migrated from scratch, so CI needs no CLI. It compares each table's

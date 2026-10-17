@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Dependency install scripts are blocked unless listed here.
 # lefthook: git hooks are installed on request with `just hooks`, not on install.
 allowBuilds:

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # NNNN. Title in the imperative or as a noun phrase
 
 - **Status:** Proposed | Accepted | Superseded by NNNN

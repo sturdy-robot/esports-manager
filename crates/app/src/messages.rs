@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Text the backend asks an adapter to show: a Fluent message id and typed
 //! arguments, never prose (ADR 0007).
 //!

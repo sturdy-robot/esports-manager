@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Writing a new save: the whole world in one transaction, into a temporary
 //! file that is then moved into place without ever replacing a file.
 

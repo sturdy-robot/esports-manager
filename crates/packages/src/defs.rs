@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The package file format: one Rust type per content type, from which the
 //! loader deserializes and the JSON Schemas are generated (ADR 0005). These
 //! types are the single definition of the format.

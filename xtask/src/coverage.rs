@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Per-crate line coverage gate (ADR 0008), reading a `cargo llvm-cov --json`
 //! report.
 

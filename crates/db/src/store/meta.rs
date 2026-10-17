@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Connections, the version check, and reading `save_meta`.
 //!
 //! The metadata is read with plain SQL naming each column, in the order a

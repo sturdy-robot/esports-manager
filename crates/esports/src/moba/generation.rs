@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The world generator (world generation spec).
 //!
 //! Each team draws from its own stream (`generator:team:<team id>`), each

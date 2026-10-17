@@ -1,3 +1,7 @@
+-- SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+--
+-- SPDX-License-Identifier: GPL-3.0-or-later
+
 -- The first save schema: the world a New Game generates (saves spec).
 -- Ids are the content's stable string ids. `position` keeps the order the
 -- world was built in, so every query can order by it (ADR 0003).

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Converts each package definition into its domain type.
 //!
 //! Every definition is destructured exhaustively, so a new field that isn't

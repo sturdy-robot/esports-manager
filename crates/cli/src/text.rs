@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Renders [`Message`]s as text through Fluent (ADR 0007): the game's own
 //! catalogs from `src/locales`, built into the binary, plus a package's text.
 //! A message missing in the chosen locale falls back to `en`.

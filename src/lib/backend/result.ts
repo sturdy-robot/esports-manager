@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 import type { Failure, Message } from "../../bindings";
 
 /** A use case failed; its messages say why (ADR 0007). */

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Specs
 
 A spec describes one feature or system: what it does, its rules, its data, its UI, and the scenarios that prove it works. The process is set out in [ADR 0009](../adr/0009-specs-and-traceability.md). Copy [`TEMPLATE.md`](TEMPLATE.md) to start a new spec.

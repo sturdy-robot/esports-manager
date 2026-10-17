@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The role set, overall, and role bias (attributes spec).
 //!
 //! Roles are package data: the core package has five, but a package can

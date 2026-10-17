@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Stable string ids for content, such as `team:azure_tigers` (ADR 0005).
 //!
 //! An id is a kind and a slug separated by `:`. Packages write slugs with

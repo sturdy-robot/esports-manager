@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # MVP scope (0.1.0)
 
 The MVP is the smallest thing that is a game: one MOBA split, played from New Game to the end-of-split evaluation.

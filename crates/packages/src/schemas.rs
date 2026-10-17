@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! JSON Schemas for package files, generated from [`defs`](crate::defs)
 //! (ADR 0005). The committed copies live in `content/schemas/`.
 

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /** Shared class lists, so buttons and links look the same everywhere. */
 export const primaryButton =
   "inline-flex min-h-11 items-center justify-center rounded-md bg-accent-strong px-4 font-semibold text-on-accent hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-accent-text focus-visible:outline-offset-2 disabled:opacity-50 aria-disabled:opacity-50";

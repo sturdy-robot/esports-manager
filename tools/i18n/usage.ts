@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /**
  * Finds which Fluent messages the UI code uses, and user-visible text that
  * bypasses Fluent (ADR 0007).

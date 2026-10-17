@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 ## Problemas de pacote (especificação de pacotes). Todos têm $file e $path:
 ## o arquivo dentro do pacote e o lugar nele.
 

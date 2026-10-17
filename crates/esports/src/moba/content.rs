@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! MOBA content a package defines beyond the shared world structure: pinned
 //! players, the roster shape and the generator's constants.
 

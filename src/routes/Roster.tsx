@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 import { Localized, useLocalization } from "@fluent/react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { RosterPlayer, TeamHeader as TeamHeaderView } from "../bindings";

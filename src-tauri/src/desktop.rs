@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! What the desktop app holds while it runs: the save store, the content it
 //! builds new worlds from, and the save the player has open. Every command
 //! is one call into here, so the adapter's behaviour is tested without a

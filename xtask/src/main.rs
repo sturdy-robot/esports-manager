@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Repository checks that no off-the-shelf tool covers (ADR 0008).
 //!
 //! Each check prints its violations and exits non-zero if there are any.

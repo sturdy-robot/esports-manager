@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Every quality gate, runnable locally exactly as CI runs it (ADR 0008).
 # `just` lists the recipes; `just check` runs them all.
 
@@ -130,6 +134,19 @@ machete:
 
 reuse:
     reuse lint
+
+# `reuse` reads `.ftl` as FreeMarker, so Fluent files get `#` comments by hand.
+# Writes the licence header into new files (ADR 0012): `just annotate a.rs b.ts`.
+annotate +files:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    args=(--copyright="Pedrenrique G. Guimarães <admin@esportsmanager.net>" --year="$(date +%Y)" --license=GPL-3.0-or-later --skip-existing)
+    for file in {{files}}; do
+        case "$file" in
+            *.ftl | justfile) reuse annotate "${args[@]}" --style=python "$file" ;;
+            *) reuse annotate "${args[@]}" "$file" ;;
+        esac
+    done
 
 # Mutation testing on the code changed since `base` (ADR 0008).
 mutants:

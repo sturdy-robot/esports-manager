@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! Spec-to-test traceability (ADR 0009).
 //!
 //! Scenario ids come from `### ID — title` headings in `docs/specs/*.md`.

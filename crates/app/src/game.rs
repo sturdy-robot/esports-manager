@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! The walking skeleton's use cases: New Game, Load Game, the roster and the
 //! player profile (new game and roster specs).
 

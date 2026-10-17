@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Agent instructions
 
 This file is an index. The rules themselves live in human-facing documents. Read them, and don't treat anything here as a substitute.

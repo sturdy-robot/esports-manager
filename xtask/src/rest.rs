@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //! No rest patterns in package conversion modules (ADR 0005).
 //!
 //! The conversion from package types to domain types destructures every
