@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Pedrenrique G. Guimarães <admin@esportsmanager.net>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Architecture Decision Records
 
 An ADR records one decision that shapes the codebase: the context, the choice, what it costs, and how the choice is enforced. We use a trimmed [MADR](https://adr.github.io/madr/) format; copy [`template.md`](template.md) to start a new one.
@@ -22,5 +28,6 @@ An ADR records one decision that shapes the codebase: the context, the choice, w
 | 0007 | [Internationalization with Project Fluent](0007-i18n-fluent.md)              | Accepted |
 | 0008 | [Enforcement policy and quality gates](0008-enforcement-policy.md)          | Accepted |
 | 0009 | [Specs with Given/When/Then scenarios, traced to tests](0009-specs-and-traceability.md) | Accepted |
-| 0010 | [Fictional world, licensing and assets](0010-fictional-world-and-licensing.md) | Accepted, amended by 0011 |
+| 0010 | [Fictional world, licensing and assets](0010-fictional-world-and-licensing.md) | Accepted, amended by 0011 and 0012 |
 | 0011 | [A package's licence is declared in its manifest](0011-package-licence-in-the-manifest.md) | Accepted |
+| 0012 | [Every file that can hold a comment carries its licence header](0012-licence-headers-in-every-file.md) | Accepted |

@@ -20,7 +20,7 @@ We follow our [Code of Conduct](CODE_OF_CONDUCT.md). Report unacceptable behavio
 
 ## Licensing
 
-All code and base-game content are **GPL-3.0-or-later**. By contributing, you confirm that your contribution is your own original work, or is compatible with that licence, and contains no third-party trademarks or copyrighted material. The repository is [REUSE](https://reuse.software/)-compliant: `REUSE.toml` covers files we write, and any third-party file must declare its own licence.
+All code and base-game content are **GPL-3.0-or-later**. By contributing, you confirm that your contribution is your own original work, or is compatible with that licence, and contains no third-party trademarks or copyrighted material. The repository is [REUSE](https://reuse.software/)-compliant ([ADR 0012](docs/adr/0012-licence-headers-in-every-file.md)): every file that can hold a comment starts with an SPDX licence header, and `REUSE.toml` covers only files that can't, such as JSON and images. `just annotate <files>` writes the header for a new file. Any third-party file must declare its own author and licence.
 
 ## Architecture in one page
 
