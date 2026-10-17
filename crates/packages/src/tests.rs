@@ -1337,6 +1337,17 @@ fn too_many_subs_does_not_hide_duplicate_nicknames() {
 }
 
 #[test]
+fn a_role_set_without_roles_is_an_empty_role_set() {
+    let mut fixture = Fixture::new();
+    fixture.edit("roles/core.json", |set| set["roles"] = json!([]));
+    let problems: Vec<Problem> = fixture.errors().into_iter().map(|e| e.problem).collect();
+    assert!(
+        problems.contains(&Problem::RoleSet(RoleSetError::Empty)),
+        "{problems:?}"
+    );
+}
+
+#[test]
 fn invalid_role_ids_are_not_also_an_empty_role_set() {
     let mut fixture = Fixture::new();
     fixture.edit("roles/core.json", |set| {
