@@ -89,68 +89,66 @@ fn count(value: usize) -> i64 {
 
 /// The message for a package problem, with its file and path.
 #[must_use]
-pub fn package_error(error: &PackageError) -> Message {
-    problem(&error.problem)
-        .text("file", error.file.clone())
-        .text("path", error.path.clone())
+pub fn package_error(error: PackageError) -> Message {
+    problem(error.problem)
+        .text("file", error.file)
+        .text("path", error.path)
 }
 
-fn problem(problem: &Problem) -> Message {
+fn problem(problem: Problem) -> Message {
     match problem {
-        Problem::Unreadable { reason } => {
-            Message::new("problem-unreadable").text("reason", reason.clone())
-        }
+        Problem::Unreadable { reason } => Message::new("problem-unreadable").text("reason", reason),
         Problem::MissingFile => Message::new("problem-missing-file"),
         Problem::UnknownFolder => Message::new("problem-unknown-folder"),
         Problem::UnexpectedFile => Message::new("problem-unexpected-file"),
         Problem::Syntax { line, column } => Message::new("problem-syntax")
-            .number("line", count(*line))
-            .number("column", count(*column)),
+            .number("line", count(line))
+            .number("column", count(column)),
         Problem::NotAnEntity => Message::new("problem-not-an-entity"),
         Problem::NotUtf8 => Message::new("problem-not-utf8"),
         Problem::Empty => Message::new("problem-empty"),
         Problem::UnknownField { field } => {
-            Message::new("problem-unknown-field").text("field", field.clone())
+            Message::new("problem-unknown-field").text("field", field)
         }
         Problem::DuplicateField { field } => {
-            Message::new("problem-duplicate-field").text("field", field.clone())
+            Message::new("problem-duplicate-field").text("field", field)
         }
         Problem::MissingField { field } => {
-            Message::new("problem-missing-field").text("field", field.clone())
+            Message::new("problem-missing-field").text("field", field)
         }
         Problem::InvalidValue { detail } => {
-            Message::new("problem-invalid-value").text("detail", detail.clone())
+            Message::new("problem-invalid-value").text("detail", detail)
         }
         Problem::InvalidFormat => Message::new("problem-invalid-format"),
         Problem::OutOfRange => Message::new("problem-out-of-range"),
-        Problem::InvalidId { id } => Message::new("problem-invalid-id").text("id", id.clone()),
+        Problem::InvalidId { id } => Message::new("problem-invalid-id").text("id", id),
         Problem::WrongKind { id, expected } => Message::new("problem-wrong-kind")
             .text("id", id.to_string())
-            .text("expected", expected.clone()),
+            .text("expected", expected),
         Problem::DuplicateId { id, other_file } => Message::new("problem-duplicate-id")
             .text("id", id.to_string())
-            .text("other", other_file.clone()),
+            .text("other", other_file),
         Problem::UnresolvedReference { field, id } => Message::new("problem-unresolved-reference")
-            .text("field", field.clone())
-            .text("id", id.clone()),
+            .text("field", field)
+            .text("id", id),
         Problem::WrongCount {
             folder,
             count: found,
         } => Message::new("problem-wrong-count")
-            .text("folder", folder.clone())
-            .number("count", count(*found)),
+            .text("folder", folder)
+            .number("count", count(found)),
         Problem::UnsupportedGenre { genre } => {
-            Message::new("problem-unsupported-genre").text("genre", genre.clone())
+            Message::new("problem-unsupported-genre").text("genre", genre)
         }
         Problem::UnknownLocale { locale } => {
-            Message::new("problem-unknown-locale").text("locale", locale.clone())
+            Message::new("problem-unknown-locale").text("locale", locale)
         }
         Problem::TextSyntax { line } => {
-            Message::new("problem-text-syntax").number("line", count(*line))
+            Message::new("problem-text-syntax").number("line", count(line))
         }
         Problem::MissingText { message, locale } => Message::new("problem-missing-text")
-            .text("message", message.clone())
-            .text("locale", locale.clone()),
+            .text("message", message)
+            .text("locale", locale),
         Problem::InvalidMix { region } => {
             Message::new("problem-invalid-mix").text("region", region.to_string())
         }
@@ -161,19 +159,19 @@ fn problem(problem: &Problem) -> Message {
         .text("nationality", nationality.to_string()),
         Problem::RoleSet(error) => role_set_problem(error),
         Problem::TooManySubs { subs, roles } => Message::new("problem-too-many-subs")
-            .number("subs", i64::from(*subs))
-            .number("roles", count(*roles)),
+            .number("subs", i64::from(subs))
+            .number("roles", count(roles)),
         Problem::DuplicateNickname {
             nickname,
             player,
             other,
         } => Message::new("problem-duplicate-nickname")
             .text("player", player.to_string())
-            .text("nickname", nickname.clone())
+            .text("nickname", nickname)
             .text("other", other.to_string()),
         Problem::NicknamePoolTooSmall { distinct, needed } => Message::new("problem-nickname-pool")
-            .number("distinct", count(*distinct))
-            .number("needed", count(*needed)),
+            .number("distinct", count(distinct))
+            .number("needed", count(needed)),
         Problem::IncompletableRoster {
             team,
             missing_roles,
@@ -190,7 +188,7 @@ fn problem(problem: &Problem) -> Message {
     }
 }
 
-fn role_set_problem(error: &esports::moba::roles::RoleSetError) -> Message {
+fn role_set_problem(error: esports::moba::roles::RoleSetError) -> Message {
     use esports::moba::roles::RoleSetError;
     match error {
         RoleSetError::Empty => Message::new("problem-no-roles"),
@@ -199,7 +197,7 @@ fn role_set_problem(error: &esports::moba::roles::RoleSetError) -> Message {
         }
         RoleSetError::MissingWeight { role, attribute } => Message::new("problem-missing-weight")
             .text("role", role.to_string())
-            .message("attribute", crate::views::attribute_message(*attribute)),
+            .message("attribute", crate::views::attribute_message(attribute)),
         RoleSetError::ZeroWeights(role) => {
             Message::new("problem-zero-weights").text("role", role.to_string())
         }
@@ -239,7 +237,7 @@ mod tests {
 
     #[test]
     fn counts_become_numbers() {
-        let syntax = problem(&Problem::Syntax {
+        let syntax = problem(Problem::Syntax {
             line: 3,
             column: 14,
         });
@@ -259,7 +257,7 @@ mod tests {
                 field: "reputaton".to_owned(),
             },
         );
-        let message = package_error(&error);
+        let message = package_error(error);
         assert_eq!(message.id, "problem-unknown-field");
         let names: Vec<&str> = message.args.iter().map(|a| a.name.as_str()).collect();
         assert_eq!(names, ["field", "file", "path"]);
@@ -343,10 +341,12 @@ mod tests {
                 missing_roles: vec![id("role:a"), id("role:b")],
             },
         ];
-        let ids: std::collections::BTreeSet<String> =
-            problems.iter().map(|p| problem(p).id).collect();
-        assert_eq!(ids.len(), problems.len());
-        let roster = problem(problems.last().unwrap());
+        let total = problems.len();
+        let messages: Vec<Message> = problems.into_iter().map(problem).collect();
+        let ids: std::collections::BTreeSet<&str> =
+            messages.iter().map(|m| m.id.as_str()).collect();
+        assert_eq!(ids.len(), total);
+        let roster = messages.last().unwrap();
         assert_eq!(
             roster.args[1].value,
             ArgValue::Text("role:a, role:b".to_owned())

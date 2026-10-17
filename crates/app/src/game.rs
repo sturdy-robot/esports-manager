@@ -476,16 +476,16 @@ pub fn player_profile(save: &mut impl OpenSave, id: &str) -> Result<PlayerProfil
 
 /// The messages describing a New Game failure.
 #[must_use]
-pub fn new_game_messages(error: &NewGameError) -> Vec<Message> {
+pub fn new_game_messages(error: NewGameError) -> Vec<Message> {
     match error {
-        NewGameError::Invalid(problems) => problems.iter().map(request_message).collect(),
-        NewGameError::Package(errors) => errors.iter().map(package_error).collect(),
+        NewGameError::Invalid(problems) => problems.into_iter().map(request_message).collect(),
+        NewGameError::Package(errors) => errors.into_iter().map(package_error).collect(),
         NewGameError::Generation(_) => vec![Message::new("error-generation")],
         NewGameError::Save(error) => vec![save_message(error)],
     }
 }
 
-fn request_message(problem: &RequestProblem) -> Message {
+fn request_message(problem: RequestProblem) -> Message {
     match problem {
         RequestProblem::EmptyManagerName => Message::new("error-manager-name-empty"),
         RequestProblem::ManagerNameTooLong => {
@@ -496,49 +496,41 @@ fn request_message(problem: &RequestProblem) -> Message {
             Message::new("error-save-name-long").number("max", SAVE_NAME_MAX)
         }
         RequestProblem::ControlCharacters { field } => {
-            Message::new("error-control-characters").text("field", *field)
+            Message::new("error-control-characters").text("field", field)
         }
         RequestProblem::UnknownTeam { team } => {
-            Message::new("error-unknown-team").text("team", team.clone())
+            Message::new("error-unknown-team").text("team", team)
         }
         RequestProblem::SaveNameTaken { name } => {
-            Message::new("error-save-name-taken").text("name", name.clone())
+            Message::new("error-save-name-taken").text("name", name)
         }
         RequestProblem::InvalidSeed { seed } => {
-            Message::new("error-invalid-seed").text("seed", seed.clone())
+            Message::new("error-invalid-seed").text("seed", seed)
         }
     }
 }
 
 /// The message describing a storage failure.
 #[must_use]
-pub fn save_message(error: &SaveError) -> Message {
+pub fn save_message(error: SaveError) -> Message {
     match error {
-        SaveError::NameTaken(name) => {
-            Message::new("error-save-name-taken").text("name", name.clone())
-        }
-        SaveError::NotFound(file) => {
-            Message::new("error-save-not-found").text("file", file.clone())
-        }
+        SaveError::NameTaken(name) => Message::new("error-save-name-taken").text("name", name),
+        SaveError::NotFound(file) => Message::new("error-save-not-found").text("file", file),
         SaveError::NotASave => Message::new("error-save-not-a-save"),
         SaveError::NewerVersion => Message::new("error-save-newer"),
         SaveError::InUse => Message::new("error-save-in-use"),
-        SaveError::Storage(detail) => Message::new("error-storage").text("detail", detail.clone()),
+        SaveError::Storage(detail) => Message::new("error-storage").text("detail", detail),
     }
 }
 
 /// The message describing a query failure.
 #[must_use]
-pub fn query_message(error: &QueryError) -> Message {
+pub fn query_message(error: QueryError) -> Message {
     match error {
-        QueryError::UnknownTeam(team) => {
-            Message::new("error-unknown-team").text("team", team.clone())
-        }
-        QueryError::AmbiguousSave(name) => {
-            Message::new("error-save-ambiguous").text("name", name.clone())
-        }
+        QueryError::UnknownTeam(team) => Message::new("error-unknown-team").text("team", team),
+        QueryError::AmbiguousSave(name) => Message::new("error-save-ambiguous").text("name", name),
         QueryError::UnknownPlayer(player) => {
-            Message::new("error-unknown-player").text("player", player.clone())
+            Message::new("error-unknown-player").text("player", player)
         }
         QueryError::Save(error) => save_message(error),
     }

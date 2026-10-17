@@ -144,20 +144,20 @@ fn teams(cli: &Cli, out: &mut impl Write) -> Result<(), Failed> {
         return print_json(out, &options);
     }
     let text = Text::new(&cli.locale, &package.texts);
-    for region in &options.regions {
-        let line = match &region.league_message {
+    for region in options.regions {
+        let line = match region.league_message {
             Some(league) => Message::new("cli-region")
-                .message("region", region.name_message.clone())
-                .message("league", league.clone()),
-            None => Message::new("cli-region-only").message("region", region.name_message.clone()),
+                .message("region", region.name_message)
+                .message("league", league),
+            None => Message::new("cli-region-only").message("region", region.name_message),
         };
         print(out, &text.render(&line))?;
-        for team in &region.teams {
+        for team in region.teams {
             let row = Message::new("cli-team")
-                .text("tag", team.crest.tag.clone())
-                .message("name", team.name_message.clone())
+                .text("tag", team.crest.tag)
+                .message("name", team.name_message)
                 .number("stars", i64::from(team.strength))
-                .text("id", team.id.clone());
+                .text("id", team.id);
             print(out, &format!("  {}", text.render(&row)))?;
         }
     }
@@ -182,44 +182,43 @@ fn new_game(
         now: db::environment::now(),
     };
     let opened = game::new_game(&package, &store, &request)
-        .map_err(|error| Failed::Messages(game::new_game_messages(&error)))?;
+        .map_err(|error| Failed::Messages(game::new_game_messages(error)))?;
     if cli.json {
         return print_json(out, &opened);
     }
     let line = Message::new("cli-new-game-created")
-        .text("file", opened.file.clone())
-        .message("team", opened.team_message.clone());
+        .text("file", opened.file)
+        .message("team", opened.team_message);
     print(out, &Text::new(&cli.locale, &package.texts).render(&line))
 }
 
 fn saves(cli: &Cli, out: &mut impl Write) -> Result<(), Failed> {
-    let saves = game::list_saves(&store(cli)?).map_err(|e| Failed::from(game::save_message(&e)))?;
+    let saves = game::list_saves(&store(cli)?).map_err(|e| Failed::from(game::save_message(e)))?;
     if cli.json {
         return print_json(out, &saves);
     }
-    print_saves(cli, out, &saves)
+    print_saves(cli, out, saves)
 }
 
 fn roster(cli: &Cli, out: &mut impl Write, save: &str, team: Option<&str>) -> Result<(), Failed> {
     let store = store(cli)?;
     let mut open = open(&store, save)?;
-    let view = game::roster(&mut open, team).map_err(|e| Failed::from(game::query_message(&e)))?;
+    let view = game::roster(&mut open, team).map_err(|e| Failed::from(game::query_message(e)))?;
     if cli.json {
         return print_json(out, &view);
     }
     let texts =
-        app::saves::OpenSave::texts(&mut open).map_err(|e| Failed::from(game::save_message(&e)))?;
+        app::saves::OpenSave::texts(&mut open).map_err(|e| Failed::from(game::save_message(e)))?;
     let text = Text::new(&cli.locale, &texts);
-    let mut title =
-        Message::new("cli-roster-title").message("team", view.team.name_message.clone());
-    title = match &view.team.league_message {
-        Some(league) => title.message("league", league.clone()),
-        None => title.message("league", view.team.region_message.clone()),
+    let title = Message::new("cli-roster-title").message("team", view.team.name_message);
+    let title = match view.team.league_message {
+        Some(league) => title.message("league", league),
+        None => title.message("league", view.team.region_message),
     };
     print(out, &text.render(&title))?;
     for (heading, players) in [
-        ("roster-starters", &view.starters),
-        ("roster-subs", &view.subs),
+        ("roster-starters", view.starters),
+        ("roster-subs", view.subs),
     ] {
         print(out, "")?;
         print(out, &text.render(&Message::new(heading)))?;
@@ -232,27 +231,23 @@ fn player(cli: &Cli, out: &mut impl Write, save: &str, player: &str) -> Result<(
     let store = store(cli)?;
     let mut open = open(&store, save)?;
     let profile = game::player_profile(&mut open, player)
-        .map_err(|e| Failed::from(game::query_message(&e)))?;
+        .map_err(|e| Failed::from(game::query_message(e)))?;
     if cli.json {
         return print_json(out, &profile);
     }
     let texts =
-        app::saves::OpenSave::texts(&mut open).map_err(|e| Failed::from(game::save_message(&e)))?;
+        app::saves::OpenSave::texts(&mut open).map_err(|e| Failed::from(game::save_message(e)))?;
     let text = Text::new(&cli.locale, &texts);
-    let p = &profile.player;
+    let name = full_name(&text, &profile.player);
     let title = Message::new("cli-player-title")
-        .text("nickname", p.nickname.clone())
-        .text("name", full_name(&text, p))
-        .message("team", profile.team.name_message.clone());
+        .text("nickname", profile.player.nickname)
+        .text("name", name)
+        .message("team", profile.team.name_message);
     print(out, &text.render(&title))?;
-    print(
-        out,
-        &text.render(&Message::new("profile-overall").number("overall", i64::from(p.overall))),
-    )?;
-    print(
-        out,
-        &text.render(&Message::new("profile-born").text("date", profile.birth_date.clone())),
-    )?;
+    let overall = Message::new("profile-overall").number("overall", profile.player.overall);
+    print(out, &text.render(&overall))?;
+    let born = Message::new("profile-born").text("date", profile.birth_date);
+    print(out, &text.render(&born))?;
     let unknown = text.render(&Message::new("profile-unknown"));
     for (heading, attributes) in [
         ("profile-skills", &profile.skills),
@@ -280,7 +275,7 @@ fn player(cli: &Cli, out: &mut impl Write, save: &str, player: &str) -> Result<(
     Ok(())
 }
 
-fn print_saves(cli: &Cli, out: &mut impl Write, saves: &[SaveSummary]) -> Result<(), Failed> {
+fn print_saves(cli: &Cli, out: &mut impl Write, saves: Vec<SaveSummary>) -> Result<(), Failed> {
     // Team names come from the package's text; without it, the ids show.
     let texts = packages::load(&cli.content)
         .map(|p| p.texts)
@@ -300,15 +295,15 @@ fn print_saves(cli: &Cli, out: &mut impl Write, saves: &[SaveSummary]) -> Result
                 game_date,
                 last_played_at: _,
             } => Message::new("cli-save")
-                .text("name", name.clone())
-                .text("manager", manager_name.clone())
-                .message("team", team_message.clone())
-                .text("date", game_date.clone())
-                .text("file", file.clone())
-                .text("inUse", if *in_use { "yes" } else { "no" }),
+                .text("name", name)
+                .text("manager", manager_name)
+                .message("team", team_message)
+                .text("date", game_date)
+                .text("file", file)
+                .text("inUse", if in_use { "yes" } else { "no" }),
             SaveSummary::Damaged { file, damage } => Message::new("cli-save-damaged")
-                .text("file", file.clone())
-                .message("damage", damage_message(*damage)),
+                .text("file", file)
+                .message("damage", damage_message(damage)),
         };
         print(out, &text.render(&line))?;
     }
@@ -326,12 +321,16 @@ fn full_name(text: &Text, player: &RosterPlayer) -> String {
     text.render(
         &Message::new("person-full-name")
             .text("order", player.name_order.as_str())
-            .text("given", player.given_name.clone())
-            .text("family", player.family_name.clone()),
+            .text("given", &player.given_name)
+            .text("family", &player.family_name),
     )
 }
 
-fn print_table(out: &mut impl Write, text: &Text, players: &[RosterPlayer]) -> Result<(), Failed> {
+fn print_table(
+    out: &mut impl Write,
+    text: &Text,
+    players: Vec<RosterPlayer>,
+) -> Result<(), Failed> {
     let header = [
         "roster-column-role",
         "roster-column-nickname",
@@ -343,11 +342,12 @@ fn print_table(out: &mut impl Write, text: &Text, players: &[RosterPlayer]) -> R
     .map(|id| text.render(&Message::new(id)));
     let mut rows = vec![header.to_vec()];
     for p in players {
+        let name = full_name(text, &p);
         rows.push(vec![
             text.render(&Message::content(&p.role_message)),
-            p.nickname.clone(),
-            full_name(text, p),
-            p.nationality.code.clone(),
+            p.nickname,
+            name,
+            p.nationality.code,
             p.age.to_string(),
             p.overall.to_string(),
         ]);
@@ -392,9 +392,8 @@ fn print_json(out: &mut impl Write, value: &impl Serialize) -> Result<(), Failed
     print(out, &json)
 }
 
-#[expect(clippy::needless_pass_by_value, reason = "passed to `map_err` by name")]
 fn package_failure(errors: Vec<app::content::PackageError>) -> Failed {
-    Failed::Messages(errors.iter().map(package_error).collect())
+    Failed::Messages(errors.into_iter().map(package_error).collect())
 }
 
 fn store(cli: &Cli) -> Result<SqliteSaveStore, Failed> {
@@ -410,10 +409,10 @@ fn store(cli: &Cli) -> Result<SqliteSaveStore, Failed> {
 
 /// The save a `--save` argument names: its file, or its name ignoring case.
 fn open(store: &SqliteSaveStore, wanted: &str) -> Result<db::SqliteSave, Failed> {
-    let file = game::find_save(store, wanted).map_err(|e| Failed::from(game::query_message(&e)))?;
+    let file = game::find_save(store, wanted).map_err(|e| Failed::from(game::query_message(e)))?;
     store
         .open(&file, db::environment::now())
-        .map_err(|e| Failed::from(game::save_message(&e)))
+        .map_err(|e| Failed::from(game::save_message(e)))
 }
 
 #[cfg(test)]
