@@ -74,7 +74,7 @@ fn different_names_with_the_same_slug_get_distinct_files() {
     // spec: SAVE-011
     // Given
     let dir = folder("slug");
-    let store = SqliteSaveStore::new(dir.clone());
+    let store = SqliteSaveStore::new(dir);
     let (world, texts) = (world(42), texts());
     store
         .create(new_save(&meta("Tigers!", 100), &world, &texts))
@@ -142,7 +142,7 @@ fn a_damaged_file_does_not_break_the_list() {
 fn an_empty_or_foreign_database_is_not_a_save() {
     let dir = folder("foreign");
     std::fs::write(dir.join("empty.esmsave"), b"").unwrap();
-    let store = SqliteSaveStore::new(dir.clone());
+    let store = SqliteSaveStore::new(dir);
     let listings = store.list().unwrap();
     assert_eq!(listings[0].save, Err(Damage::NotASave));
     assert_eq!(
@@ -179,7 +179,7 @@ fn a_save_round_trips() {
     // spec: SAVE-015
     // Given
     let dir = folder("round-trip");
-    let store = SqliteSaveStore::new(dir.clone());
+    let store = SqliteSaveStore::new(dir);
     let (meta, world, texts) = (meta("Round trip", 100), world(42), texts());
     let file = store.create(new_save(&meta, &world, &texts)).unwrap();
     // When
@@ -209,7 +209,7 @@ fn generated_ids_survive_closing_and_reopening() {
     // spec: GEN-018
     // Given
     let dir = folder("ids");
-    let store = SqliteSaveStore::new(dir.clone());
+    let store = SqliteSaveStore::new(dir);
     let (meta, world, texts) = (meta("Ids", 100), world(42), texts());
     let file = store.create(new_save(&meta, &world, &texts)).unwrap();
     // When
@@ -240,7 +240,7 @@ fn opening_updates_last_played() {
     // spec: SAVE-016
     // Given
     let dir = folder("last-played");
-    let store = SqliteSaveStore::new(dir.clone());
+    let store = SqliteSaveStore::new(dir);
     let (world, texts) = (world(42), texts());
     let file = store
         .create(new_save(&meta("Played", 36_000), &world, &texts))
@@ -266,7 +266,7 @@ fn a_name_with_no_ascii_letters_still_gets_a_file() {
     // spec: SAVE-017
     // Given
     let dir = folder("unicode");
-    let store = SqliteSaveStore::new(dir.clone());
+    let store = SqliteSaveStore::new(dir);
     let (meta, world, texts) = (meta("호랑이", 100), world(42), texts());
     // When
     let file = store.create(new_save(&meta, &world, &texts)).unwrap();
@@ -359,7 +359,7 @@ fn an_open_save_cannot_be_opened_twice() {
     // spec: SAVE-020
     // Given
     let dir = folder("in-use");
-    let store = SqliteSaveStore::new(dir.clone());
+    let store = SqliteSaveStore::new(dir);
     let (world, texts) = (world(42), texts());
     let file = store
         .create(new_save(&meta("Busy", 100), &world, &texts))
@@ -381,7 +381,7 @@ fn an_open_save_cannot_be_opened_twice() {
 #[test]
 fn a_name_is_taken_even_by_a_save_that_is_open() {
     let dir = folder("taken-open");
-    let store = SqliteSaveStore::new(dir.clone());
+    let store = SqliteSaveStore::new(dir);
     let (world, texts) = (world(42), texts());
     let file = store
         .create(new_save(&meta("Tigers", 100), &world, &texts))
@@ -465,7 +465,7 @@ fn saves_played_at_the_same_moment_have_a_stable_order() {
 #[test]
 fn only_save_files_in_the_folder_can_be_opened() {
     let dir = folder("not-found");
-    let store = SqliteSaveStore::new(dir.clone());
+    let store = SqliteSaveStore::new(dir);
     for file in ["missing.esmsave", "../escape.esmsave", "notes.txt"] {
         assert_eq!(
             store.open(file, Timestamp(1)).map(|_| ()),

@@ -154,10 +154,7 @@ mod tests {
             "managerName": "Ana", "team": "team:azure_tigers", "saveName": "Tigers", "seed": "42" } });
         let opened = invoke(&webview, "start_new_game", input);
         assert_eq!(opened["file"], "tigers.esmsave");
-        assert_eq!(
-            invoke(&webview, "list_saves", empty.clone())[0]["name"],
-            "Tigers"
-        );
+        assert_eq!(invoke(&webview, "list_saves", empty)[0]["name"], "Tigers");
         let roster = invoke(&webview, "get_roster", serde_json::json!({ "team": null }));
         assert_eq!(roster["starters"].as_array().unwrap().len(), 5);
         let player = invoke(

@@ -64,6 +64,8 @@ unwrap_used = "deny"
 expect_used = "deny"
 panic = "deny"
 wildcard_enum_match_arm = "deny"
+# A clone whose original is never used again should be a move.
+redundant_clone = "deny"
 # Crate names are short (`domain`, `app`), so `domain::rng::RngProvider`-style
 # repetition is the clearest naming, not noise.
 module_name_repetitions = "allow"

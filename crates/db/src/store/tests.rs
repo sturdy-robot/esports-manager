@@ -83,7 +83,7 @@ fn a_temporary_file_still_being_written_is_kept() {
     assert!(path.exists());
     drop(held);
     std::fs::write(journal(&path), b"").unwrap();
-    drop(SqliteSaveStore::new(dir.clone()));
+    drop(SqliteSaveStore::new(dir));
     assert!(!path.exists());
     assert!(!journal(&path).exists());
     assert!(!lock::lock_path(&path).exists());
