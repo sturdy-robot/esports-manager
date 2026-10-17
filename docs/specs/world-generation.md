@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # World generation
 
 - **Prefix:** `GEN`
-- **Status:** Accepted
+- **Status:** Implemented
 - **Related:** [ADR 0002](../adr/0002-genre-seam.md), [ADR 0003](../adr/0003-deterministic-simulation.md), [packages](packages.md), [attributes](attributes.md), [core world](../game-design/core-world.md)
 
 ## Summary

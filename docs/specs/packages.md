@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # Content packages
 
 - **Prefix:** `PKG`
-- **Status:** Accepted
+- **Status:** Implemented
 - **Related:** [ADR 0005](../adr/0005-esm-packages.md), [ADR 0007](../adr/0007-i18n-fluent.md), [ADR 0010](../adr/0010-fictional-world-and-licensing.md), [world generation](world-generation.md)
 
 ## Summary

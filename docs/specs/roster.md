@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # Roster and player profile
 
 - **Prefix:** `ROST`
-- **Status:** Accepted
+- **Status:** Implemented
 - **Related:** [attributes](attributes.md), [world generation](world-generation.md), [new game](new-game.md), [ADR 0006](../adr/0006-bindings-and-pure-view.md), [ADR 0010](../adr/0010-fictional-world-and-licensing.md)
 
 ## Summary

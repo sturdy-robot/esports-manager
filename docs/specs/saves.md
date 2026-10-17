@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # Saves and data locations
 
 - **Prefix:** `SAVE`
-- **Status:** Accepted
+- **Status:** Implemented
 - **Related:** [ADR 0001](../adr/0001-clean-architecture-and-workspace-layout.md), [ADR 0004](../adr/0004-sqlite-and-diesel.md), [new game](new-game.md)
 
 ## Summary

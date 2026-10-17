@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 # New Game, Load Game and the main menu
 
 - **Prefix:** `NEWG`
-- **Status:** Accepted
+- **Status:** Implemented
 - **Related:** [packages](packages.md), [world generation](world-generation.md), [saves](saves.md), [roster](roster.md), [ADR 0006](../adr/0006-bindings-and-pure-view.md)
 
 ## Summary
